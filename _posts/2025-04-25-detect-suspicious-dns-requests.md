@@ -7,7 +7,8 @@ tags: [sentinel, dns, summary rules, detection, threat intel]
 render_with_liquid: false
 ---
 
-💡Came you also across the situation or requirement to log DNS queries from within Azure VNET? If yes, then this blog may be of interest for you.
+>💡Came you also across the situation or requirement to log DNS queries from within Azure VNET? If yes, then this blog may be of interest for you.
+{: .prompt-tip}
 
 While this was not possible in the past without going with your own DNS forwarder to collect DNS queries, with `DNS Security Policy` Azure now provides a new `public preview` feature for this which allows you to filter (block) and log DNS queries at the VNet level, providing enhanced security and visibility into your network traffic.
 
@@ -64,7 +65,7 @@ It also allows us to reduce some noise upfront, for instance not logging/aggrega
 > When considering aggregation and detection timing for Summary Rules in Microsoft Sentinel, it's crucial to define the aggregation interval carefully. A larger interval can lead to hugh cost savings and reduced data volume, but it may also result in delayed detection of security events. Conversely, a shorter interval enhances detection timing but may diminish the benefits of using Summary Rules due to increased data processing. In my lab I could reduce the data volume by 80-90% using a 1h aggregation interval.
 {: .prompt-info}
 
-To check for other summary rule scenarios have a look to [https://learn.microsoft.com/en-us/azure/sentinel/summary-rules#sample-summary-rule-scenarios](https://learn.microsoft.com/en-us/azure/sentinel/summary-rules#sample-summary-rule-scenarios) and [https://techcommunity.microsoft.com/blog/microsoftsentinelblog/leave-no-data-behind-using-summary-rules-to-store-data-cost-effectively-in-micro/4296785](https://techcommunity.microsoft.com/blog/microsoftsentinelblog/leave-no-data-behind-using-summary-rules-to-store-data-cost-effectively-in-micro/4296785).
+To check for other summary rule scenarios have a look to [sentinel summary rule scenarios (learn.microsoft.com))](https://learn.microsoft.com/en-us/azure/sentinel/summary-rules#sample-summary-rule-scenarios) and [using summary rules to store data cost effectively (techcommunity.microsoft.com)](https://techcommunity.microsoft.com/blog/microsoftsentinelblog/leave-no-data-behind-using-summary-rules-to-store-data-cost-effectively-in-micro/4296785).
 
 ## Bringing DNS Security Policy and Sentinel Summary Rules together
 
@@ -79,7 +80,7 @@ As usual, we first want to define our environment/variables and the resources we
 > Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
 {: .prompt-info}
 
-```powershell
+```shell
 $ResourceGroup = "sampleDnsResourceGroup"
 $location = "swedencentral"
 
@@ -97,33 +98,33 @@ az group create --name $ResourceGroup --location $location
 
 To get started, we need to create a `DNS Resolver Policy` which acts as container for the other elements. The `--location` parameter is important as the DNS Resolver Policy must be created in the same region as the VNet you want to link it to. The `--query id` parameter returns the id of the created DNS Resolver Policy which we need later to configure the diagnostics settings in order to send the logs to Sentinel.
 
-```powershell
+```shell
 $resolverPolicyId = $(az dns-resolver policy create --resource-group $ResourceGroup --dns-resolver-policy-name $DnsResolverPolicy --location $location --query id --output tsv)
 ```
 
 Because we want to audit/log any dns query, we need to create a `domain list` with the wildcard `"[.]"` which is then attached to the `DNS Resolver Policy`. The `--domains` parameter is the wildcard domain list we want to create. The `--query id` parameter returns the id of the created domain list which we need for the next step.
 
-```powershell
+```shell
 $DnsDomainListId = $(az dns-resolver domain-list create --resource-group $ResourceGroup --dns-resolver-domain-list-name $DnsDomainListName --location $location --domains "[.]" --query id --output tsv)
 $DnsDomainListName = $("[{id:" + $DnsDomainListId + "}]")
 ```
 
 After having the `domain list` created, we can add a `dns security policy rule` to the `DNS Resolver Policy` and linking the domain list to it. The `--action` parameter can be set to `Allow`, `Block`, or `Alert`. In our case, we want to log all requests, so we go for `Allow`.
 
-```powershell
+```shell
 az dns-resolver policy dns-security-rule create --resource-group $ResourceGroup --policy-name $DnsResolverPolicy --dns-security-rule-name $DnsSecurityRule --location $location --priority 100 --action "{action-type:Allow}" --domain-lists $DnsDomainListName --rule-state Enabled
 ```
 
 The last step for the inital setup is to link your vnets to the `DNS Resolver Policy`. The `--location` parameter is important as the DNS Resolver Policy must be created in the same region as the VNet you want to link it to. The `--virtual-network` parameter is the id of your Vnet you want to link to the DNS Resolver Policy.
 
-```powershell
+```shell
 $vnet = $("[{id:" + $vnet + "}]")
 az dns-resolver policy vnet-link create --resource-group $ResourceGroup  --policy-name $DnsResolverPolicy --dns-resolver-policy-virtual-network-link-name "sampleVirtualNetworkLink1" --location $location --virtual-network $vnet
 ```
 
 To now bring the events into our Sentinel workspace, we have to create the diagnostic setting for the `DNS Resolver Policy`. The `--logs` parameter is the list of logs we want to send to Sentinel. In our case, we want to send the `DnsResponse` logs. The `--workspace` parameter is the id of your Sentinel workspace.
 
-```powershell
+```shell
 # [{"category":"DnsResponse","enabled":true}]
 # [{"categoryGroup":"allLogs","enabled":true}]
 az monitor diagnostic-settings create --name $diagnosticSettingName --resource $resolverPolicyId --logs '[{"category":"DnsResponse","enabled":true}]' --workspace $workspaceId
@@ -135,10 +136,10 @@ After running the above commands, you can check the deployed resources in the Az
 
 Because we want to run our detection rule against the aggregated data instead against the built-in table, we can bring the DNSQuery table into basic tier to save costs.
 
-> [!NOTE]
 > As of today, auxiliary log tier is not supported for the DNSQuery table.
+{: .prompt-warning}
 
-```powershell
+```shell
 $resourceGroup = $workspaceId -match "/resourcegroups/([^/]+)/" | Out-Null; $resourceGroup = $matches[1]
 $workspaceName = $workspaceId -match "/workspaces/([^/]+)$" | Out-Null; $workspaceName = $matches[1]
 
