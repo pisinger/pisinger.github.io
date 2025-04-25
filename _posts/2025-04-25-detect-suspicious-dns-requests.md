@@ -147,7 +147,7 @@ az monitor log-analytics workspace table update --resource-group $ResourceGroup 
 
 That's it, you should now see the DNS queries coming in to your Sentinel workspace. It does not matter if doing some queries from a VM or Container running in k8s for example - as long as you have a Vnet you can link and the Azure Vnet DNS resolver is used in the query flow, you are all set 🥳
 
-```sql
+```console
 DNSQueryLogs
 | take 10
 ```
@@ -158,7 +158,7 @@ Now we want to prepare the data source for the detection rule. For this we will 
 
 To configure Summary Rules in Microsoft Sentinel, start by opening Sentinel in either the Azure or Defender portal, navigate to Summary Rules and click on the option to create a new rule. Enter the name and description for your rule, enter the custom table where to send the data and finally, define the aggregation interval, such as 1 hour - to balance cost efficiency and detection timing - and then copy the below KQL query into the query box.
 
-```sql
+```console
 DNSQueryLogs
 | extend Answer = iif(Answer == "[]", '["NXDOMAIN"]', Answer)
 | extend Answer = todynamic(Answer)
@@ -182,7 +182,7 @@ To create the detection/analytics rule in Sentinel, navigate to the "Analytics" 
 > You may want to prepare the detection test already by resolving some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
 {: .prompt-tip}
 
-```sql
+```console
 // detect suspicious DNS requests using dns security policy and threat intelligence
 let dt_lookBack = 1h;      // needs to be in sync with the summary rule aggregation interval
 let ioc_lookBack = 14d;    // Look back 14 days for threat intelligence indicators
@@ -251,7 +251,7 @@ After creating the rule, you can further adjust as needed such as severity, rule
 
 To test the detection, simply try to resolve a domain which is in the threat intel list using `nslookup`, `ping`, or other tools. To find out which domains are in the list, you can use the below kusto query:
 
-```sql
+```console
 ThreatIntelIndicators
 | where IsActive == true
 | summarize LatestIndicatorTime = arg_max(TimeGenerated, *) by Id
