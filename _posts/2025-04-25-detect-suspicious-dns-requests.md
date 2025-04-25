@@ -69,13 +69,15 @@ To check for other summary rule scenarios have a look to [sentinel summary rule 
 
 ## Bringing DNS Security Policy and Sentinel Summary Rules together
 
-By leveraging the combined power of Azure DNS Security Policy and Sentinel Summary Rules, you can streamline your DNS security operations, making it easier to manage and analyze DNS logs while maintaining robust protection against cyber threats.
+By leveraging the combined power of Azure DNS Security Policy and Sentinel Summary Rules, you can streamline your DNS security operations, making it easier to manage and analyze DNS logs while maintaining robust protection against cyber threats. See the following sections for a step-by-step guide on how to set up this integration.
 
 ## Create DNS Security Policy and Logging via Azure CLI
 
-See also [Secure and view DNS traffic (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/dns/dns-traffic-log-how-to) for more details. This documentation provides information on how to configure it via Azure Portal or Azure PowerShell. In this blog we will do the same via Azure CLI 🫡
+[Secure and view DNS traffic (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/dns/dns-traffic-log-how-to) describes information on how to configure it via Azure Portal or Azure PowerShell. In this blog we will do the same via Azure CLI 🫡
 
 As usual, we first want to define our environment/variables and the resources we need to create. This is done in the below code snippet which does also create a dedicated resource group. The `workspaceId` is your Sentinel workspace, the `vnet` variable is the id of your Vnet you want to link to the DNS Security Policy.
+
+
 
 > Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
 {: .prompt-info}
