@@ -7,7 +7,7 @@ tags: [sentinel, dns, summary rules, detection, threat intel]
 render_with_liquid: false
 ---
 
->💡Came you also across the situation or requirement to log DNS queries from within Azure VNET? If yes, then this blog may be of interest for you.
+> Came you also across the situation or requirement to log DNS queries from within Azure VNET? If yes, then this blog may be of interest for you.
 {: .prompt-tip}
 
 While this was not possible in the past without going with your own DNS forwarder to collect DNS queries, with `DNS Security Policy` Azure now provides a new `public preview` feature for this which allows you to filter (block) and log DNS queries at the VNet level, providing enhanced security and visibility into your network traffic.
@@ -34,7 +34,7 @@ Using this feature provides you the below capabilities:
 - `DNS Query Filtering`: Block known malicious domains to prevent DNS-based attacks
 - `DNS Logging`: Capture detailed logs of DNS queries and send them to a Storage Account, Log Analytics Workspace, or Event Hubs via Azure diagnostic settings
 
-> 👉 A DNS security policy has the following associated elements and properties:
+A DNS security policy has the following associated elements and properties:
 
 - `Location`: The Azure region where the security policy is created and deployed.
 - `DNS traffic rules`: Rules that allow, block, or alert based on priority and domain lists.
