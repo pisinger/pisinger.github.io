@@ -77,8 +77,6 @@ By leveraging the combined power of Azure DNS Security Policy and Sentinel Summa
 
 As usual, we first want to define our environment/variables and the resources we need to create. This is done in the below code snippet which does also create a dedicated resource group. The `workspaceId` is your Sentinel workspace, the `vnet` variable is the id of your Vnet you want to link to the DNS Security Policy.
 
-
-
 > Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
 {: .prompt-info}
 
@@ -138,7 +136,7 @@ After running the above commands, you can check the deployed resources in the Az
 
 Because we want to run our detection rule against the aggregated data instead against the built-in table, we can bring the DNSQuery table into basic tier to save costs.
 
-> As of today, auxiliary log tier is not supported for the DNSQuery table.
+> As of the time of writing this blog (2025-04), auxiliary log tier is only supported for new custom tables but not for the built-in ones. Because DNSQuery table does not support ingestion-time transformation, we can also not forward the data to a custom table.
 {: .prompt-warning}
 
 ```shell
@@ -182,7 +180,7 @@ DNSQueryLogs
 
 To create the detection/analytics rule in Sentinel, navigate to the "Analytics" section and select "Create" to start the setup. Choose the "Scheduled query rule" option and enter the name and description for your rule. Copy the below KQL query into the query box, then set the query frequency to match the aggregation interval of your summary rule, such as 1 hour, and the lookup period to 14d.
 
-> You may want to prepare the detection test already by resolving some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
+> You may want to prepare the detection test already upfront by `resolving` some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
 {: .prompt-tip}
 
 ```console
