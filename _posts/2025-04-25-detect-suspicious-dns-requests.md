@@ -187,7 +187,7 @@ To create the detection/analytics rule in Sentinel, navigate to the "Analytics" 
 > You may want to prepare the detection test already upfront by `resolving` some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
 {: .prompt-tip}
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fhunting%2Frefs%2Fheads%2Fmain%2Fsentinel-suspicious-dns-requests.json)
+[![Deploy below Analytic Rule to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fhunting%2Frefs%2Fheads%2Fmain%2Fsentinel-suspicious-dns-requests.json)
 
 ```console
 // detect suspicious DNS requests using dns security policy and threat intelligence
