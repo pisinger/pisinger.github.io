@@ -78,7 +78,7 @@ By leveraging the combined power of Azure DNS Security Policy and Sentinel Summa
 As usual, we first want to define our environment/variables and the resources we need to create. This is done in the below code snippet which does also create a dedicated resource group. The `workspaceId` is your Sentinel workspace, the `vnet` variable is the id of your Vnet you want to link to the DNS Security Policy.
 
 > Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
-{: .prompt-info}
+{: .prompt-tip}
 
 ```shell
 $ResourceGroup = "sampleDnsResourceGroup"
@@ -176,7 +176,7 @@ DNSQueryLogs
 ```
 
 > Latest KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/tree/main)
-{: .prompt-info}
+{: .prompt-tip}
 
 ![picture](/assets/img/posts/detect-suspicious-dns-requests/sentinel-summary-rule-0.png)
 
@@ -251,7 +251,7 @@ ioc_query_match_parentdomain_only
 ```
 
 > Latest KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/tree/main)
-{: .prompt-info}
+{: .prompt-tip}
 
 > The above query makes already use of the new STIX 2.1 based Threat Intellignent tables in Sentinel. For more information see [Whats new in Sentinel (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/whats-new#microsoft-sentinel-now-ingests-all-stix-objects-and-indicators-into-new-threat-intelligence-tables-preview). Also make sure you have the proper [Threat Intelligence data connector (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/connect-mdti-data-connector) enabled for your Sentinel workspace.
 {: .prompt-info}
