@@ -175,6 +175,9 @@ DNSQueryLogs
 | extend RDataCount = array_length(Answers)
 ```
 
+> Latest KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/tree/main)
+{: .prompt-info}
+
 ![picture](/assets/img/posts/detect-suspicious-dns-requests/sentinel-summary-rule-0.png)
 
 ## Create Sentinel detection rule
@@ -183,6 +186,8 @@ To create the detection/analytics rule in Sentinel, navigate to the "Analytics" 
 
 > You may want to prepare the detection test already upfront by `resolving` some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
 {: .prompt-tip}
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fhunting%2Frefs%2Fheads%2Fmain%2Fsentinel-suspicious-dns-requests.json)
 
 ```console
 // detect suspicious DNS requests using dns security policy and threat intelligence
@@ -245,7 +250,8 @@ ioc_query_match_parentdomain_only
 | project TimeGenerated, QueryName, DomainName, IsActive, Confidence, ValidUntil, IndicatorType, RType, OperationName, SourceIpAddress, Transport, Answers, RDataCount, EventCount, Region, VirtualNetworkId, _LookupType
 ```
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fhunting%2Frefs%2Fheads%2Fmain%2Fsentinel-suspicious-dns-requests.json)
+> Latest KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/tree/main)
+{: .prompt-info}
 
 > The above query makes already use of the new STIX 2.1 based Threat Intellignent tables in Sentinel. For more information see [Whats new in Sentinel (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/whats-new#microsoft-sentinel-now-ingests-all-stix-objects-and-indicators-into-new-threat-intelligence-tables-preview). Also make sure you have the proper [Threat Intelligence data connector (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/connect-mdti-data-connector) enabled for your Sentinel workspace.
 {: .prompt-info}
