@@ -168,9 +168,10 @@ DNSQueryLogs
 | extend RData = parsed.RData
 | extend RType = tostring(parsed.Type)
 // removing the trailing dot
-| extend QueryName = tolower(substring(QueryName, 0, strlen(QueryName) - 1))
+| extend QueryName = tolower(trim_end("\\.", QueryName))
 // finally aggregate
-| summarize EventCount = count(), Answers = make_set(tostring(RData)) by bin(TimeGenerated, 1h), RType, OperationName, Region, VirtualNetworkId, SourceIpAddress, Transport, QueryName, QueryType, ResponseCode, ResolutionPath, ResolverPolicyRuleAction
+| summarize EventCount = count(), Answers = make_set(tostring(RData)) 
+    by bin(TimeGenerated, 1h), RType, OperationName, Region, VirtualNetworkId, SourceIpAddress, Transport, QueryName, QueryType, ResponseCode, ResolutionPath, ResolverPolicyRuleAction
 | extend RDataCount = array_length(Answers)
 ```
 
@@ -178,7 +179,7 @@ DNSQueryLogs
 
 ## Create Sentinel detection rule
 
-To create the detection/analytics rule in Sentinel, navigate to the "Analytics" section and select "Create" to start the setup. Choose the "Scheduled query rule" option and enter the name and description for your rule. Copy the below KQL query into the query box, then set the query frequency to match the aggregation interval of your summary rule, such as 1 hour, and the lookup period to 14d.
+To create the detection/analytics rule in Sentinel, navigate to the "Analytics" section and select "Create" to start the setup. Choose the "Scheduled query rule" option and enter the name and description for your rule. Copy the below KQL query into the query box, then set the query frequency to match the aggregation interval of your summary rule, such as 1 hour, and the lookup period to 14d. The rule will then check for exact query matches, parent domain matches, and CNAME answer matches against the threat indicators table.
 
 > You may want to prepare the detection test already upfront by `resolving` some suspcious domains from a test machine within the linked Vnet - this will ensure that you will see a match right after deploying the detection/analytics rule to Sentinel -> [Finally test the detection rule](#finally-test-the-detection-rule)
 {: .prompt-tip}
@@ -188,53 +189,60 @@ To create the detection/analytics rule in Sentinel, navigate to the "Analytics" 
 let dt_lookBack = 1h;      // needs to be in sync with the summary rule aggregation interval
 let ioc_lookBack = 14d;    // Look back 14 days for threat intelligence indicators
 // get all active domains from threat intel
-let ThreatIntel = (
+let ThreatIntel = materialize(
     ThreatIntelIndicators
+    | where TimeGenerated >= ago(ioc_lookBack) and ValidUntil > now()
     | where IsActive == true
     | summarize LatestIndicatorTime = arg_max(TimeGenerated, *) by Id
     | extend source = Data.name
     | extend IndicatorType = tostring(Data.indicator_types)
-    | extend DomainName = ObservableValue
     | where ObservableKey has "domain"
-);
-// save domain names in set
-let ThreatIntelDomainSet = (
-    ThreatIntel
-    | distinct DomainName
+    | extend DomainName = ObservableValue
     | where isnotempty(DomainName)
-    | summarize make_set(DomainName)
 );
-//----------------------
-let ioc_match_domain_only = (
-    ThreatIntel
-    | where isnotempty(DomainName)
-    | distinct DomainName, IsActive, Confidence, ValidUntil, IndicatorType 
-    | where IsActive == "true" and ValidUntil > now()
-    | lookup kind=inner (
-        DNSQueryLogs_sum_CL
-        | where TimeGenerated >= ago(dt_lookBack)
-        // extract contoso.com from sub.contoso.com
-        | extend DomainName = replace_regex(QueryName, "^.*?\\.", "")      
-    ) on $left.DomainName == $right.DomainName
-);
-let ioc_match_exact = (
-    ThreatIntel
-    | where isnotempty(DomainName)
-    | distinct DomainName, IsActive, Confidence, ValidUntil, IndicatorType 
-    | lookup kind=inner (
-        DNSQueryLogs_sum_CL
-        | where TimeGenerated >= ago(dt_lookBack)
-        | extend DomainName = replace_regex(QueryName, "^.*?\\.", "")
-    ) on $left.DomainName == $right.QueryName
-);
-let ioc_match_exact_answers = (
+let DNSQueryLogs_sum = (
     DNSQueryLogs_sum_CL
     | where TimeGenerated >= ago(dt_lookBack)
-    | where Answers has_any(ThreatIntelDomainSet)
+    // remove trailing dot from domain
+    | extend QueryName = trim_end("\\.", QueryName)
 );
-ioc_match_domain_only
-| union ioc_match_exact, ioc_match_exact_answers
-| project TimeGenerated, QueryName, DomainName, IsActive, Confidence, ValidUntil, IndicatorType, RType, OperationName, SourceIpAddress, Transport, Answers, RDataCount, EventCount, Region, VirtualNetworkId
+//----------------------
+// dns query match
+let ioc_query_match_parentdomain_only = (
+    ThreatIntel
+    | project DomainName, IsActive, Confidence, ValidUntil, IndicatorType
+    | join kind=inner (
+        DNSQueryLogs_sum
+        // extract contoso.com from sub.contoso.com
+        | extend DomainNameExtractKey = replace_regex(QueryName, "^.*?\\.", "")
+        | extend _LookupType = "query_match_parentdomain_only"
+    ) on $left.DomainName == $right.DomainNameExtractKey
+);
+// dns query match
+let ioc_query_match_exact = (
+    ThreatIntel
+    | project DomainName, IsActive, Confidence, ValidUntil, IndicatorType 
+    | join kind=inner (
+        DNSQueryLogs_sum
+        | extend _LookupType = "query_match_exact"
+    ) on $left.DomainName == $right.QueryName
+);
+// dns answer match for cname
+let ioc_answer_match_exact = (
+    ThreatIntel
+    | project DomainName, IsActive, Confidence, ValidUntil, IndicatorType 
+    | join kind=inner (
+        DNSQueryLogs_sum
+        | where RType == "CNAME"
+        | mv-expand AnswersKey = Answers to typeof(string)
+        // remove trailing dot from expanded answers
+        | extend AnswersKey = trim_end("\\.", AnswersKey)
+        | extend _LookupType = "answer_match_exact"
+    ) on $left.DomainName == $right.AnswersKey
+);
+ioc_query_match_parentdomain_only
+| union ioc_query_match_exact, ioc_answer_match_exact
+| project TimeGenerated, QueryName, DomainName, IsActive, Confidence, ValidUntil, IndicatorType, RType, OperationName, SourceIpAddress, Transport, Answers, RDataCount, EventCount, Region, VirtualNetworkId, _LookupType
 ```
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fhunting%2Frefs%2Fheads%2Fmain%2Fsentinel-suspicious-dns-requests.json)
