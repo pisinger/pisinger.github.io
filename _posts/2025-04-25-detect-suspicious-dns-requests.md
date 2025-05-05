@@ -77,7 +77,7 @@ By leveraging the combined power of Azure DNS Security Policy and Sentinel Summa
 
 As usual, we first want to define our environment/variables and the resources we need to create. This is done in the below code snippet which does also create a dedicated resource group. The `workspaceId` is your Sentinel workspace, the `vnet` variable is the id of your Vnet you want to link to the DNS Security Policy.
 
-> Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
+> Full script can be found in my [GitHub repository](https://github.com/pisinger/scripts-lib/powershell/blob/main/create-azure-dns-security-policy/create-azure-dns-security-policy.ps1)
 {: .prompt-tip}
 
 ```shell
