@@ -3,7 +3,7 @@ title: Detect suspicious DNS requests using Azure DNS Security Policy and Sentin
 author: pit
 date: 2025-04-25
 categories: [Blogging, Tutorial]
-tags: [sentinel, dns, summary rules, detection, threat intel, cti, networking, hunting]
+tags: [sentinel, dns, summary rules, detection, threat intel, cti, networking, hunting, vnet, azure]
 render_with_liquid: false
 ---
 
