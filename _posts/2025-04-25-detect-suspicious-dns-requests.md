@@ -281,7 +281,7 @@ ThreatIntelIndicators
 
 ## Additional rule to detect suspicious IPs from the DNS answer
 
-You may also want to detect suspicious DNS requests based on the IP address answer. This can be done by joing the `IP` from the dns answer with suspicious IPs from the `Threat Intel` table.
+You may also want to detect suspicious DNS requests based on the `IP address answer`. This can be done by joing the IP from the dns answer with suspicious IPs from the Threat Intel table.
 
 ```console
 let dt_lookBack = 1h;
@@ -307,7 +307,7 @@ ThreatIntelIndicators
 
 When not going for the dns query summary rule, you could also join directly with the DNSQueryLogs table.
 
-> Just make sure, the DNSQueryLogs table is still in 'analytics' and not in 'basic' tier to be elgible to do the `join` and to eventually run this as detection rule.
+> Just make sure, the DNSQueryLogs table is still in `analytics` and not in `basic` tier to be elgible to do the `join` and to eventually run this as detection rule.
 {: .prompt-info}
 
 ```console
