@@ -3,7 +3,7 @@ title: Detect suspicious DNS requests using Azure DNS Security Policy and Sentin
 author: pit
 date: 2025-04-25
 categories: [Blogging, Tutorial]
-tags: [sentinel, dns, summary rules, detection, threat intel]
+tags: [sentinel, dns, summary rules, detection, threat intel, cti, networking, hunting]
 render_with_liquid: false
 ---
 
@@ -23,6 +23,7 @@ Below the topics we will cover:
 - [Create DNS Security Policy and Logging via Azure CLI](#create-dns-security-policy-and-logging-via-azure-cli)
 - [Create the Sentinel Summary Rule](#create-the-sentinel-summary-rule)
 - [Create Sentinel detection rule](#create-sentinel-detection-rule)
+- [Additional rule to detect suspicious IPs from the DNS answer](#additional-rule-to-detect-suspicious-ips-from-the-dns-answer)
 - [Finally test the detection rule](#finally-test-the-detection-rule)
 
 ## What is Azure DNS Security Policy
@@ -268,6 +269,7 @@ To test the detection, simply try to resolve a domain which is in the threat int
 
 ```console
 ThreatIntelIndicators
+| where TimeGenerated >= ago(ioc_lookBack) and ValidUntil > now()
 | where IsActive == true
 | summarize LatestIndicatorTime = arg_max(TimeGenerated, *) by Id
 | extend source = Data.name
@@ -275,6 +277,65 @@ ThreatIntelIndicators
 | extend DomainName = ObservableValue
 | where ObservableKey has "domain"
 | project DomainName
+```
+
+## Additional rule to detect suspicious IPs from the DNS answer
+
+You may also want to detect suspicious DNS requests based on the IP address answer. This can be done by joing the `IP` from the dns answer with suspicious IPs from the `Threat Intel` table.
+
+```console
+let dt_lookBack = 1h;
+let ioc_lookBack = 14d;
+ThreatIntelIndicators
+| where TimeGenerated >= ago(ioc_lookBack) and ValidUntil > now()
+| where IsActive == true
+| summarize LatestIndicatorTime = arg_max(TimeGenerated, *) by Id
+| extend IndicatorType = tostring(Data.indicator_types)
+| where ObservableKey has "network-traffic"
+| extend IpAddr = ObservableValue
+| where isnotempty(IpAddr)
+| project IpAddr, IsActive, Confidence, ValidUntil, IndicatorType
+//-----------
+| join kind=inner (
+    DNSQueryLogs_sum_CL
+    | where TimeGenerated >= ago(dt_lookBack)
+    | where RType in ("A","AAAA")
+    | mv-expand Answers to typeof(string)
+    | distinct QueryName, RType, Answers
+) on $left.IpAddr == $right.Answers
+```
+
+When not going for the dns query summary rule, you could also join directly with the DNSQueryLogs table.
+
+> Just make sure, the DNSQueryLogs table is still in 'analytics' and not in 'basic' tier to be elgible to do the `join` and to eventually run this as detection rule.
+{: .prompt-info}
+
+```console
+let dt_lookBack = 1h;
+let ioc_lookBack = 14d;
+ThreatIntelIndicators
+| where IsActive == true
+| summarize LatestIndicatorTime = arg_max(TimeGenerated, *) by Id
+| extend IndicatorType = tostring(Data.indicator_types)
+| where ObservableKey has "network-traffic"
+| extend IpAddr = ObservableValue
+| where isnotempty(IpAddr)
+| project IpAddr, IsActive, Confidence, ValidUntil, IndicatorType
+//-----------
+| join kind=inner (
+    DNSQueryLogs
+    | where TimeGenerated >= ago(dt_lookBack)
+    | extend Answer = iif(Answer == "[]", '["NXDOMAIN"]', Answer)
+    | extend Answer = todynamic(Answer)
+    | mv-expand Answer
+    | extend parsed = parse_json(Answer)
+    | extend RData = parsed.RData
+    | extend RType = tostring(parsed.Type)
+    // removing the trailing dot
+    | extend QueryName = tolower(trim_end("\\.", QueryName))
+    | where RType in ("A","AAAA")
+    | distinct Answers = tostring(RData), QueryName, RType
+) on $left.IpAddr == $right.Answers
 ```
 
 ## Next Steps
