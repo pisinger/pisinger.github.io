@@ -26,6 +26,18 @@ Below the topics we will cover:
 - [Additional rule to detect suspicious IPs from the DNS answer](#additional-rule-to-detect-suspicious-ips-from-the-dns-answer)
 - [Finally test the detection rule](#finally-test-the-detection-rule)
 
+## What you will achieve by the end of this guide
+
+By following this step-by-step guide, you will implement a DNS monitoring and threat detection setup using Azure and Microsoft Sentinel.
+
+- ✅ Azure DNS Security Policy with logging enabled for all DNS queries
+- 📊 Sentinel Summary Rule to aggregate the DNS queries
+- 🔍 Sentinel Analytics Rule to detect suspicious DNS queries based on threat intel:
+  - Suspicious DNS queries based on exact domain name
+  - Suspicious DNS queries based on parent domain
+  - Suspicious DNS queries based on CNAME answer
+  - Suspicious DNS queries based on IP address answer
+
 ## What is Azure DNS Security Policy
 
 As mentioned above, [Azure DNS Security Policy (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/dns/dns-security-policy) is a new `public preview` feature that allows you to filter and log DNS queries at the VNet level. This feature is designed to enhance network security by providing visibility into DNS traffic and enabling organizations to block known malicious domains.
