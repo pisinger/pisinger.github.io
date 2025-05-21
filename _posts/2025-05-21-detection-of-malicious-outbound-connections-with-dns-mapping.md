@@ -1,5 +1,5 @@
 ---
-title: VNet Flow Logs: Detection of Malicious Outbound Connections with DNS Mapping
+title: VNet Flow Logs - Detection of Malicious Outbound Connections with DNS Mapping
 author: pit
 date: 2025-05-21
 categories: [Blogging, Tutorial]
