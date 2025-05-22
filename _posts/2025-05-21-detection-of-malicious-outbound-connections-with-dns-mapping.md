@@ -21,7 +21,7 @@ This solution combines data from `VNet Flow Logs` (Network Traffic Analytics) an
 - Map IPs to their corresponding DNS names for better readability and detection capabilities
 - Highlight traffic to known malicious destinations using built-in capabilities from Network Traffic Analytics
 
-> Limitations: Because of the nature of how packet forwarding and routing through centralized egress is handled, you may see same connections twice (inbound to egress vnet + outbound from egress via SNAT) when not excluding the outbound flows from the NAT egress machine. On the other hand, when excluding those, you will then also lose visibility into connectiions initiated by the egress machine itself rather than forwarding packets. This is a trade-off you have to make depending on your use case.
+> Limitations: Because of the nature of how packet forwarding and routing through centralized egress is handled, you may see same connections twice (inbound to egress vnet + outbound from egress via SNAT) when not excluding the outbound flows from the NAT egress machine. On the other hand, when excluding those, you will then also lose visibility into connectiions initiated by the egress machine itself rather than just losing the flows of forwarding packets. This is a trade-off you have to make depending on your use case.
 {: .prompt-warning}
 
 Requirements:
@@ -231,7 +231,7 @@ By joining this enrichment data, you gain valuable context about each destinatio
 ) on $left.DestIp == $right.Ip
 ```
 
-## 🌐 Enriching VNet Flow Logs with DNS Data: Why It Matters
+## 🌐 Enriching VNet Flow Logs with DNS Data
 
 When analyzing outbound connections in Azure using VNet flow logs, you're typically working with raw IP addresses. While this provides a foundational view of network activity, it lacks the context needed to fully understand where your traffic is going and why. This is where DNS query logs come into play. The below snippet enriches the flow data with `DNS information`, allowing you to map IPs to domain names to then provide:
 
