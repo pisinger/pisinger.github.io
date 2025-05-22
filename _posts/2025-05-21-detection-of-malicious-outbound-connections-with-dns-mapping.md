@@ -9,6 +9,9 @@ render_with_liquid: false
 
 ## Introduction
 
+> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql)
+{: .prompt-tip}
+
 In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution and traffic volume (bytes in/out) to malicious remote ips — all in one place.
 
 > The query does also cover VNet integration scenarios when using serverless resources like Azure App Services or Container Instances.
@@ -29,9 +32,6 @@ Requirements:
 - Azure VNet Flow Logs with traffic analytics enabled [Manage VNet flow logs (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-manage)
 - Azue DNS Security Policy with diagnostics logging configured [Azure DNS security policy (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/dns/dns-security-policy)
 - Tables: NTANetAnalytics, NTAIpDetails, DNSQueryLogs
-
-> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql)
-{: .prompt-tip}
 
 See below for example results
 
