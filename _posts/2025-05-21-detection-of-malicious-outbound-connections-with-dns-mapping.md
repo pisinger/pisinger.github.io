@@ -9,7 +9,7 @@ render_with_liquid: false
 
 ## Introduction
 
-In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution, traffic volume (bytes in/out), to malicious remote ips — all in one place.
+In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution and traffic volume (bytes in/out) to malicious remote ips — all in one place.
 
 > The query does also cover VNet integration scenarios when using serverless resources like Azure App Services or Container Instances.
 {: .prompt-info}
