@@ -24,7 +24,7 @@ This solution combines data from `VNet Flow Logs` (Network Traffic Analytics) an
 - Map IPs to their corresponding DNS names for better readability and detection capabilities
 - Highlight traffic to known malicious destinations using built-in capabilities from Network Traffic Analytics
 
-> Limitations: Because of the nature of how packet forwarding and routing through centralized egress is handled, you may see same connections twice (inbound to egress vnet + outbound from egress via SNAT) when not excluding the outbound flows from the NAT egress machine. On the other hand, when excluding those, you will then also lose visibility into connectiions initiated by the egress machine itself rather than just losing the flows of forwarding packets. This is a trade-off you have to make depending on your use case.
+> Warning: Potential Duplicate Connection Logs in Centralized Egress Setups - Due to the way packet forwarding and routing are managed in centralized egress configurations, you might observe duplicate connection entries—once for the inbound traffic to the egress VNet and again for the outbound traffic after SNAT. This occurs if outbound flows from the NAT egress machine are not excluded. However, if you choose to exclude these outbound flows to avoid duplication, be aware that you'll also lose visibility into connections initiated directly by the egress machine itself—not just the forwarded traffic. This is an important trade-off to consider based on your specific monitoring and visibility requirements.
 {: .prompt-warning}
 
 Requirements:
