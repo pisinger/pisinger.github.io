@@ -9,7 +9,7 @@ render_with_liquid: false
 
 ## Introduction
 
-> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql). Similar query which makes use of ThreatIntelIndicators table instead of NTA built-in malicious flows to then also allow the mapping against your own IoCs is available at [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes-ti-map.kql)
+> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql). Similar query which makes use of ThreatIntelIndicators table instead of NTA built-in malicious flows to then also allow the mapping against your own IoCs is available here [GitHub TI Map query](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes-ti-map.kql).
 {: .prompt-tip}
 
 In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution and traffic volume (bytes in/out) to malicious remote ips — all in one place.
@@ -24,7 +24,9 @@ This solution combines data from `VNet Flow Logs` (Network Traffic Analytics) an
 - Map IPs to their corresponding DNS names for better readability and detection capabilities
 - Highlight traffic to known malicious destinations using built-in capabilities from Network Traffic Analytics
 
-> Potential Duplicate Connection Logs in Centralized Egress Setups: In centralized egress configurations, packet forwarding and routing can result in duplicate connection entries. You might see these duplicates for inbound traffic to the egress VNet and again for outbound traffic after SNAT. This duplication occurs if outbound flows from the NAT egress machine are not excluded. However, excluding these outbound flows to avoid duplication means losing visibility into connections initiated directly by the egress machine itself, not just the forwarded traffic. This trade-off should be considered based on your specific monitoring and visibility needs. Additionally, it's important to note that we cannot retrieve the received bytes from the response in this scenario, as the response is tracked as a separate flow, preventing it from merging with the corresponding outbound requests. To retrieve the RecvBytes from response flows in such cases, use the filter with `DestPort == -1`.
+> NOTE: In centralized egress configurations, packet forwarding and routing can result in duplicate connection entries. You might see these duplicates for inbound traffic to the egress VNet and again for outbound traffic after SNAT. This duplication occurs if outbound flows from the NAT egress machine are not excluded. However, excluding these outbound flows to avoid duplication means losing visibility into connections initiated directly by the egress machine itself, not just the forwarded traffic. This trade-off should be considered based on your specific monitoring and visibility needs.
+{: .prompt-warning}
+> Additionally, it's important to note that we cannot retrieve the received bytes from the response in this scenario, as the response is tracked as a separate flow, preventing it from merging with the corresponding outbound requests. To retrieve the RecvBytes from response flows in such cases, use the filter with `DestPort == -1`.
 {: .prompt-warning}
 
 Requirements:
@@ -145,7 +147,7 @@ We also need to correctly manage forwarding scenarios where the FlowDirection do
     DestPublicIps_s = split(DestPublicIps_s,"|")[0],
     BytesDestToSrc = todecimal(iff(FlowDirection == "Outbound" and DestPublicIps_s has "|", split(DestPublicIps_s, "|")[-1], BytesDestToSrc) ),
     BytesSrcToDest = todecimal(case(
-        FlowDirection == "Inbound" and IsFlowCapturedAtUdrHop == true and DestPublicIps_s has "|", split(DestPublicIps_s,"|")[-2],    // vnet integeration outbound request
+        FlowDirection == "Inbound" and IsFlowCapturedAtUdrHop == true and DestPublicIps_s has "|", split(DestPublicIps_s,"|")[-2],    // vnet integration outbound request
         FlowDirection == "Outbound" and IsFlowCapturedAtUdrHop == true and SrcPublicIps_s has "|", split(SrcPublicIps_s, "|")[-2],    // vnet integration dedicated response
         FlowDirection == "Inbound" and DestPublicIps_s has "|", split(DestPublicIps_s,"|")[-2],
         FlowDirection == "Outbound" and DestPublicIps_s has "|", split(DestPublicIps_s, "|")[-2],
