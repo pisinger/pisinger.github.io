@@ -9,7 +9,7 @@ render_with_liquid: false
 
 ## Introduction
 
-> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql)
+> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql). Similar query which makes use of ThreatIntelIndicators table instead of NTA built-in malicious flows to then also allow the mapping against your own IoCs is available at [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes-ti-map.kql)
 {: .prompt-tip}
 
 In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution and traffic volume (bytes in/out) to malicious remote ips — all in one place.
@@ -24,7 +24,7 @@ This solution combines data from `VNet Flow Logs` (Network Traffic Analytics) an
 - Map IPs to their corresponding DNS names for better readability and detection capabilities
 - Highlight traffic to known malicious destinations using built-in capabilities from Network Traffic Analytics
 
-> Warning: Potential Duplicate Connection Logs in Centralized Egress Setups - Due to the way packet forwarding and routing are managed in centralized egress configurations, you might observe duplicate connection entries—once for the inbound traffic to the egress VNet and again for the outbound traffic after SNAT. This occurs if outbound flows from the NAT egress machine are not excluded. However, if you choose to exclude these outbound flows to avoid duplication, be aware that you'll also lose visibility into connections initiated directly by the egress machine itself—not just the forwarded traffic. This is an important trade-off to consider based on your specific monitoring and visibility requirements.
+> Potential Duplicate Connection Logs in Centralized Egress Setups: In centralized egress configurations, packet forwarding and routing can result in duplicate connection entries. You might see these duplicates for inbound traffic to the egress VNet and again for outbound traffic after SNAT. This duplication occurs if outbound flows from the NAT egress machine are not excluded. However, excluding these outbound flows to avoid duplication means losing visibility into connections initiated directly by the egress machine itself, not just the forwarded traffic. This trade-off should be considered based on your specific monitoring and visibility needs. Additionally, it's important to note that we cannot retrieve the received bytes from the response in this scenario, as the response is tracked as a separate flow, preventing it from merging with the corresponding outbound requests. To retrieve the RecvBytes from response flows in such cases, use the filter with DestPort == -1.
 {: .prompt-warning}
 
 Requirements:
@@ -73,7 +73,7 @@ This `extend` logic is especially important for the `HostVm` field to handle sit
 
 ## 🌐 Identify egress routing of serverless resources
 
-The next step is to identify routing through VNet egresses (NVA, Azure Firewall, etc.) what then is specified in a custom `RouteType` field. This allows us to better handle traffic from serverless resources, like `Azure Container Apps` or `Azure Container Instances` when having those configured with VNet integration, or traffic from a "normal" VM using a centralized egress. For this we are using `case` to set the `RouteType` based on the following conditions:
+The next step is to identify routing through VNet egresses (NVA, Azure Firewall, etc.) what then is specified in a custom `RouteType` field. This allows us to better handle traffic from serverless resources, like `Azure Container Apps` or `Azure Container Instances` when having those configured with VNet integration, or traffic from a "classic" VM using a centralized egress. For this we are using `case` to set the `RouteType` based on the following conditions:
 
 - `IsFlowCapturedAtUdrHop` indicates whether the flow went direct or through a UDR hop
 - `unknown-vm` in source or destination fields
@@ -94,6 +94,7 @@ If these conditions are met, it either labels the RouteType as `VNET_INTEGRATION
         (FlowDirection == "Outbound" and isempty(DestVm) and FlowType startswith "Unknown") or (FlowDirection == "Inbound" and isempty(SrcVm) and FlowType startswith "Unknown")
     ), "VNET_INTEGRATION_APPS", 
     IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Inbound" and TargetResourceId !has "/mc_", "VNET_INTEGRATION_VM",
+    IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound" and TargetResourceId !has "/mc_", "VNET_INTEGRATION_VM",
     "DIRECT"
 )
 ```
@@ -105,33 +106,14 @@ To focus on meaningful outbound traffic from VNet-integrated workloads, this sni
 - The `AclRule platformrule` condition filters out platform-generated responses/answers to the requesting source
 - `IsFlowCapturedAtUdrHop` is used to make sure we only exclude answers from egress based scenarios
 
-Together, these filters help clean up the data by removing noise, making it easier to focus on actual outbound connections from serverless resources using VNet integration, and of course the other VM-based resources.
+> Update: Doing so would also prevent us from retrieving RecvBytes from the response as in vnet integration scenarios the response is tracked as a separate flow, which prevents merging with the corresponding outbound requests. Consequently, the received bytes are not included in the outbound request records. To address this, a workaround has been implemented that allows checking for received bytes without mapping them to the specific outbound request. This can be queried by filtering for DestPort == -1.
+{: .prompt-info}
+
+Together, these filters may help clean up the data by removing noise, making it easier to focus on actual outbound connections from serverless resources using VNet integration, and of course the other VM-based resources.
 
 ```shell
 // exclude inbound answers in vnet integration scenarios
 | where not(AclRule == "platformrule" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound")
-```
-
-## ↔️ Correcting Flow Direction for Egress Routing (VNet Integration)
-
-When it comes to VNet integration amd egress routing, the flow direction can sometimes be misleading. For example, outbound traffic from a VNet-integrated serverless resource is logged as inbound on the defined UDR hop (NVA, Azure Firewall, etc.) from the egress VNet due to the nature of packet forwarding and NAT, what then can create confusion when doing analysis of inbound/outbound flows.
-
-> The same is true for "normal" VM resources using a centralized egress in a commmon hub-spoke network topology.
-{: .prompt-info}
-
-The below snippet corrects the FlowDirection for traffic from such VNet-integrated resources where the outbound flows appear as inbound by checking for:
-
-- The traffic originates from RouteType startswith `VNET_INTEGRATION` - to cover serverless and VM-based resources
-- The flow is marked as `Inbound` - this is how the vnet egress hop sees it
-
-When these conditions are met, the flow direction is flipped to `Outbound` to more accurately reflect the true nature of the traffic egress from a serverless workload.
-
-> We are not adjusting the AclRule, so this will still reflect the applied inbound rule from the egress vnet while the traffic is actually outbound from source/app perspective while the hop sees the same flow as inbound.
-{: .prompt-info}
-
-```shell
-// revert direction in case of vnet based egress (SNAT)
-| extend FlowDirection = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Inbound", "Outbound", FlowDirection)
 ```
 
 ## 🧩 Extracting Accurate Network Tuples (IP + Byte Info)
@@ -152,6 +134,8 @@ This step ensures you get clean and accurate tuples of:
 - Destination IP
 - Bytes sent and received
 
+We also need to correctly manage forwarding scenarios where the FlowDirection does not align with the actual traffic direction due to the way the flow is captured at the UDR hop. This then leads to having having the Source and Destination "mixed up". This is also important to properly extract the sent/recv bytes from the flow tuple in the next section further below.
+
 ```shell
 // extract ips from single line tuples
 | mv-expand SrcPublicIps_s = split(SrcPublicIps, " ")
@@ -159,13 +143,46 @@ This step ensures you get clean and accurate tuples of:
 | extend
     SrcPublicIps_s = split(SrcPublicIps_s,"|")[0],
     DestPublicIps_s = split(DestPublicIps_s,"|")[0],
-    BytesDestToSrc = split(DestPublicIps_s,"|")[-1],
-    BytesSrcToDest = split(DestPublicIps_s,"|")[-2]
+    BytesDestToSrc = todecimal(iff(FlowDirection == "Outbound" and DestPublicIps_s has "|", split(DestPublicIps_s, "|")[-1], BytesDestToSrc) ),
+    BytesSrcToDest = todecimal(case(
+        FlowDirection == "Inbound" and IsFlowCapturedAtUdrHop == true and DestPublicIps_s has "|", split(DestPublicIps_s,"|")[-2],    // vnet integeration outbound request
+        FlowDirection == "Outbound" and IsFlowCapturedAtUdrHop == true and SrcPublicIps_s has "|", split(SrcPublicIps_s, "|")[-2],    // vnet integration dedicated response
+        FlowDirection == "Inbound" and DestPublicIps_s has "|", split(DestPublicIps_s,"|")[-2],
+        FlowDirection == "Outbound" and DestPublicIps_s has "|", split(DestPublicIps_s, "|")[-2],
+        BytesSrcToDest
+    ))
 | extend
     SrcIp = tostring(iff(isempty(SrcIp), SrcPublicIps_s, SrcIp)),
     DestIp = tostring(iff(isempty(DestIp), DestPublicIps_s, DestIp)),
     AclGroup = tostring(split(AclGroup, "/")[-1])
 ```
+
+## ↔️ Correcting Flow Direction for Egress Routing (VNet Integration)
+
+As mentioned above, when it comes to VNet integration amd egress routing, the flow direction can sometimes be misleading. For example, outbound traffic from a VNet-integrated serverless resource is logged as inbound on the defined UDR hop (NVA, Azure Firewall, etc.) from the egress VNet due to the nature of packet forwarding and NAT, what then can create confusion when doing analysis of inbound/outbound flows.
+
+> The same is true for "classic" VM resources using a centralized egress in a commmon hub-spoke network topology.
+{: .prompt-info}
+
+The following snippet corrects the FlowDirection for traffic from VNet-integrated resources where outbound flows are recorded as inbound. It also re-maps the source and destination, including the sent/received bytes.
+
+- The traffic originates from RouteType startswith `VNET_INTEGRATION` - to cover serverless and VM-based resources
+
+> We do not adjust the AclRule, so this will still reflect the applied inbound rule from the egress vnet while the traffic is actually outbound from source/app perspective while the hop sees the same flow as inbound.
+{: .prompt-info}
+
+```shell
+// revert direction and source/destination columns including bytes sent/recv in case of vnet based egress (SNAT)
+| extend 
+    FlowDirection = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Inbound", "Outbound", FlowDirection),
+    DestIp = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound", SrcIp, DestIp),
+    SrcIp = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound", DestIp, SrcIp),
+    BytesSrcToDest = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound", BytesDestToSrc, BytesSrcToDest),
+    BytesDestToSrc = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound", BytesSrcToDest, BytesDestToSrc),
+    DestPort = iff(RouteType startswith "VNET_INTEGRATION" and IsFlowCapturedAtUdrHop == "true" and FlowDirection == "Outbound", -1, DestPort)
+```
+
+When these conditions are met, the flow direction is flipped to `Outbound` including re-mapping the source and destination to more accurately reflect the true nature of the traffic egress from a serverless workload.
 
 ## ✨ Enhancing Readability with Unicode Symbols
 
@@ -181,7 +198,8 @@ To make the output more intuitive and visually scannable, this step uses Unicode
 | extend Action = iff(FlowStatus == "Allowed", "✅", "⛔")
 | extend FlowTypeUni = case(
     FlowType == "MaliciousFlow" and (not(ipv4_is_private(SrcIp)) or not(ipv4_is_private(DestIp))), "🌐 Public ⚠️ Malicious",
-    FlowType == "MaliciousFlow", "🏠 Internal ⚠️ Malicious", not(ipv4_is_private(SrcIp)) or not(ipv4_is_private(DestIp)), "🌐 Public", 
+    FlowType == "MaliciousFlow", "🏠 Internal ⚠️ Malicious", 
+    not(ipv4_is_private(SrcIp)) or not(ipv4_is_private(DestIp)), "🌐 Public", 
     "🏠 Internal"
 )
 ```
@@ -190,13 +208,17 @@ To make the output more intuitive and visually scannable, this step uses Unicode
 
 This step is about filtering the data to focus on outbound flows that are relevant for your analysis. The goal is to narrow down the dataset to only those flows that are of interest, such as outbound connections from serverless resources or VNet-integrated workloads. This is also where you can apply any additional filters based on your specific use case, for expample to filter for `AKS` flows only, or to only focus on serverless resources by going with RouteType of `VNET_INTEGRATION_APPS`.
 
+Please note the `DestPort != -1` filter, which is used to exclude responses from VNet integration scenarios. This exclusion is necessary because the response is captured as a separate flow, preventing the merging of request and response flows. To retrieve the RecvBytes from the response flows in such scenarios, use the filter with ==.
+
 ```shell
 // early filters
 | where FlowDirection == "Outbound"
 //| where not(ipv4_is_private(DestIp))
 //| where FlowTypeUni !endswith "Internal"
-//| where RouteType startswith "VNET_INTEGRATION"    // VNET_* or DIRECT
-//| where HostVm !has "aks"       // include/exclude aks
+//| where RouteType startswith "DIRECT"    // VNET_ or DIRECT
+//| where HostVm has "aks"       // include/exclude aks
+//| where AclGroup has "spoke"
+| where DestPort != -1
 ```
 
 ## 📊 Aggregating Traffic Data for Analysis
@@ -209,7 +231,7 @@ This step summarizes/aggregates the flow data by key dimensions and calculates t
 ```shell
 | summarize 
     BytesSentMb = round(sum(BytesSrcToDest/1024./1024.),3), BytesRecvMb = round(sum(BytesDestToSrc/1024./1024.),3),
-    count() by HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, Region, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, DestIp, DestPort, FlowType
+    count() by bin(TimeGenerated, dt_binTime), HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, Region, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, DestIp, DestPort, FlowType
 ```
 
 ## 🌍 Enriching with geo IP information
@@ -268,8 +290,8 @@ The final steps is about proper aggregation and shaping of the data to make it u
 - `extend Client` normalizes the client name, making it easier to identify the source (such as VNET integration)
 
 ```shell
-| summarize QueryName = make_set(QueryName) by HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, DestIp, DestPort, PublicIpDetails, BytesSentMb, BytesRecvMb, Location, Region, FlowType, count_
+| summarize QueryName = make_set(QueryName) by TimeGenerated, HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, DestIp, DestPort, PublicIpDetails, BytesSentMb, BytesRecvMb, Location, Region, FlowType, count_
 | extend QueryNameSingle = QueryName[0]    // extract first entry from array to use this as entity in sentinel
 | extend Client = toupper(tostring(split(HostVm,"/")[1]))
-| project Client, HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, QueryNameSingle, QueryName, DestIp, DestPort, PublicIpDetails, BytesSentMb, BytesRecvMb, Location, Region, FlowType, count_
+| project TimeGenerated, Client, HostVm, RouteType, IsFlowCapturedAtUdrHop, AclGroup, AclRule, FlowDirection, Action, FlowStatus, FlowTypeUni, L4Protocol, SrcIp, QueryNameSingle, QueryName, DestIp, DestPort, PublicIpDetails, BytesSentMb, BytesRecvMb, Location, Region, FlowType, count_
 ```
