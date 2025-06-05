@@ -9,7 +9,7 @@ render_with_liquid: false
 
 ## Introduction
 
-> Full KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql). Similar query which makes use of ThreatIntelIndicators table instead of NTA built-in malicious flows to then also allow the mapping against your own IoCs is available here [GitHub TI Map query](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes-ti-map.kql).
+> Full KQL query can be found here [GitHub NTA query](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes.kql). Similar query which makes use of ThreatIntelIndicators table instead of NTA built-in malicious flows to then also allow the mapping against your own IoCs is available here [GitHub TI Map query](https://github.com/pisinger/hunting/blob/main/sentinel-malicious-connections-with-dns-and-bytes-ti-map.kql).
 {: .prompt-tip}
 
 In this post, I’ll walk through a Kusto query I developed to improve visibility into general outbound network activity using `VNet Flow Logs`. The goal is to correlate outbound connections with DNS resolution and traffic volume (bytes in/out) to malicious remote ips — all in one place.
