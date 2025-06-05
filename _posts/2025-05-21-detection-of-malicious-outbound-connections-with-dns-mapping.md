@@ -24,18 +24,18 @@ This solution combines data from `VNet Flow Logs` (Network Traffic Analytics) an
 - Map IPs to their corresponding DNS names for better readability and detection capabilities
 - Highlight traffic to known malicious destinations using built-in capabilities from Network Traffic Analytics
 
-> NOTE: In centralized egress configurations, packet forwarding and routing can result in duplicate connection entries. You might see these duplicates for inbound traffic to the egress VNet and again for outbound traffic after SNAT. This duplication occurs if outbound flows from the NAT egress machine are not excluded. However, excluding these outbound flows to avoid duplication means losing visibility into connections initiated directly by the egress machine itself, not just the forwarded traffic. This trade-off should be considered based on your specific monitoring and visibility needs.
-{: .prompt-warning}
-> Additionally, it's important to note that we cannot retrieve the received bytes from the response in this scenario, as the response is tracked as a separate flow, preventing it from merging with the corresponding outbound requests. To retrieve the RecvBytes from response flows in such cases, use the filter with `DestPort == -1`.
-{: .prompt-warning}
-
 Requirements:
 
 - Azure VNet Flow Logs with traffic analytics enabled [Manage VNet flow logs (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-manage)
 - Azue DNS Security Policy with diagnostics logging configured [Azure DNS security policy (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/dns/dns-security-policy)
 - Tables: NTANetAnalytics, NTAIpDetails, DNSQueryLogs
 
-See below for example results
+> NOTE: In centralized egress configurations, packet forwarding and routing can result in duplicate connection entries. You might see these duplicates for inbound traffic to the egress VNet and again for outbound traffic after SNAT. This duplication occurs if outbound flows from the NAT egress machine are not excluded. However, excluding these outbound flows to avoid duplication means losing visibility into connections initiated directly by the egress machine itself, not just the forwarded traffic. This trade-off should be considered based on your specific monitoring and visibility needs.
+{: .prompt-warning}
+> Additionally, it's important to note that we cannot retrieve the received bytes from the response in this scenario, as the response is tracked as a separate flow, preventing it from merging with the corresponding outbound requests. To retrieve the RecvBytes from response flows in such cases, use the filter with `DestPort == -1`.
+{: .prompt-warning}
+
+See below for example results including the RecvBytes from the response flows in VNet integration scenarios:
 
 ![img-description](/assets/img/posts/detection-of-malicious-outbound-connections-with-dns-mapping/example-apps.png)
 serverless app connections when using vnet integration (egress routing)
@@ -45,6 +45,9 @@ vm connections when using vnet integration (egress routing)
 
 ![img-description](/assets/img/posts/detection-of-malicious-outbound-connections-with-dns-mapping/example-aks.png)
 aks connections using direct egress routing through aks vnet
+
+![img-description](/assets/img/posts/detection-of-malicious-outbound-connections-with-dns-mapping/example-received-bytes-vnet-integration.png)
+received bytes in vnet integration scenarios (egress routing)
 
 ## Detailed Description of the Kusto Query
 
