@@ -9,6 +9,8 @@ render_with_liquid: false
 
 Hi there! I was recently asked whether it's possible to retrieve details about the actual commands executed via Azure VM Run Command when working with **Microsoft Defender** and **Sentinel**. Although there's no direct integration and Azure doesn't log these actions with such granularity by default in central manner, I decided to dig deeper into the topic.
 
+The most obvious option would be to use PowerShell Transcription logging on Windows together with **Azure Monitor** to ingest the logs. However, I wanted to investigate whether we could leverage Defender Endpoint telemetry instead to retrieve Run Command activity.
+
 > Full KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-runcommands-hunting.kql).
 {: .prompt-tip}
 
