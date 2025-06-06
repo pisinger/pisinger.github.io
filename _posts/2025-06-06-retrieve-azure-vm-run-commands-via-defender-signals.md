@@ -3,16 +3,16 @@ title: Retrieve Azure VM Run Commands through Defender AH tables (PoC)
 author: pit
 date: 2025-06-06
 categories: [Blogging, Tutorial]
-tags: [defender, detection, hunting, azure, powershell, RunCommands]
+tags: [defender, detection, hunting, azure, RunCommands]
 render_with_liquid: false
 ---
 
-Hi there! I was recently asked whether it's possible to retrieve details about the actual commands executed via Azure VM Run Command when working with Microsoft Defender/Sentinel. Although there's no direct integration and Azure doesn't log these actions centrally in such granularity by default, I decided to dig deeper into the topic.
+Hi there! I was recently asked whether it's possible to retrieve details about the actual commands executed via Azure VM Run Command when working with **Microsoft Defender** and **Sentinel**. Although there's no direct integration and Azure doesn't log these actions centrally in such granularity by default, I decided to dig deeper into the topic.
 
 > Full KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-runcommands-hunting.kql).
 {: .prompt-tip}
 
-## Azure VM Run Command
+## ▶️Azure VM Run Command
 
 Azure VM Run Command provides a convenient way to execute scripts or commands on Azure Virtual Machines without requiring direct login access. It's especially handy for administrative tasks, troubleshooting, and automation scenarios. However, capturing the exact content of the commands executed through this feature - especially in a flexible or auditable way - can be somewhat challenging.
 
@@ -29,7 +29,7 @@ AzureActivity
 | where OperationNameValue =~ "MICROSOFT.COMPUTE/VIRTUALMACHINES/RUNCOMMAND/ACTION"
 ```
 
-## off topic - repair RunCommand extension
+## 🛠️Off topic - repair Run Command extension
 
 Before diving into how to retrieve Run Command data, I want to briefly touch on a related issue — repairing the Run Command extension on Azure VMs. This can be helpful if you run into problems with the extension itself.
 
@@ -42,7 +42,7 @@ Invoke-AzVMRunCommand -ResourceGroupName "PS-RG-SPOKE-OTHER" -Name "PS-CLIENT-W1
 
 To reinstall the extension, you can simply trigger a new Run Command execution — this will automatically re-provision the extension if it's missing or broken. It’s worth noting that the Run Command extension isn’t pre-installed on Azure VMs and also doesn’t appear under the list of installed extensions in the Azure Portal. Instead, it’s provisioned on demand the first time a Run Command is executed.
 
-## where to find the Run Commands logs locally
+## 🔍Where to find the Run Commands logs locally
 
 When you execute Run Commands on Azure Virtual Machines, the commands run within the system context of the VM. These actions aren’t captured in detail by Azure Activity Logs or Diagnostics Logs. However, the actual command scripts — typically named script.ps1 for Windows or script.sh for Linux — are downloaded to the VM and stored locally before execution.
 
@@ -53,9 +53,9 @@ These scripts are placed in a specific directory used by the Run Command extensi
 
 On Linux VMs, the Run Command logs — including stdout and stderr — can be found in the same directory where the script is downloaded and executed. These logs provide insight into the output and any errors generated during execution. On Windows VMs, however, there's a dedicated status folder located at `C:\Packages\Plugins\Microsoft.CPlat.Core.RunCommandWindows\1.1.18\Status`.
 
-## Retrieve Run Commands via Defender Telemetry
+## 🎯Retrieve Run Commands activity via Defender Telemetry
 
-Since I wanted to avoid manually ingesting logs from individual VMs, I turned to Microsoft Defender for Endpoint and started analyzing its signals using the Advanced Hunting tables. While Defender isn’t designed to capture every operational detail, I was curious whether it logs Run Command activity in any meaningful way. And good news — it does! 💡🥳
+Since I wanted to avoid manually ingesting logs from individual VMs, I turned to **Defender Endpoint** and started analyzing its signals using the **Advanced Hunting** tables. While Defender isn’t designed to capture every operational detail, I was curious whether it logs Run Command activity in any meaningful way. And good news — it does! 💡🥳
 
 > Spoiler alert: Based on my investigation, tracking the Run Commands through Defender AH works pretty well on Linux machines, including capturing the full script content. On Windows, the visibility is more limited — it typically logs only certain executions, depending on the security context and Defender’s telemetry focus instead of the full script content.
 {: .prompt-info}
@@ -87,8 +87,7 @@ let RunCommandsLinuxFileName = RunCommandsLinux | summarize make_set(FileName);
 let RunCommandsLinuxFileSHA256 = RunCommandsLinux | summarize make_set(SHA256);
 //-----------------
 union DeviceProcessEvents, DeviceEvents, DeviceFileEvents
-| where 
-    //* has ("script1.ps1") //and ActionType != "ScriptContent"
+| where
     ProcessCommandLine has_any (RunCommandsWindows) or InitiatingProcessCommandLine has_any (RunCommandsWindows) or
     ProcessCommandLine has_any (RunCommandsLinuxFileName) or InitiatingProcessCommandLine has_any (RunCommandsLinuxFileName) or 
     SHA256 has_any(RunCommandsLinuxFileSHA256)  
@@ -106,6 +105,6 @@ union DeviceProcessEvents, DeviceEvents, DeviceFileEvents
 | sort by Timestamp desc
 ```
 
-## final thoughts
+## Final thoughts
 
-While Azure VM Run Command is a powerful tool for remote management and automation, its visibility in standard logging solutions like Azure Activity Logs is limited — especially when it comes to capturing the actual command content. However, by exploring local VM paths and leveraging Defender for Endpoint signals, particularly on Linux systems, we can uncover valuable insights that support threat hunting and incident enrichment. With the right combination of tools and queries, it's possible to bridge the visibility gap and enhance your security investigations.
+While Azure VM Run Command is a powerful tool for remote management and automation, its visibility in standard logging solutions like Azure Activity Logs is limited — especially when it comes to capturing the actual command content. However, by exploring local VM paths and leveraging Defender Endpoint signals, particularly on Linux systems, we can uncover valuable insights that support threat hunting and incident enrichment. With the right combination of tools and queries, it's possible to bridge the visibility gap and enhance your security investigations.
