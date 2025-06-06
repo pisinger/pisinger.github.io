@@ -7,7 +7,7 @@ tags: [defender, detection, hunting, azure, RunCommands]
 render_with_liquid: false
 ---
 
-Hi there! I was recently asked whether it's possible to retrieve details about the actual commands executed via Azure VM Run Command when working with **Microsoft Defender** and **Sentinel**. Although there's no direct integration and Azure doesn't log these actions centrally in such granularity by default, I decided to dig deeper into the topic.
+Hi there! I was recently asked whether it's possible to retrieve details about the actual commands executed via Azure VM Run Command when working with **Microsoft Defender** and **Sentinel**. Although there's no direct integration and Azure doesn't log these actions with such granularity by default in central manner, I decided to dig deeper into the topic.
 
 > Full KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-runcommands-hunting.kql).
 {: .prompt-tip}
@@ -37,14 +37,14 @@ Before diving into how to retrieve Run Command data, I want to briefly touch on 
 {: .prompt-tip}
 
 ```shell
-Invoke-AzVMRunCommand -ResourceGroupName "PS-RG-SPOKE-OTHER" -Name "PS-CLIENT-W11-N" -CommandId "RemoveRunCommandWindowsExtension"
+Invoke-AzVMRunCommand -ResourceGroupName "myResourceGroup" -Name "myMachine" -CommandId "RemoveRunCommandWindowsExtension"
 ```
 
 To reinstall the extension, you can simply trigger a new Run Command execution — this will automatically re-provision the extension if it's missing or broken. It’s worth noting that the Run Command extension isn’t pre-installed on Azure VMs and also doesn’t appear under the list of installed extensions in the Azure Portal. Instead, it’s provisioned on demand the first time a Run Command is executed.
 
 ## 🔍Where to find the Run Commands logs locally
 
-When you execute Run Commands on Azure Virtual Machines, the commands run within the system context of the VM. These actions aren’t captured in detail by Azure Activity Logs or Diagnostics Logs. However, the actual command scripts — typically named script.ps1 for Windows or script.sh for Linux — are downloaded to the VM and stored locally before execution.
+When you execute Run Commands on Azure Virtual Machines, the commands run within the system context of the VM. These actions aren’t captured in detail by Azure Activity Logs or Diagnostics Logs. However, the actual command scripts — typically named script1.ps1, script2.ps1 for Windows or script.sh for Linux — are downloaded to the VM and stored locally before execution.
 
 These scripts are placed in a specific directory used by the Run Command extension, from where they are picked up and executed. This local presence can be useful for forensic analysis or troubleshooting, especially when deeper visibility into command content is required.
 
@@ -63,7 +63,7 @@ Since I wanted to avoid manually ingesting logs from individual VMs, I turned to
 > Keep in mind: Defender for Endpoint is a security solution, not a full auditing or monitoring tool. That said, it can still offer valuable insights into Run Command usage on Windows even while not seeing the full script content.
 {: .prompt-warning}
 
-To identify Run Command executions via Defender, you can use the following KQL query. It searches for relevant events across both Windows and Linux environments. While Windows coverage may be partial, Linux systems often provide full script visibility — at least in the scenarios I tested 🙃.
+To finally identify Run Command executions via Defender, you can use the following KQL query. It searches for relevant events across both Windows and Linux environments. While Windows coverage may be partial, Linux systems often provide full script visibility — at least in the scenarios I tested 🙃.
 
 ```shell
 let RunCommandsWindows = DeviceProcessEvents
