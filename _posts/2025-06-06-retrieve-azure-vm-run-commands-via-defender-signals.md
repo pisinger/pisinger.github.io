@@ -11,7 +11,7 @@ Hi there! I was recently asked whether it's possible to retrieve details about t
 
 > The most obvious option would be to use PowerShell Transcription logging on Windows together with **Azure Monitor** to ingest the logs. However, I wanted to investigate whether we could leverage Defender Endpoint telemetry instead to retrieve Run Command activity.
 {: .prompt-info}
-> Full KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-runcommands-hunting.kql).
+> Full KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-run-commands-hunting.kql).
 {: .prompt-tip}
 
 See below example result when running above query in Defender Advanced Hunting:
