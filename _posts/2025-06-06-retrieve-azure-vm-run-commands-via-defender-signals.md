@@ -2,7 +2,7 @@
 title: Retrieve Azure VM Run Commands through Defender AH tables (PoC)
 author: pit
 date: 2025-06-06
-categories: [Blogging, Tutorial]
+categories: [Blogging, Tutorial, PoC]
 tags: [defender, detection, hunting, azure, RunCommands]
 render_with_liquid: false
 ---
@@ -61,7 +61,6 @@ Since I wanted to avoid manually ingesting logs from individual VMs, I turned to
 
 > Spoiler alert: Based on my investigation, tracking the Run Commands through Defender AH works pretty well on Linux machines, including capturing the full script content. On Windows, the visibility is more limited — it typically logs only certain executions, depending on the security context and Defender’s telemetry focus instead of the full script content.
 {: .prompt-info}
-
 > Keep in mind: Defender for Endpoint is a security solution, not a full auditing or monitoring tool. That said, it can still offer valuable insights into Run Command usage on Windows even while not seeing the full script content.
 {: .prompt-warning}
 
