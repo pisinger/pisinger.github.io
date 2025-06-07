@@ -51,7 +51,7 @@ To reinstall the extension, you can simply trigger a new Run Command execution �
 
 ## 🔍Where to find the Run Commands logs locally
 
-When you execute Run Commands on Azure Virtual Machines, the commands run within the system context of the VM. These actions aren’t captured in detail by Azure Activity Logs or Diagnostics Logs. However, the actual command scripts — typically named script1.ps1, script2.ps1 for Windows or script.sh for Linux — are downloaded to the VM and stored locally before execution.
+When you execute Run Commands on Azure Virtual Machines, the commands run within the VM agent context of the VM (System on Windows, Root on Linux). These actions aren’t captured in detail by Azure Activity Logs or Diagnostics Logs. However, the actual command scripts — typically named script1.ps1, script2.ps1 for Windows or script.sh for Linux — are downloaded to the VM and stored locally before execution.
 
 These scripts are placed in a specific directory used by the Run Command extension, from where they are picked up and executed. This local presence can be useful for forensic analysis or troubleshooting, especially when deeper visibility into command content is required.
 
@@ -72,19 +72,16 @@ Since I wanted to avoid manually ingesting logs from individual VMs, I turned to
 To finally identify Run Command executions via Defender, you can use the following KQL query. It searches for relevant events across both Windows and Linux environments. While Windows coverage may be partial, Linux systems often provide full script visibility — at least in the scenarios I tested 🙃.
 
 ```shell
-let RunCommandsWindows = DeviceProcessEvents
-    //| where FolderPath contains "runCommandWindows" or FolderPath contains "waagent/run-command" or ProcessCommandLine contains "script12.ps1"
-    | where InitiatingProcessCommandLine has ("runCommandExtension.exe") and (ProcessCommandLine contains "ExecutionPolicy" or ProcessCommandLine contains ".ps1")
-    | project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine, InitiatingProcessCommandLine, ProcessIntegrityLevel, AccountName, AccountSid, LogonId
-    | extend FileName = split(ProcessCommandLine, " ")[-1]
-    //| where AccountName =~ "system"
-    // we cannot use SHA256 as this is related to cmd.exe as the initiating process, thus relying on script FileName only for later correlation
-    | project FileName //, Timestamp, DeviceName
+let RunCommandsWindows = DeviceFileEvents
+    | where InitiatingProcessFileName == "runcommandextension.exe" and FileName contains ".ps1" and isnotempty(FileSize)
+    | project TimeGenerated, DeviceName, FileName, SHA256, FolderPath, InitiatingProcessAccountName
 ;
+let RunCommandsWindowsFileName = RunCommandsWindows | summarize make_set(FileName);
+let RunCommandsWindowsFileSHA256 = RunCommandsWindows | summarize make_set(SHA256);
 //-----------------
 let RunCommandsLinux = DeviceFileEvents
     | where FolderPath contains "run-command/download" and FileName contains ".sh"
-    | summarize make_set(ActionType) by bin(Timestamp,1m), DeviceName, FileName, FolderPath, SHA1, SHA256, InitiatingProcessAccountName
+    | summarize make_set(ActionType) by bin(TimeGenerated,1m), DeviceName, FileName, FolderPath, SHA1, SHA256, InitiatingProcessAccountName
     //| extend FileName = split(FolderPath, " ")[-1]
     | join kind=inner (DeviceEvents) on SHA256
     | project FileName, SHA256, parse_json(AdditionalFields).ScriptContent
@@ -92,23 +89,24 @@ let RunCommandsLinux = DeviceFileEvents
 let RunCommandsLinuxFileName = RunCommandsLinux | summarize make_set(FileName);
 let RunCommandsLinuxFileSHA256 = RunCommandsLinux | summarize make_set(SHA256);
 //-----------------
+// using script FileName or its SHA256 for correlation
 union DeviceProcessEvents, DeviceEvents, DeviceFileEvents
 | where
-    ProcessCommandLine has_any (RunCommandsWindows) or InitiatingProcessCommandLine has_any (RunCommandsWindows) or
+    ProcessCommandLine has_any (RunCommandsWindowsFileName) or InitiatingProcessCommandLine has_any (RunCommandsWindowsFileName) or
     ProcessCommandLine has_any (RunCommandsLinuxFileName) or InitiatingProcessCommandLine has_any (RunCommandsLinuxFileName) or 
-    SHA256 has_any(RunCommandsLinuxFileSHA256)  
+    SHA256 has_any(RunCommandsLinuxFileSHA256) or SHA256 has_any (RunCommandsWindowsFileSHA256)
 | extend ScriptContent = parse_json(AdditionalFields).ScriptContent
 | extend RunCommand = parse_json(AdditionalFields).Command
 | extend RunCommand = iff (RunCommand == "" and not(ProcessCommandLine has_any (RunCommandsWindows) or ProcessCommandLine has_any(RunCommandsLinux)), ProcessCommandLine, RunCommand)
 | extend RunCommand = coalesce (todynamic(RunCommand), ScriptContent)
-| project Timestamp, DeviceId, DeviceName = split(DeviceName,".")[0], ActionType, FileName, FolderPath, InitiatingProcessFolderPath, InitiatingProcessFileName, RunCommand, ScriptContent, ProcessCommandLine, InitiatingProcessCommandLine, AccountName, AccountSid, LogonId, SHA256, ReportId, RequestAccountName
+| project TimeGenerated, DeviceId, DeviceName = split(DeviceName,".")[0], ActionType, FileName, FolderPath, InitiatingProcessFolderPath, InitiatingProcessFileName, RunCommand, ScriptContent, ProcessCommandLine, InitiatingProcessCommandLine, AccountName, AccountSid, LogonId, SHA256, ReportId, RequestAccountName
 //-----------------
 | extend AccountName = coalesce (AccountName, RequestAccountName)
-| project-away ScriptContent, ProcessCommandLine, LogonId, AccountSid, RequestAccountName
-| where isnotempty(RunCommand) and InitiatingProcessCommandLine !has ("Cpowershell")
+| project-away ScriptContent, ProcessCommandLine, LogonId, AccountSid, RequestAccountName, FileName, FolderPath
+| where isnotempty(RunCommand) and InitiatingProcessCommandLine !has ("Cpowershell") and RunCommand !has ("Cpowershell") and InitiatingProcessFileName != "csrss.exe"
 // exclude non runCommand related processes where any script.sh is run
 | where not(ActionType == "ProcessCreated" and InitiatingProcessCommandLine has "script.sh" and InitiatingProcessCommandLine !has ("run-command"))
-| sort by Timestamp desc
+| sort by TimeGenerated desc
 ```
 
 ## Final thoughts
