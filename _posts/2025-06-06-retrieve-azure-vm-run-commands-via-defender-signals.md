@@ -47,7 +47,7 @@ Before diving into how to retrieve Run Command data, I want to briefly touch on 
 Invoke-AzVMRunCommand -ResourceGroupName "myResourceGroup" -Name "myMachine" -CommandId "RemoveRunCommandWindowsExtension"
 ```
 
-To reinstall the extension, you can simply trigger a new Run Command execution — this will automatically re-provision the extension if it's missing or broken. It’s worth noting that the Run Command extension isn’t pre-installed on Azure VMs and also doesn’t appear under the list of installed extensions in the Azure Portal. Instead, it’s provisioned on demand the first time a Run Command is executed.
+To reinstall the extension, you can simply trigger a new Run Command execution — this will automatically re-provision the extension if it's missing. It’s worth noting that the Run Command extension isn’t pre-installed on Azure VMs and also doesn’t appear under the list of installed extensions in the Azure Portal. Instead, it’s provisioned on demand the first time a Run Command is executed.
 
 ## 🔍Where to find the Run Commands logs locally
 
