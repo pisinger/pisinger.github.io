@@ -26,7 +26,7 @@ Thus I decided to first explore options using existing tools such as **Azure Mon
 
 ## 🕵️‍♂️Inspektor Gadget
 
-Luckily, I already had a tool in mind -> **Inspektor Gadget**
+Luckily, I already had a tool in mind -> **Inspektor Gadget** 🚀
 
 Originally developed by **Kinvolk** (<https://kinvolk.io/>), a company known for its Linux and Kubernetes tools, which was acquired by **Microsoft** in 2021. It's worth noting that since February 2024, the `Defender Container sensor` is been powered by Inspektor Gadget. Given this background, it's quite obvious why I chose it, right? 😊🥳
 
