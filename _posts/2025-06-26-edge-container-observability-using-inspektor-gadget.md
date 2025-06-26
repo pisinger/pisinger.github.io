@@ -11,7 +11,7 @@ In a recent project, I tackled a scenario where we aimed to enhance container ne
 
 Unlike AKS nodes, where we can leverage tools like `VNet Flow Logs` or `DNS Security Policies` for deep network insights on VNet level as described in [my previous blog post](https://pisinger.github.io/posts/detection-of-malicious-outbound-connections-with-dns-mapping), edge environments may lack the necessary network and monitoring infrastructure. This results in limited egress logging and monitoring capabilities, making it harder to detect suspicious behavior and anomalies in central manner.
 
-> AKS provides a quite new feature around **ACNS** (Azure Container Networking Services) using **Azure Monitor** Addon and **Hubble** to collect `Container Network Logs` in Azure at scale (<https://learn.microsoft.com/en-us/azure/aks/container-network-observability-logs>)
+> Tip: AKS recently introduces a new feature around ACNS (Azure Container Networking Services), leveraging the Azure Monitor Addon and Hubble to collect `container network logs` at scale in Azure. Learn more about it here: <https://learn.microsoft.com/en-us/azure/aks/container-network-observability-logs>
 {: .prompt-tip}
 
 ## 🎯The challenge to retrieve observability data in a manner to use it in Sentinel
