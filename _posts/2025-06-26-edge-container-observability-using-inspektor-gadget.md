@@ -9,9 +9,10 @@ render_with_liquid: false
 
 In a recent project, I tackled a scenario where we aimed to enhance container network observability for Arc-enabled clusters deployed at customer edge sites with the potential to then use the signals in Microsoft Sentinel.
 
-Unlike AKS nodes, where we can leverage tools like `VNet Flow Logs` or `DNS Security Policies` for deep network insights on VNet level as described in [my previous blog post](https://pisinger.github.io/posts/detection-of-malicious-outbound-connections-with-dns-mapping), or a very new feature around **ACNS** (Azure Container Networking Services) using **Azure Monitor Addon** and **Hubble** to collect `Container Network Logs` (<https://learn.microsoft.com/en-us/azure/aks/container-network-observability-logs>) in Azure at scale, edge environments may lack the necessary network infrastructure.
+Unlike AKS nodes, where we can leverage tools like `VNet Flow Logs` or `DNS Security Policies` for deep network insights on VNet level as described in [my previous blog post](https://pisinger.github.io/posts/detection-of-malicious-outbound-connections-with-dns-mapping), edge environments may lack the necessary network and monitoring infrastructure. This results in limited egress logging and monitoring capabilities, making it harder to detect suspicious behavior and anomalies in central manner.
 
-This results in limited egress logging and monitoring capabilities, making it harder to detect suspicious behavior and anomalies in central manner.
+> AKS provides a quite new feature around **ACNS** (Azure Container Networking Services) using **Azure Monitor** Addon and **Hubble** to collect `Container Network Logs` in Azure at scale (<https://learn.microsoft.com/en-us/azure/aks/container-network-observability-logs>)
+{: .prompt-tip}
 
 ## 🎯The challenge to retrieve observability data in a manner to use it in Sentinel
 
@@ -21,7 +22,7 @@ To achieve this, we could go with a custom data pipeline using fluent-bit or sim
 
 Thus I decided to first explore options using existing tools such as **Azure Monitor Agent** when using **Container Insights** (<https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-data-collection-configure>). This is a great option for monitoring and logging, but it doesn't provide the level of observability we need for network traffic in this specific edge case - but thats fine as for now we are only looking for a data pipeline we could leverage instead of going the custom way.
 
-👉 So far, so good. The next step was to identify a tracing tool that logs directly to `stdout`, allowing us to collect this data natively via **Container Insights** and subsequently ingest the logs into our **Log Analytics Workspace**. This approach enables us to utilize the existing data pipeline without reinventing the wheel, while still obtaining the necessary insights.
+👉 So far, so good. The next step was to identify a tracing tool that logs directly to `stdout`, allowing us to collect this data natively via `Container Insights` and subsequently ingest the logs into our `Log Analytics Workspace`. This approach enables us to utilize the existing data pipeline without reinventing the wheel, while still obtaining the necessary insights.
 
 ## 🕵️‍♂️Inspektor Gadget
 
@@ -93,7 +94,7 @@ Inspektor Gadget comes with basically 2 flavors:
 - DaemonSet to run on demand including headless mode (which is not logging to stdout)
 - IG tool (which we will also run as DaemonSet as described later in this blog post)
 
-## 🛠️Deployment Part 1 - Enable Azure Monitor Container Insights (arc enabled k8s)
+## 🛠️Deploy Part 1 - Enable Azure Monitor Container Insights (arc enabled k8s)
 
 The initial step involves preparing our log pipeline using **Azure Monitor Container Insights**. To enable this on an Arc-enabled Kubernetes cluster, you can utilize the `Azure CLI` to create the appropriate Azure Monitor extension, allowing us to collect logs and metrics and ingest them into an Azure Log Analytics workspace.
 
@@ -133,7 +134,7 @@ kube-system      ama-logs-dfrgr                  3/3     Running
 kube-system      ama-logs-rs-6cc6d544d4-bs4wz    2/2     Running
 ```
 
-## 🛠️Deployment Part 2 - IG tool as DaemonSet
+## 🛠️Deploy Part 2 - IG tool as DaemonSet
 
 The final step is to deploy the Inspektor Gadget `IG tool` as a DaemonSet. This deployment will enable you to run the ig tool and various gadgets across all nodes, allowing you to capture telemetry data from any pod or container within the cluster.
 
