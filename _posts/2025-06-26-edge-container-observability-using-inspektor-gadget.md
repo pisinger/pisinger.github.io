@@ -251,7 +251,7 @@ ContainerLogV2
 | summarize count() by bin(TimeGenerated,1h), Computer, log_namespace, log_podName, log_containerName, log_containerImage, log_syscall, log_syscall_id, log_seccomp_ret_log
 ```
 
-The next example focuses on `dns` traffic events. This is particularly useful for monitoring DNS queries and responses within your Kubernetes cluster, helping to identify potential issues or anomalies in name resolution.
+Another example focuses on `dns` traffic events. This is particularly useful for monitoring DNS queries and responses within your Kubernetes cluster, helping to identify potential issues or anomalies in name resolution.
 
 ```shell
 ContainerLogV2
