@@ -265,7 +265,6 @@ ioc_query_match_parentdomain_only
 
 > Latest KQL query can be found in my [GitHub repository](https://github.com/pisinger/hunting/tree/main)
 {: .prompt-tip}
-
 > The above query makes already use of the new STIX 2.1 based Threat Intellignent tables in Sentinel. For more information see [Whats new in Sentinel (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/whats-new#microsoft-sentinel-now-ingests-all-stix-objects-and-indicators-into-new-threat-intelligence-tables-preview). Also make sure you have the proper [Threat Intelligence data connector (learn.microsoft.com)](https://learn.microsoft.com/en-us/azure/sentinel/connect-mdti-data-connector) enabled for your Sentinel workspace.
 {: .prompt-info}
 
