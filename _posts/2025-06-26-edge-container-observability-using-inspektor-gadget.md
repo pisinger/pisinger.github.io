@@ -7,7 +7,7 @@ tags: [sentinel, kubernetes, k8s, observability, azure arc, aks edge, monitoring
 render_with_liquid: false
 ---
 
-Hey there 🖖 - In a recent project, I tackled a scenario where we aimed to enhance container network observability for Arc-enabled clusters deployed at customer edge sites with the potential to then use the signals in Microsoft Sentinel.
+Hey there 🖖 - In a recent project, I tackled a scenario where we aimed to enhance container network observability for Arc-enabled clusters deployed at customer edge sites to potentially utilize the collected signals in Microsoft Sentinel and respecitively in Defender XDR.
 
 Unlike AKS nodes, where we can leverage tools like `VNet Flow Logs` or `DNS Security Policies` for deep network insights on VNet level as described in [my previous blog post](https://pisinger.github.io/posts/detection-of-malicious-outbound-connections-with-dns-mapping), edge environments may lack the necessary network and monitoring infrastructure. This results in limited egress logging and monitoring capabilities, making it harder to detect suspicious behavior and anomalies in central manner.
 
