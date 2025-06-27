@@ -3,15 +3,15 @@ title: Enhancing Edge Container Observability with Inspektor Gadget and Sentinel
 author: pit
 date: 2025-06-26
 categories: [Blogging, Tutorial]
-tags: [sentinel, kubernetes, k8s, observability, azure arc, aks edge, monitoring, edge, ebpf, inspektor gadget]
+tags: [sentinel, kubernetes, k8s, observability, azure arc, aks edge, monitoring, edge, ebpf, inspektor gadget, ContainerLogV2]
 render_with_liquid: false
 ---
 
-In a recent project, I tackled a scenario where we aimed to enhance container network observability for Arc-enabled clusters deployed at customer edge sites with the potential to then use the signals in Microsoft Sentinel.
+Hey there 🖖 - In a recent project, I tackled a scenario where we aimed to enhance container network observability for Arc-enabled clusters deployed at customer edge sites with the potential to then use the signals in Microsoft Sentinel.
 
 Unlike AKS nodes, where we can leverage tools like `VNet Flow Logs` or `DNS Security Policies` for deep network insights on VNet level as described in [my previous blog post](https://pisinger.github.io/posts/detection-of-malicious-outbound-connections-with-dns-mapping), edge environments may lack the necessary network and monitoring infrastructure. This results in limited egress logging and monitoring capabilities, making it harder to detect suspicious behavior and anomalies in central manner.
 
-> If you would prefer not to scroll through the entire blog post, you can access the YAML here <https://github.com/pisinger/scripts-lib/blob/main/k8s/inspektor-gadget-ig-ds-multi-gadgets.yaml> and the KQL queries here <https://github.com/pisinger/hunting/blob/main/container-signals-via-inspektor-gadget.kql> 😵‍💫
+> 👉If you would prefer not to scroll through the entire blog post, you can access the YAML here <https://github.com/pisinger/scripts-lib/blob/main/k8s/inspektor-gadget-ig-ds-multi-gadgets.yaml> and the KQL queries here <https://github.com/pisinger/hunting/blob/main/container-signals-via-inspektor-gadget.kql> 😅
 {: .prompt-info}
 > Tip: AKS recently introduces a new feature around ACNS (Azure Container Networking Services), leveraging the Azure Monitor Addon and Hubble to collect `container network logs` at scale in Azure. Learn more about it here: <https://learn.microsoft.com/en-us/azure/aks/container-network-observability-logs>
 {: .prompt-tip}
