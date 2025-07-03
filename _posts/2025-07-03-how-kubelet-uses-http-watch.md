@@ -3,7 +3,7 @@ title: How kubelet really knows what to do - The Tale of HTTP Watch
 author: pit
 date: 2025-07-03
 categories: [Blogging]
-tags: [kubernetes, k8s, container, basics, kubelet]
+tags: [kubernetes, k8s, container, basics, kubelet, kube-api]
 render_with_liquid: false
 ---
 
@@ -27,7 +27,7 @@ When kubelet starts, it needs to know which pods are assigned to its node. It do
 
 See the below example of how kubelet uses `HTTP watch` to keep track of pods assigned to its node. The important part is the `watch=true` query parameter, which essentially saying: "Hey, don’t just tell me what’s happening now, keep me posted."
 
-```http
+```txt
 GET /api/v1/pods?fieldSelector=spec.nodeName%3D_name_&resourceVersion=5054847&timeoutSeconds=509&watch=true
 ```
 
@@ -38,7 +38,7 @@ When the watch request is made, the API server keeps the connection open and sen
 
 When a new Pod is created, the process of deploying it involves several steps, and `HTTP watch` plays a crucial role in this workflow as we learned above. However, before the pod can be deployed, it must be assigned to a node. This is the role of the scheduler.
 
-In fact, the kube-scheduler continuously watches for new pods that don't have an assigned node. When it detects a new pod, it evaluates the available nodes in the cluster based on resource availability, constraints like nodeSelector, and other scheduling policies. Once it finds a suitable node, it updates the Pod's specifications in etcd. When the Pod specs are updated, any active HTTP watches on the Pod resource are triggered. This notifies kubelet on the assigned node, to deploy the Pod.
+In fact, the **kube-scheduler** continuously watches for new pods that don't have an assigned node. When it detects a new pod, it evaluates the available nodes in the cluster based on resource availability, constraints like nodeSelector, and other scheduling policies. Once it finds a suitable node, it updates the Pod's specifications in etcd. When the Pod specs are updated, any active HTTP watches on the Pod resource are triggered. This notifies kubelet on the assigned node, to deploy the Pod.
 
 > As you may have observed, the scheduler also uses an HTTP watch to monitor for any unassigned pods. It then updates the pod's specifications in etcd. This process is a crucial part of the Kubernetes control plane, ensuring that pods are efficiently scheduled and deployed throughout the cluster.
 {: .prompt-info}
