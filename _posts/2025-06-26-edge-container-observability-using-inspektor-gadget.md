@@ -2,7 +2,7 @@
 title: Enhancing Edge Container Observability with Inspektor Gadget and Sentinel (PoC)
 author: pit
 date: 2025-06-26
-categories: [Blogging, Tutorial]
+categories: [Blogging, Tutorial, PoC]
 tags: [sentinel, defender, kubernetes, k8s, observability, container, azure arc, aks edge, monitoring, edge, ebpf, inspektor gadget, ContainerLogV2]
 render_with_liquid: false
 ---
