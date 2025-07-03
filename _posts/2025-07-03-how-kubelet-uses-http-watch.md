@@ -27,7 +27,7 @@ When kubelet starts, it needs to know which pods are assigned to its node. It do
 
 See the below example of how kubelet uses `HTTP watch` to keep track of pods assigned to its node. The important part is the `watch=true` query parameter, which essentially saying: "Hey, don’t just tell me what’s happening now, keep me posted."
 
-```txt
+```text
 GET /api/v1/pods?fieldSelector=spec.nodeName%3D_name_&resourceVersion=5054847&timeoutSeconds=509&watch=true
 ```
 
