@@ -2,7 +2,7 @@
 title: How kubelet really knows what to do - The Tale of HTTP Watch
 author: pit
 date: 2025-07-03
-categories: [Blogging, 101]
+categories: [Blogging]
 tags: [kubernetes, k8s, container, basics, kubelet, kube-api]
 render_with_liquid: false
 ---
