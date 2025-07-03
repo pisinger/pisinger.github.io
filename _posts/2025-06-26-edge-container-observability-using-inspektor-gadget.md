@@ -3,7 +3,7 @@ title: Enhancing Edge Container Observability with Inspektor Gadget and Sentinel
 author: pit
 date: 2025-06-26
 categories: [Blogging, Tutorial]
-tags: [sentinel, kubernetes, k8s, observability, azure arc, aks edge, monitoring, edge, ebpf, inspektor gadget, ContainerLogV2]
+tags: [sentinel, defender, kubernetes, k8s, observability, container, azure arc, aks edge, monitoring, edge, ebpf, inspektor gadget, ContainerLogV2]
 render_with_liquid: false
 ---
 
@@ -100,10 +100,10 @@ Inspektor Gadget comes with basically 2 flavors:
 
 The initial step involves preparing our log pipeline using **Azure Monitor Container Insights**. To enable this on an Arc-enabled Kubernetes cluster, you can utilize the `Azure CLI` to create the appropriate Azure Monitor extension, allowing us to collect logs and metrics and ingest them into an Azure Log Analytics workspace.
 
-> Note: If your cluster is not Arc enabled yet, then first follow the steps from here <https://learn.microsoft.com/en-us/azure/azure-arc/kubernetes/connect-cluster> to connect your cluster to Azure Arc.
+> Note: If your cluster is not Arc-enabled yet, then first follow the steps from here <https://learn.microsoft.com/en-us/azure/azure-arc/kubernetes/connect-cluster> to connect your cluster to Azure Arc.
 {: .prompt-warning}
 
-See below to prepare your az cli to finally connect your cluster to `Azure Arc`:
+See below to prepare your az cli to finally connect your cluster:
 
 ```shell
 # add extension
@@ -119,7 +119,7 @@ az provider show -n Microsoft.Kubernetes -o table
 az provider show -n Microsoft.KubernetesConfiguration -o table
 az provider show -n Microsoft.ExtendedLocation -o table
 
-# connect your cluster to Azure Arc
+# connect your cluster to arc
 az connectedk8s connect --name "your-edge-cluster-name" --resource-group "ResourceGroup" --location "westeurope"
 ```
 
