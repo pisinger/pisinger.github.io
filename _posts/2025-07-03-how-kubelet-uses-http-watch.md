@@ -33,6 +33,13 @@ GET /api/v1/pods?fieldSelector=spec.nodeName%3D_name_&resourceVersion=5054847&ti
 
 When the watch request is made, the API server keeps the connection open and sends a stream of events. Each event includes the type of change (ADDED, MODIFIED, DELETED) and the resource object that was changed. This allows kubelet to react to changes in real-time. For example, if a new pod is scheduled to the node, kubelet will receive an ADDED event with the details of the new pod to then spin it up.
 
+💡To get a even clearer picture, let's give it a try with `kubectl` as you as a user can do the same by using `watch` to subscribe to changes like kubelet does. For example, if you want to watch all pods in specific namespace, you can run the below - this will also show you the events such as ADDED, MODIFIED, and DELETED in real-time. To feel more like kubelet, go for the second command 😊
+
+```shell
+kubectl get pods -n test --watch --output-watch-events
+kubectl get pods -A --field-selector spec.nodeName=<nodeName> --watch --output-watch-events
+```
+
 > So far so good, but how is a node assigned to a pod? For this we need to look at the role of the `kube-scheduler` and how it interacts with the API server and etcd.
 {: .prompt-info}
 
