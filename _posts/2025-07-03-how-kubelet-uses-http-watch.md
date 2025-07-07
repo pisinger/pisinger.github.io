@@ -13,7 +13,7 @@ Instead, kubelet retrieves pod specs from the Kubernetes API server through a me
 
 > "In the Kubernetes API, watch is a verb that is used to track changes to an object in Kubernetes as a stream. It is used for the efficient detection of changes." <https://kubernetes.io/docs/reference/using-api/api-concepts>
 {: .prompt-info}
-> WebSockets are still used in Kubernetes, but not for this purpose. They are primarily used for interactive sessions like `kubectl exec` or `port-forward`, where low-latency, bidirectional communication is essential. <https://kubernetes.io/blog/2024/08/20/websockets-transition/>
+> WebSockets are also used in Kubernetes, but not for this purpose. They are primarily used for interactive sessions like `kubectl exec` or `port-forward`, where low-latency, bidirectional communication is essential. <https://kubernetes.io/blog/2024/08/20/websockets-transition/>
 {: .prompt-tip}
 
 ## 👀How kubelet makes use of HTTP watch
@@ -33,7 +33,10 @@ GET /api/v1/pods?fieldSelector=spec.nodeName%3D_name_&resourceVersion=5054847&ti
 
 When the watch request is made, the API server keeps the connection open and sends a stream of events. Each event includes the type of change (ADDED, MODIFIED, DELETED) and the resource object that was changed. This allows kubelet to react to changes in real-time. For example, if a new pod is scheduled to the node, kubelet will receive an ADDED event with the details of the new pod to then spin it up.
 
-💡To get a even clearer picture, let's give it a try with `kubectl` as you as a user can do the same by using `watch` to subscribe to changes like kubelet does. For example, if you want to watch all pods in specific namespace, you can run the below - this will also show you the events such as ADDED, MODIFIED, and DELETED in real-time. To feel more like kubelet, go for the second command 😊
+>💡To get a even clearer picture, let's give it a try with `kubectl` as you as a user can do the same by using `watch` to subscribe to changes like kubelet does 😊.
+{: .prompt-tip}
+
+For example, if you want to watch all pods in specific namespace, you can run the below - this will also show you the events such as ADDED, MODIFIED, and DELETED in real-time. To feel more like kubelet, go for the second command:
 
 ```shell
 kubectl get pods -n test --watch --output-watch-events
