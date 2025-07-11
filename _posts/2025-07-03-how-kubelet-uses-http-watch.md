@@ -9,12 +9,12 @@ render_with_liquid: false
 
 Hey there 🖖 - Ever wondered how the **kubelet** - the well known small node agent in Kubernetes - keeps tabs on what pods to deploy? I did too, and thus decided to have a deeper look on it. Initially, I assumed it might use good old `HTTP long polling`, maybe even something fancier like `WebSockets` but the reality is as often different 😅
 
-Instead, kubelet retrieves pod specs from the Kubernetes API server through a mechanism called **HTTP watch** (<https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes>). Unlike long polling, which re-requests the resource every time and keeps the connection open until an update arrives (then repeats), HTTP watch is more efficient. It uses the `watch` parameter in the API call, which streams resource updates as they happen that allows clients (kubectl or controllers) to subscribe to changes on resources.
+Instead, kubelet retrieves pod specs from the Kubernetes API server through a mechanism called **HTTP watch** (<https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes>). Unlike long polling, which re-requests the resource every time and keeps the connection open until an update arrives (then repeats), HTTP watch is more efficient even while they share similarities. It uses the `watch` parameter in the API call, which streams resource updates as they happen that allows clients (kubectl or controllers) to subscribe to changes on resources.
 
-> "In the Kubernetes API, watch is a verb that is used to track changes to an object in Kubernetes as a stream. It is used for the efficient detection of changes." <https://kubernetes.io/docs/reference/using-api/api-concepts>
+> "In the Kubernetes API, watch is a verb that is used to track changes to an object in Kubernetes as a stream. It is used for the efficient detection of changes." <https://kubernetes.io/docs/reference/using-api/api-concepts>.
 {: .prompt-info}
-> WebSockets are also used in Kubernetes, but not for this purpose. They are primarily used for interactive sessions like `kubectl exec` or `port-forward`, where low-latency, bidirectional communication is essential. <https://kubernetes.io/blog/2024/08/20/websockets-transition/>
-{: .prompt-tip}
+> Also worth noting that HTTP watch is heavily used by the different k8s compents such as kube-scheduler or kube-controller-manager to efficiently monitor changes in the cluster to then react accordingly. WebSockets are also used in Kubernetes, but not for this purpose. They are primarily used for interactive sessions like `kubectl exec` or `port-forward`, where low-latency, bidirectional communication is essential. <https://kubernetes.io/blog/2024/08/20/websockets-transition/>
+{: .prompt-info}
 
 ## 👀How kubelet makes use of HTTP watch
 
