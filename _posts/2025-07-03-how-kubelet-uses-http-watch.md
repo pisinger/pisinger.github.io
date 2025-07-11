@@ -7,7 +7,7 @@ tags: [kubernetes, k8s, container, basics, kubelet, kube-api]
 render_with_liquid: false
 ---
 
-Hey there 🖖 - Ever wondered how the **kubelet** - the well known small node agent in Kubernetes — keeps tabs on what pods to deploy? I did too, and thus decided to have a deeper look on it. Initially, I assumed it might use good old `HTTP long polling`, maybe even something fancier like `WebSockets` but the reality is as often different 😅
+Hey there 🖖 - Ever wondered how the **kubelet** - the well known small node agent in Kubernetes - keeps tabs on what pods to deploy? I did too, and thus decided to have a deeper look on it. Initially, I assumed it might use good old `HTTP long polling`, maybe even something fancier like `WebSockets` but the reality is as often different 😅
 
 Instead, kubelet retrieves pod specs from the Kubernetes API server through a mechanism called **HTTP watch** (<https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes>). Unlike long polling, which re-requests the resource every time and keeps the connection open until an update arrives (then repeats), HTTP watch is more efficient. It uses the `watch` parameter in the API call, which streams resource updates as they happen that allows clients (kubectl or controllers) to subscribe to changes on resources.
 
@@ -57,7 +57,7 @@ In essence, the scheduler ensures the Pod is assigned to the right node, updates
 
 ## 🧠 Watch is a Verb
 
-In Kubernetes, watch is a first class API verb — not just a query parameter. When you send a GET request with `?watch=true`, you are not just asking for data, you are subscribing to a live stream of events such as:
+In Kubernetes, watch is a first class API verb - not just a query parameter. When you send a GET request with `?watch=true`, you are not just asking for data, you are subscribing to a live stream of events such as:
 
 - ADDED: A new object was created
 - MODIFIED: An existing object changed
@@ -101,7 +101,7 @@ The Kubelet watches several key resources to ensure it can manage the state of t
 
 ## 🔄 Resource Versions and Consistency
 
-Every Kubernetes object has a `metadata.resourceVersion`. This is not a timestamp — it is an opaque string used to track changes. When you start a watch, you can specify a resourceVersion to resume from a known point. But if that version is too stale, the API server will say "nope" and force you to re-list.
+Every Kubernetes object has a `metadata.resourceVersion`. This is not a timestamp - it is an opaque string used to track changes. When you start a watch, you can specify a resourceVersion to resume from a known point. But if that version is too stale, the API server will say "nope" and force you to re-list.
 
 To handle this, Kubernetes clients often:
 
@@ -113,7 +113,7 @@ This ensures strong consistency between client and server.
 
 ## 🧰Watch Cache: The API Server’s Memory Bank
 
-Behind the scenes, the API server maintains a watch cache — an in-memory mirror of etcd. This cache serves most reads and watches, making them fast and efficient. It also helps with:
+Behind the scenes, the API server maintains a watch cache - an in-memory mirror of etcd. This cache serves most reads and watches, making them fast and efficient. It also helps with:
 
 - Reducing etcd load
 - Serving consistent snapshots
@@ -123,7 +123,7 @@ Behind the scenes, the API server maintains a watch cache — an in-memory mirro
 
 Short answer: Yes, HTTP watch connections can expire or be interrupted.
 
-- Time limits: Most clusters impose a maximum duration for a watch — often around 5 minutes to prevent stale connections.
+- Time limits: Most clusters impose a maximum duration for a watch - often around 5 minutes to prevent stale connections.
 - Resource version too old: If you try to resume a watch using a resourceVersion that is no longer valid, the API server returns a 410 Gone error.
 - Idle timeout or network hiccups: Connections can drop due to inactivity or transient network issues.
 
