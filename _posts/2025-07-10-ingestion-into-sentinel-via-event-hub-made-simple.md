@@ -174,7 +174,7 @@ More information around auxiliary tables can be found here: <https://learn.micro
 
 To ensure we have a dedicated `Data Collection Rule` (DCR) for each data source and Event Hub, we will iterate through the data map again and create a DCR for each data source. Each DCR will be linked to the `Data Collection Endpoint` (DCE) and the custom table created in the previous step.
 
-> Keep in mind the DCR limitations related to the Logs Ingestion API, such as the 2GB/min limit per DCR. This typically shouldn't be an issue when dealing with multiple data sources, as it's often beneficial to use multiple Event Hubs. This approach allows for at least one dedicated DCR per hub, enabling horizontal scaling. Additionally, this setup improves monitoring by making it easier to distinguish between different data sources from a metrics perspective (bytes sent/received). <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
+> Be aware of the DCR limits for the Logs Ingestion API, which include a maximum of 2GB per minute per DCR (indicated by the Retry-After header in the response). This limit is generally manageable when working with multiple data sources, as using multiple DCRs and Event Hubs is often beneficial. This strategy allows for at least one dedicated DCR per hub, thereby enabling horizontal scaling. Additionally, this configuration enhances monitoring by simplifying the differentiation between various data sources from a metrics perspective (bytes sent/received). <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
 {: .prompt-warning}
 
 Of course, you could also combine multiple data sources into a single DCR, but for clarity and separation we will create dedicated DCRs per data source. This also makes it easier to monitor (bytes sent/recv) and manage the data ingestion process - that said, the template also comes with having the diagnostic settings enabled for the DCR 😊.
@@ -250,7 +250,7 @@ foreach ($item in $dataMap) {
 }
 ```
 
-## conclusion
+## Conclusion
 
 By following these steps, you have successfully established a data ingestion pipeline from Event Hub to Sentinel using Azure Monitor's Data Collection Endpoint and Data Collection Rule. This setup enables you to efficiently collect and process large volumes of data from various sources without the need for custom code or complex configurations.
 
