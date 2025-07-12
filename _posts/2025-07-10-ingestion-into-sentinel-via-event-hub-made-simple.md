@@ -33,7 +33,7 @@ Before we get started, let's also quickly recap the key components involved in t
 - DCR <https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview>
 - DCE <https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-endpoint-overview>
 
-## Pre-requisites
+## ✅Pre-requisites
 
 - Event Hub namespace (if public access disabled, make sure "Allow trusted Microsoft services to bypass this firewall" is enabled)
 - Sentinel workspace (requires dedicated cluster, or commitment tier)
@@ -54,7 +54,7 @@ The below steps will guide you through the process of setting up the necessary A
 > NOTE: This feature is not exclusive to the Auxiliary tier, thus you can also choose Basic or Analytics table tier based on your specific requirements and needs.
 {: .prompt-info}
 
-## Prep - define your variables
+## ⚙️Prep - define your variables
 
 The first step is to define your variables. Make sure you have the Azure ResourceIds for your `Workspace`, `DCE` and  `Event Hub namespace` handy to then define them as shown below. The script will automatically deploy the Azure Monitor resources into the same Resource Group as the workspace, but you can choose a different one if you prefer. Just make sure the DCRA is in the same region as the Event Hub namespace.
 
@@ -73,7 +73,7 @@ $resourceGroup = $workspaceId.Split("/")[-5]
 $resourceGroupId = ($workspaceId.Split("/providers",2))[0]
 ```
 
-## Prep - define your data sources in data map
+## 📄Prep - define your data sources in data map
 
 The below needs to reflected to your data source you want to ingest into Sentinel via Event Hub. The `partitions` and `totalRetentionInDays` are important to define as they will be used to create the Event Hub and also the corresponding custom table in Sentinel. Do also specify the table log tier - we are going for all available types, including **Auxiliary**:
 
@@ -94,7 +94,7 @@ For the DCR the most important part the is `DataStream` which needs to be set to
 
 ![img-description](/assets/img/posts/ingestion-into-sentinel-via-event-hub-made-simple/data-collection-rules-stream-declaration.png)
 
-## 1 Create event hubs in your existing namespace
+## 🛠️1 Create event hubs in your existing namespace
 
 To deploy this, we will iterate through the data map. Ensure you have the appropriate Azure (az) module installed -> `Install-Module az.eventhub`
 
@@ -106,7 +106,7 @@ foreach ($item in $dataMap) {
 
 ![img-description](/assets/img/posts/ingestion-into-sentinel-via-event-hub-made-simple/event-hubs.png)
 
-## 2 Create custom table of type aux in desired workspace
+## 🛠️2 Create custom table of type aux in desired workspace
 
 To create a custom `auxiliary table` check the below template. Depending your data source and your planned transformations you may want to adjust the table schema and columns accordingly. The `RawData` column is a string type and will hold the raw data from the Event Hub. If not sure about schema, you can also adjust it later in the Azure portal after the table is created.
 
@@ -170,7 +170,7 @@ More information around auxiliary tables can be found here: <https://learn.micro
 > Did you know that the Auxiliary tier now also supports transformations to further parse and optimize data before ingestion? To learn more about KQL transformations, see <https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-transformations>
 {: .prompt-tip}
 
-## 3 Create dedicated DCR per data source and Event Hub
+## 🛠️3 Create dedicated DCR per data source and Event Hub
 
 To ensure we have a dedicated `Data Collection Rule` (DCR) for each data source and Event Hub, we will iterate through the data map again and create a DCR for each data source. Each DCR will be linked to the `Data Collection Endpoint` (DCE) and the custom table created in the previous step.
 
@@ -208,7 +208,7 @@ foreach ($item in $dataMap) {
 
 ![img-description](/assets/img/posts/ingestion-into-sentinel-via-event-hub-made-simple/data-collection-rules.png)
 
-## 4 Associate the data collection rule with the event hub (DCRA)
+## 🔗4 Associate the data collection rule with the event hub (DCRA)
 
 Almost there! Now, we need to associate each DCR with the Event Hub. As before, we will loop through the data map and create a DCR association for each data source. This association will link the DCR with the Event Hub, enabling the DCR to consume data from the Event Hub. For more details on how to create a DCR association, see the documentation at <https://learn.microsoft.com/en-us/azure/azure-monitor/logs/ingest-logs-event-hub#associate-the-data-collection-rule-with-the-event-hub>.
 
@@ -231,7 +231,7 @@ foreach ($item in $dataMap) {
 > Note: The data collection assocation (DCRA) needs to be in same region as the Event Hub while the workspace and its DCE and DCR can be in a dfferent region. If possible, place the Event Hub in same region as the workspace to avoid cross-region data transfer. <https://learn.microsoft.com/en-us/azure/azure-monitor/logs/ingest-logs-event-hub#supported-regions>
 {: .prompt-warning}
 
-## 5 Assign event hub receiver permission to DCR managed identity (role assignment)
+## 🔑5 Assign event hub receiver permission to DCR managed identity (role assignment)
 
 Although we technically have everything in place, the DCR cannot yet consume data from the Event Hub due to missing permissions. Thus, we need to assign the `Azure Event Hubs Data Receiver` role to the DCR's managed identity for each Event Hub. The DCRs are acting as the consumer groups/clients for the Event Hubs.
 
