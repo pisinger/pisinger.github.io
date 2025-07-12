@@ -14,7 +14,7 @@ Instead, kubelet retrieves pod specs from the Kubernetes API server through a me
 > "In the Kubernetes API, watch is a verb that is used to track changes to an object in Kubernetes as a stream. It is used for the efficient detection of changes." <https://kubernetes.io/docs/reference/using-api/api-concepts>.
 {: .prompt-info}
 > Also worth noting that HTTP watch is heavily used by the different k8s compents such as kube-scheduler or kube-controller-manager to efficiently monitor changes in the cluster to then react accordingly. WebSockets are also used in Kubernetes, but not for this purpose. They are primarily used for interactive sessions like `kubectl exec` or `port-forward`, where low-latency, bidirectional communication is essential. <https://kubernetes.io/blog/2024/08/20/websockets-transition/>
-{: .prompt-info}
+{: .prompt-tip}
 
 ## 👀How kubelet makes use of HTTP watch
 
