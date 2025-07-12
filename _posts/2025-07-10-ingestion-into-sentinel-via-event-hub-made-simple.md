@@ -9,7 +9,7 @@ render_with_liquid: false
 
 Hey there 🖖 - In this blog post, I want to introduce you to a preview feature that simplifies the ingestion of massive data into **Sentinel** by using **Event Hub**.
 
-> Spoiler alert: In my opinion this is truly a game changer for anyone working with large data volumes streamed to Event Hub and looking to leverage that data in Sentinel! 🚀😅
+> Spoiler alert: In my opinion this is truly a game changer for anyone working with large data volumes streamed to Event Hub and looking to leverage that data in Sentinel! 🚀🥳
 {: .prompt-info}
 
 What you can expect from this blog post:
