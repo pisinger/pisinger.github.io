@@ -129,7 +129,7 @@ Short answer: Yes, HTTP watch connections can expire or be interrupted.
 
 When a watch expires, the client must re-establish it by first listing the current state and then starting a new watch from the latest resourceVersion.
 
-## 🧪Where Kubernetes actually utilizes WebSockets
+## 🧪Where WebSockets actually utilizes in k8s
 
 Kubernetes does also make use of `WebSockets` but more selectively (<https://kubernetes.io/blog/2024/08/20/websockets-transition/>). The below scenarios now use WebSockets instead of the deprecated `SPDY` protocol for streaming:
 
