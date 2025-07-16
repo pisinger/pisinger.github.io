@@ -57,7 +57,13 @@ The below steps will guide you through the process of setting up the necessary A
 
 ## ⚙️Prep - define your variables
 
-The first step is to define your variables. Make sure you have the Azure ResourceIds for your `Workspace`, `DCE` and  `Event Hub namespace` handy to then define them as shown below. The script will automatically deploy the Azure Monitor resources into the same Resource Group as the workspace, but you can choose a different one if you prefer. Just make sure the DCRA is in the same region as the Event Hub namespace.
+The first step is to define your variables. Make sure you have the Azure ResourceIds for the below handy:
+
+- Workspace
+- Data Collection Endpoint (DCE)
+- Event Hub namespace
+
+ The script will automatically deploy the Azure Monitor resources into the same Resource Group as the workspace, but you can choose a different one if you prefer. Just make sure the DCRA (basically linking DCR with the Event Hub) is in the same region as the Event Hub namespace. More on that later.
 
 ```shell
 # variables
@@ -90,7 +96,7 @@ $dataMap = @(
 
 ## 🛠️1 Create event hubs in your existing namespace
 
-To deploy this, we will iterate through the data map. Ensure you have the appropriate Azure (az) module installed -> `Install-Module az.eventhub`
+To deploy this, we will iterate through the data map. Ensure you have the appropriate Azure PowerShell module installed -> `Install-Module az.eventhub`
 
 ```shell
 foreach ($item in $dataMap) {
@@ -202,7 +208,7 @@ More information around auxiliary tables can be found here: <https://learn.micro
 
 To ensure we have a dedicated `Data Collection Rule` (DCR) for each data source and Event Hub, we will again iterate through the data map and create a DCR for each data source. Each DCR will be linked to the `Data Collection Endpoint` (DCE) and one of the custom tables created in the previous step.
 
-> Keep the Logs Ingestion API limits in mind when using Data Collection Rules as each DCR comes with a throughput limit of 2 GB per minute, which is indicated by the `Retry-After` header in the response. While this limit cannot be exceeded at the DCR level, the Event Hub-based ingestion service includes built-in retry logic. As a result, if the limit is temporarily hit, the service will automatically attempt to resend the data to the workspace, enhancing overall reliability. <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
+> Keep the Logs Ingestion API limits in mind when using Data Collection Rules as each DCR comes with a throughput limit of `2 GB per minute`. If this limit is hit, the response will include a `Retry-After` header - the good news is that the Event Hub-based ingestion service features a built-in retry logic, which automatically attempts to resend the data to the workspace to further enhance reliability and ensuring smoother data flow. <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
 {: .prompt-warning}
 
 Although it is technically feasible to consolidate multiple data sources into a single Event Hub and Data Collection Rule (DCR), we opt to assign a dedicated DCR to each source as mentioned above. This strategy improves clarity and separation, simplifies monitoring via metrics such as bytes sent/received per data source, streamlines data ingestion management, and enables horizontal scalability. Additionally, the template comes with diagnostic settings preconfigured for the DCRs. 😊
@@ -216,7 +222,7 @@ You can also check for metrics on Event Hub side as soon as start streaming your
 > The DCE needs to be created before going with the below script to create the DCR. If you going for AMPLS, then create the DCE in desired region and associate it with the proper AMPLS scope.
 {: .prompt-warning}
 
-Now lets have a look to the code snippet to get this deployed. For this we again using the ARM template from <https://learn.microsoft.com/en-us/azure/azure-monitor/logs/ingest-logs-event-hub#create-a-data-collection-rule> and replacing the pre-defined variables inline with the actual values from our data map. The DCR will come with `EVH` as name prefix, so you can easily identify it as Event Hub DCR.
+Now lets have a look to the code snippet to get this deployed. For this we again using the ARM template from <https://learn.microsoft.com/en-us/azure/azure-monitor/logs/ingest-logs-event-hub#create-a-data-collection-rule> and replacing the pre-defined variables inline with the actual values from our data map. The DCR is then created with `EVH` as name prefix, so you can easily identify it as Event Hub DCR.
 
 ```shell
 foreach ($item in $dataMap) {
