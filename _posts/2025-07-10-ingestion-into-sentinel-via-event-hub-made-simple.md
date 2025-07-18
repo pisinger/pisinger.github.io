@@ -87,8 +87,8 @@ The following configuration needs to be tailored to the specific data sources yo
 ```shell
 # map of data sources to create event hubs and corresponding tables in workspace
 $dataMap = @(
-    @{source="DataSource1"; partitions=10; totalRetentionInDays=30; plan="Analytics"},
-    @{source="DataSource2"; partitions=10; totalRetentionInDays=30; plan="Basic"},
+    @{source="DataSource1"; partitions=10; totalRetentionInDays=120; plan="Analytics"},
+    @{source="DataSource2"; partitions=10; totalRetentionInDays=90; plan="Basic"},
     @{source="DataSource3"; partitions=10; totalRetentionInDays=30; plan="Auxiliary"},
     @{source="DefenderStreamingApi"; partitions=4; totalRetentionInDays=30; plan="Auxiliary"}
 )
@@ -208,7 +208,7 @@ More information around auxiliary tables can be found here: <https://learn.micro
 
 To ensure we have a dedicated `Data Collection Rule` (DCR) for each data source and Event Hub, we will again iterate through the data map and create a DCR for each data source. Each DCR will be linked to the `Data Collection Endpoint` (DCE) and one of the custom tables created in the previous step.
 
-> Keep the Logs Ingestion API limits in mind when using Data Collection Rules as each DCR comes with a throughput limit of `2 GB per minute`. If this limit is hit, the response will include a `Retry-After` header - the good news is that the Event Hub-based ingestion service features a built-in retry logic, which automatically attempts to resend the data to the workspace to further enhance reliability and ensuring smoother data flow. <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
+> Keep the Logs Ingestion API limits in mind when using Data Collection Rules as each DCR comes with a throughput limit of `2 GB per minute`. If this limit is exceeded, the response will include a `Retry-After` header - Helpfully, the Event Hub-based ingestion service features a built-in retry logic, which automatically attempts to resend the data to the workspace to further enhance reliability and ensuring smoother data flow. <https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api>
 {: .prompt-warning}
 
 Although it is technically feasible to consolidate multiple data sources into a single Event Hub and Data Collection Rule (DCR), we opt to assign a dedicated DCR to each source as mentioned above. This strategy improves clarity and separation, simplifies monitoring via metrics such as bytes sent/received per data source, streamlines data ingestion management, and enables horizontal scalability. Additionally, the template comes with diagnostic settings preconfigured for the DCRs. 😊
@@ -275,7 +275,7 @@ foreach ($item in $dataMap) {
 }
 ```
 
-> Note: The data collection assocation (DCRA) needs to be in same region as the Event Hub while the workspace and its DCE and DCR can be in a dfferent region. If possible, place the Event Hub in same region as the workspace to avoid cross-region data transfer.
+> Note: The data collection  association  (DCRA) needs to be in same region as the Event Hub while the workspace and its DCE and DCR can be in a different region. If possible, place the Event Hub in same region as the workspace to avoid cross-region data transfer.
 {: .prompt-warning}
 > Make sure to consider the currently supported regions, given that this feature is in preview: <https://learn.microsoft.com/en-us/azure/azure-monitor/logs/ingest-logs-event-hub#supported-regions>
 {: .prompt-warning}
