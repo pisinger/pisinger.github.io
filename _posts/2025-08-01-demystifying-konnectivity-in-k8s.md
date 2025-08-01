@@ -25,7 +25,9 @@ Traditionally, this was done using `SSH tunnels` or open inbound ports to the no
 
 ## 🚀 The Solution: Konnectivity
 
-It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms. On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
+It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms.
+
+On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
 
 🔄 How It Works:
 
@@ -46,10 +48,9 @@ konnectivity-agent-69bd86f5f7-82rc5   1/1     Running
 konnectivity-agent-69bd86f5f7-l9gpz   1/1     Running
 ```
 
-> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play—it just works out of the box - no extra setup required 😊.
-{: .prompt-info}
+> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play—it just works out of the box - no extra setup required 😊{: .prompt-info}
 
-## 🧩 Admission Controller Webhooks: Do they use Konnectivity?
+## 🧩 Admission Controller Webhooks: Konnectivity used as well?
 
 Short answer: Yes, they do! 😊
 
