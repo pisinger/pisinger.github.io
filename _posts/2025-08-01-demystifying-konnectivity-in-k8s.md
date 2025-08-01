@@ -27,14 +27,16 @@ Traditionally, this was done using `SSH tunnels` or open inbound ports to the no
 
 It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms. On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
 
-🔄 How It Works: <https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues>
+🔄 How It Works:
 
 - A Konnectivity agent runs as a DaemonSet on each node or as a regular Pod, preferably on system nodes.
-- Agent is maintaining a persistent outbound connection to the Konnectivity Server in the control plane.
+- The Agent is maintaining a persistent outbound connection to the Konnectivity Server in the control plane.
 - This long-lived, multiplexed connection allows the API server to reach nodes (e.g., for exec, logs, or metrics) without inbound access.
 - Requests are routed through the server to the agent, which then forwards them to the kubelet API (typically on tcp:10250).
-![
+
 ![img-description](/assets/img/posts/demystifying-konnectivity-in-k8s/aks-konnectivity-architecture.jpg)
+
+💡For more information, check out <https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues>
 
 On AKS you can check for the Konnectivity Agent pods by running:
 
@@ -53,7 +55,7 @@ Short answer: Yes, they do! 😊
 
 When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
 
-> Note: You can use Inspektor Gadget to observe network traffic and verify that the API server communicates with internal admission webhooks via Konnectivity. While the requests to the Konnectivity Agent aren't directly visible due to already existing connection using this approach, you can inspect the outbound connections from the agent pod to the Admission Webhook service and its backing pods <https://inspektor-gadget.io/docs/latest/gadgets/trace_tcp>.
+> Note: You can use Inspektor Gadget to observe network traffic and verify that the API server communicates with internal admission webhooks via Konnectivity. While the requests to the Konnectivity Agent aren't directly visible due to already existing connection using this approach, you can inspect the outbound connections from the agent pod to the Admission Webhook service and its backing pods. <https://inspektor-gadget.io/docs/latest/gadgets/trace_tcp>
 {: .prompt-tip}
 
 ```bash
