@@ -27,14 +27,13 @@ Traditionally, this was done using `SSH tunnels` or open inbound ports to the no
 
 It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms. On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
 
-🔄 How It Works:
+🔄 How It Works: <https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues>
 
 - A Konnectivity agent runs as a DaemonSet on each node or as a regular Pod, preferably on system nodes.
 - Agent is maintaining a persistent outbound connection to the Konnectivity Server in the control plane.
 - This long-lived, multiplexed connection allows the API server to reach nodes (e.g., for exec, logs, or metrics) without inbound access.
 - Requests are routed through the server to the agent, which then forwards them to the kubelet API (typically on tcp:10250).
-- <https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues>
-
+![
 ![img-description](/assets/img/posts/demystifying-konnectivity-in-k8s/aks-konnectivity-architecture.jpg)
 
 On AKS you can check for the Konnectivity Agent pods by running:
