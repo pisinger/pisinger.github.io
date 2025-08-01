@@ -27,7 +27,7 @@ Traditionally, this was done using `SSH tunnels` or open inbound ports to the no
 
 It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms.
 
-On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
+On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation: <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
 
 🔄 How It Works:
 
