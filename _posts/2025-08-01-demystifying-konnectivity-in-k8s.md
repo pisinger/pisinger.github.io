@@ -57,11 +57,13 @@ The agent also comes with a default outbound allow `networkPolicy`, which allows
 kubectl get networkpolicy konnectivity-agent -n kube-system 
 ```
 
-> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play—it just works out of the box - no extra setup required 😊{: .prompt-info}
+> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play—it just works out of the box - no extra setup required 😊
+{: .prompt-info}
 
 ## 🧩 Admission Controller Webhooks: Konnectivity used as well?
 
-Short answer: Yes, they do! 😊
+>Short answer: Yes, they do! 😊
+{: .prompt-info}
 
 When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server also leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
 
@@ -98,14 +100,18 @@ While implementation details can vary between cloud providers, the core principl
 
 ## 🔗 VNet Integration: The Comeback of Direct Control Plane to Node Communication
 
-The introduction of `API Server VNet Integration` <https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration> marks a major milestone in optimizing secure communication between the control plane and cluster nodes, specifically when accessing the kubelet API. By bypassing the Konnectivity server for selected operations, this feature trims latency and simplifies network architecture, especially for high-frequency tasks like exec or logs. So with that, the managed control plane is being able to connect directly to the kubelet API on nodes via private IPs, without needing the Konnectivity server as an intermediary.
+The introduction of `API Server VNet Integration` <https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration> marks a major milestone in optimizing secure communication between the control plane and cluster nodes, specifically when accessing the kubelet API.
+
+By allowing selected operations to bypass the Konnectivity server, this feature reduces latency and streamlines the network architecture, especially for high-frequency tasks like exec and logs. With this enhancement, the managed control plane can now connect directly to the kubelet API on nodes using private IPs, eliminating the need for Konnectivity as an intermediary in these scenarios.
+
+The below how to enable this feature on an existing AKS cluster:
 
 ```powershell
 az aks update --name "clusterName" --resource-group "resourceGroup" --enable-apiserver-vnet-integration --apiserver-subnet-id "apiserver-subnet-resource-id"
 ```
 
 > While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity. These webhooks require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged
-<{: .prompt-warning}>
+{: .prompt-warning}
 
 In practice, combining both technologies offers the best of both worlds:
 
@@ -113,4 +119,5 @@ In practice, combining both technologies offers the best of both worlds:
 - Nodes → Control plane: Direct access to the API server using private IPs through the load balancer.
 - Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent.
 
-This hybrid model enhances performance while maintaining strong security standards. It also simplifies private networking in AKS, bringing it closer to the flexibility of self-managed clusters where full control over the control plane and network allows direct exposure of the kubelet API on tcp:10250. Previously, this wasn’t feasible in cloud environments, which is why Konnectivity was introduced in the first place.
+This hybrid setup not only boosts performance but also marks a significant shift in how private networking is handled in AKS. By enabling direct access from the managed control plane to the kubelet API over private IPs, it brings AKS closer to the operational flexibility of self-managed clusters where exposing the kubelet API on tcp:10250 is straightforward. In the past, such direct communication wasn’t feasible in cloud-managed environments due to network isolation and security constraints, which is one of the key reasons Konnectivity was introduced: to securely bridge that gap 😊.
+
