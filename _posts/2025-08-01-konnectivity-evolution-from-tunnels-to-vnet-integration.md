@@ -7,9 +7,9 @@ tags: [azure, aks, kubernetes, konnectivity, kubelet, networking, security, admi
 render_with_liquid: false
 ---
 
-Hey there 🖖 - Have you ever wondered how a managed kubernetes `Control Plane` can reach into your cluster and execute commands, stream logs, or call webhooks without having direct network access to your nodes? 
+Hey there 🖖 - Have you ever wondered how a managed kubernetes `Control Plane` can reach into your cluster and execute commands, stream logs, or call webhooks without having direct network access to your nodes?
 
-This might seem tricky in cloud-managed Kubernetes platforms like GKE, EKS, or AKS where the worker nodes usually sit behind private IPs, NAT gateways, or firewalls in a customer-managed VNet, but in reality, it’s not 😅
+This might seem tricky in cloud-managed Kubernetes platforms like GKE, EKS, or AKS where the worker nodes usually sit behind private IPs, NAT gateways, or firewalls in a customer-managed VNet, but in reality, it’s not 🙃
 
 > The key is a shift to a proxy-based architecture: Instead of the control plane reaching into the cluster, the cluster reaches out to the control plane - thanks to a component called **Konnectivity** service <https://kubernetes.io/docs/tasks/extend-kubernetes/setup-konnectivity/>.
 {: .prompt-tip}
@@ -62,7 +62,7 @@ The agent also comes with a default outbound allow `networkPolicy`, which allows
 kubectl get networkpolicy konnectivity-agent -n kube-system 
 ```
 
-> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play and just works out of the box - no extra setup required 😊
+> This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play and just works out of the box - no extra setup required 🚀
 {: .prompt-info}
 
 ## 🧩 Admission Controller Webhooks: Konnectivity used as well?
@@ -109,6 +109,9 @@ The introduction of `API Server VNet Integration` <https://learn.microsoft.com/e
 
 By allowing selected operations to bypass the Konnectivity server, this feature reduces latency and streamlines the network architecture, especially for high-frequency tasks like exec and logs. With this enhancement, the managed control plane can now connect directly to the kubelet API on nodes using private IPs, eliminating the need for Konnectivity as an intermediary in these scenarios.
 
+> While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity. These webhooks require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged
+{: .prompt-info}
+
 See below for how to enable this feature on an existing AKS cluster:
 
 > Important: Once API Server VNet Integration is enabled, it becomes a permanent part of the cluster configuration. The feature cannot be disabled or rolled back.
@@ -117,9 +120,6 @@ See below for how to enable this feature on an existing AKS cluster:
 ```powershell
 az aks update --name "clusterName" --resource-group "resourceGroup" --enable-apiserver-vnet-integration --apiserver-subnet-id "apiserver-subnet-resource-id"
 ```
-
-> While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity. These webhooks require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged
-{: .prompt-warning}
 
 In practice, combining both technologies offers the best of both worlds:
 
