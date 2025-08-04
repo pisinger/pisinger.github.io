@@ -1,16 +1,21 @@
 ---
-title: Demystifying Konnectivity in k8s - Secure Control Plane to Node Communication"
+title: Konnectivity Evolution - From Tunnels to VNet Integration
 author: pit
 date: 2025-08-01
 categories: [Blogging]
-tags: [azure, aks, kubernetes, konnectivity, kubelet, networking, security, admission-webhooks]
+tags: [azure, aks, kubernetes, konnectivity, kubelet, networking, security, admission-webhooks, control plane]
 render_with_liquid: false
 ---
 
-Hey there 🖖 - Have you ever wondered how the Kubernetes `Control Plane` can reach into your cluster and execute commands, stream logs, or call webhooks without having direct network access to your nodes? This might seem tricky in cloud-managed Kubernetes platforms like GKE, EKS, or AKS where the worker nodes usually sit behind private IPs, NAT gateways, or firewalls in a customer-managed VNet, but in reality, it’s not 😅
+Hey there 🖖 - Have you ever wondered how a managed kubernetes `Control Plane` can reach into your cluster and execute commands, stream logs, or call webhooks without having direct network access to your nodes? This might seem tricky in cloud-managed Kubernetes platforms like GKE, EKS, or AKS where the worker nodes usually sit behind private IPs, NAT gateways, or firewalls in a customer-managed VNet, but in reality, it’s not 😅
 
-> The key is a shift to a proxy-based architecture: Instead of the control plane reaching into the cluster, the cluster reaches out to the control plane — thanks to a component called **Konnectivity** service <https://kubernetes.io/docs/tasks/extend-kubernetes/setup-konnectivity/>.
+> The key is a shift to a proxy-based architecture: Instead of the control plane reaching into the cluster, the cluster reaches out to the control plane - thanks to a component called **Konnectivity** service <https://kubernetes.io/docs/tasks/extend-kubernetes/setup-konnectivity/>.
 {: .prompt-tip}
+
+When managing your own Kubernetes clusters, it's possible to expose the kubelet API via `tcp:10250`, allowing direct communication between the control plane and the nodes. However, in provider-managed environments, this approach isn’t feasible due to strict security policies, network limitations, and because the control plane operating entirely within the provider's managed virtual network.
+
+> Spoiler alert: The ability for the managed control plane to directly connect to cluster nodes is making a comeback with AKS's new API Server VNet Integration feature. But we’ll unpack that in more detail later in this blog 😊
+{: .prompt-info}
 
 ## 🧭 The origin problem: Secure Control Plane to Node Communication
 
@@ -19,21 +24,19 @@ In Kubernetes, the control plane needs to initiate connections to worker nodes f
 - kubectl exec
 - kubectl logs
 - kubectl port-forward
-- Metrics scraping
+- Metrics and status scraping
 
-Traditionally, this was done using `SSH tunnels` or open inbound ports to the nodes on `tcp:10250`, which posed security and scalability challenges.
+Historically, direct connectivity to nodes was achieved through `SSH tunnels` or by exposing inbound ports on `tcp:10250`. While this method was acceptable for on-premises clusters, it introduced significant security and scalability concerns. In managed Kubernetes services such as AKS, GKE, or EKS, this strategy is generally impractical due to strict access controls and network isolation as mentioned above.
 
 ## 🚀 The Solution: Konnectivity
 
-It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms.
-
-On AKS we have it since October 2021 replacing the former `aks-link` and `tunnel-front` implementation: <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
+It became the default mechanism for control plane to node communication in Kubernetes 1.22, released in August 2021 by replacing the older direct kubelet API server proxy and SSH tunneling mechanisms. On AKS this has been available since October 2021, replacing the former `aks-link` and `tunnel-front` implementation: <https://github.com/Azure/AKS/blob/master/CHANGELOG.md#release-2021-10-28>
 
 🔄 How It Works:
 
 - A Konnectivity agent runs as a DaemonSet on each node or as a regular Pod, preferably on system nodes.
 - The Agent is maintaining a persistent outbound connection to the Konnectivity Server in the control plane.
-- This long-lived, multiplexed connection allows the API server to reach nodes (e.g., for exec, logs, or metrics) without inbound access.
+- This long-lived, multiplexed connection allows the API server to reach nodes (exec, logs, metrics, etc.) without inbound access.
 - Requests are routed through the server to the agent, which then forwards them to the kubelet API (typically on tcp:10250).
 
 ![img-description](/assets/img/posts/demystifying-konnectivity-in-k8s/aks-konnectivity-architecture.jpg)
@@ -48,15 +51,29 @@ konnectivity-agent-69bd86f5f7-82rc5   1/1     Running
 konnectivity-agent-69bd86f5f7-l9gpz   1/1     Running
 ```
 
+The agent also comes with a default outbound allow `networkPolicy`, which allows it to communicate with the Konnectivity server in the control plane. This is crucial for maintaining the secure connection and ensuring that the API server can reach the nodes without needing direct inbound access. If you remove this policy, you can no longer run commands like `kubectl exec` or `kubectl logs` against your nodes, as the API server won't be able to reach the Konnectivity agent.
+
+```bash
+kubectl get networkpolicy konnectivity-agent -n kube-system 
+```
+
 > This Konnectivity-based setup is super network and firewall friendly, built for the cloud, and way more secure. You don’t need to mess with exposing node ports, setting up SSH access, or tweaking custom network rules for your VNet or NSGs. It’s basically plug-and-play—it just works out of the box - no extra setup required 😊{: .prompt-info}
 
 ## 🧩 Admission Controller Webhooks: Konnectivity used as well?
 
 Short answer: Yes, they do! 😊
 
-When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
+When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server also leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
 
-> Note: You can use Inspektor Gadget to observe network traffic and verify that the API server communicates with internal admission webhooks via Konnectivity. While the requests to the Konnectivity Agent aren't directly visible due to already existing connection using this approach, you can inspect the outbound connections from the agent pod to the Admission Webhook service and its backing pods. <https://inspektor-gadget.io/docs/latest/gadgets/trace_tcp>
+>With that in mind, deleting the above mentioned `networkPolicy` will also break Admission Controller Webhooks, which are essential for validating and mutating requests before they reach the API server. Without proper connection we then relying on the defined `failurePolicy` within the webhook configuration. For instance, having it defined as `ignore` would simply result in bypassing the webhook, while `fail` would cause the API server to reject requests that require webhook validation or mutation even while dealing with proper yaml configuration.
+<{: .prompt-warning}>
+
+```bash
+kubectl get validatingwebhookconfigurations -o yaml
+kubectl get mutatingwebhookconfigurations -o yaml
+```
+
+> Note: You can use Inspektor Gadget to observe network traffic and verify that the API server communicates with internal admission webhooks via Konnectivity. While the requests to the Konnectivity Agent aren't directly visible due to already existing connection using this approach, you may see the outbound connections from the Konnectivity agent to the Admission Webhook service and its backing pods. <https://inspektor-gadget.io/docs/latest/gadgets/trace_tcp>
 {: .prompt-tip}
 
 ```bash
@@ -65,7 +82,7 @@ kubectl gadget version
 kubectl gadget run trace_tcp:latest -n kube-system -p konnectivity-agent-xxxxxx --connect-only
 ```
 
-> 💡Alternatively you could also `nsenter` into the Konnectivity Agent namespace and use `tcpdump` to capture traffic sent to the node, as well to the webhooks.
+> 💡Alternatively you could also `nsenter` into the Konnectivity Agent namespace and use `tcpdump` to capture traffic sent to the node, and to the webhooks.
 {: .prompt-info}
 
 ## 🛡️ Security Benefits
@@ -78,3 +95,22 @@ kubectl gadget run trace_tcp:latest -n kube-system -p konnectivity-agent-xxxxxx 
 ## ☁️ Cloud Provider Implementations
 
 While implementation details can vary between cloud providers, the core principles remain consistent. AKS closely follows the standard Konnectivity setup as outlined on <https://kubernetes.io>, and GKE appears to adopt a similar approach. EKS, however, uses a more customized model that relies on the EKS Connector and VPC CNI instead of the default Konnectivity agent.
+
+## 🔗 VNet Integration: The Comeback of Direct Control Plane to Node Communication
+
+The introduction of `API Server VNet Integration` <https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration> marks a major milestone in optimizing secure communication between the control plane and cluster nodes, specifically when accessing the kubelet API. By bypassing the Konnectivity server for selected operations, this feature trims latency and simplifies network architecture, especially for high-frequency tasks like exec or logs. So with that, the managed control plane is being able to connect directly to the kubelet API on nodes via private IPs, without needing the Konnectivity server as an intermediary.
+
+```powershell
+az aks update --name "clusterName" --resource-group "resourceGroup" --enable-apiserver-vnet-integration --apiserver-subnet-id "apiserver-subnet-resource-id"
+```
+
+> While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity. These webhooks require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged
+<{: .prompt-warning}>
+
+In practice, combining both technologies offers the best of both worlds:
+
+- Control plane → Nodes (kubelet API): Direct access via private IPs and internal load balancer.
+- Nodes → Control plane: Direct access to the API server using private IPs through the load balancer.
+- Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent.
+
+This hybrid model enhances performance while maintaining strong security standards. It also simplifies private networking in AKS, bringing it closer to the flexibility of self-managed clusters where full control over the control plane and network allows direct exposure of the kubelet API on tcp:10250. Previously, this wasn’t feasible in cloud environments, which is why Konnectivity was introduced in the first place.
