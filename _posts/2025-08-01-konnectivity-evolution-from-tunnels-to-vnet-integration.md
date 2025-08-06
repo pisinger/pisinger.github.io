@@ -67,12 +67,12 @@ kubectl get networkpolicy konnectivity-agent -n kube-system
 
 ## 🧩 Admission Controller Webhooks: Konnectivity used as well?
 
->Short answer: Yes, they do! 😊
+> Short answer: Yes, they are! 😊
 {: .prompt-info}
 
 When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server also leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
 
-> With that in mind, deleting the above mentioned `networkPolicy` will also break Admission Controller Webhooks, which are essential for validating and mutating requests before they reach the API server. Without proper connection we then relying on the defined `failurePolicy` within the webhook configuration. For instance, having it defined as `ignore` would simply result in bypassing the webhook, while `fail` would cause the API server to reject requests that require webhook validation or mutation even while dealing with proper yaml configuration.
+> This also means, deleting the above mentioned `networkPolicy` will also break Admission Controller Webhooks, which are essential for validating and mutating requests before they reach the API server. Without proper connection we then relying on the defined `failurePolicy` within the webhook configuration. For instance, having it defined as `ignore` would simply result in bypassing the webhook, while `fail` would cause the API server to reject requests that require webhook validation or mutation even while dealing with proper yaml configuration.
 {: .prompt-warning}
 
 ```bash
@@ -87,9 +87,10 @@ kubectl get mutatingwebhookconfigurations -o yaml
 kubectl gadget deploy
 kubectl gadget version
 kubectl gadget run trace_tcp:latest -n kube-system -p konnectivity-agent-xxxxxx --connect-only
+kubectl gadget run trace_tcp:latest -n gatekeeper-system -p gatekeeper-controller-xxxxxx --accept-only
 ```
 
-> 💡Alternatively you could also `nsenter` into the Konnectivity Agent namespace and use `tcpdump` to capture traffic sent to the node, and to the webhooks.
+> 💡Alternatively you could also `nsenter` into the Konnectivity Agent namespace and use `tcpdump` to capture traffic sent to the node, as well to the webhooks.
 {: .prompt-info}
 
 ## 🛡️ Security Benefits
@@ -105,12 +106,37 @@ While implementation details can vary between cloud providers, the core principl
 
 ## 🔗 VNet Integration: The Comeback of Direct Control Plane to Node Communication
 
-The introduction of `API Server VNet Integration` <https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration> marks a major milestone in optimizing secure communication between the control plane and  kubelet API of the nodes.
+The introduction of `API Server VNet Integration` <https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration> marks a major milestone in optimizing secure communication between the control plane and kubelet API of the nodes, but also between the control plane and admission controller webhooks.
 
 By allowing selected operations to bypass the Konnectivity server, this feature reduces latency and streamlines the network architecture, especially for high-frequency tasks like exec and logs. With this enhancement, the managed control plane can now connect directly to the kubelet API on nodes using private IPs, eliminating the need for Konnectivity as an intermediary in these scenarios.
 
-> While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity. These webhooks require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged
+> While the API server can now directly access the kubelet API on nodes using private IPs and an internal load balancer, it's important to note that Admission Controller Webhook traffic still relies on Konnectivity when using `Azure CNI Overlay`.
 {: .prompt-info}
+
+Here these webhooks though require reverse connections from the control plane to the nodes, and Konnectivity continues to play a crucial role in securely enabling that communication path. Based on my own observations, this part of the setup appears to remain unchanged.
+
+> In contrast, when using a flat network configuration in AKS where each pod gets a routable IP from the VNet, the API server can communicate directly with the Webhook services and their backing pods. This removes the need for Konnectivity entirely. Consequently, you’ll find that the `konnectivity-agent` pods are absent from the kube-system namespace, as shown below because they’re no longer necessary in this setup.
+{: .prompt-info}
+
+```bash
+gatekeeper-system   gatekeeper-audit-68d8fccc54-8wfxp        1/1     Running 
+gatekeeper-system   gatekeeper-controller-5ff4578c5f-8qb8r   1/1     Running 
+gatekeeper-system   gatekeeper-controller-5ff4578c5f-cv4rk   1/1     Running 
+kube-system         azure-cns-kwqd8                          1/1     Running 
+kube-system         azure-ip-masq-agent-chbvc                1/1     Running 
+kube-system         azure-policy-86b97bfcc9-bthx5            1/1     Running 
+kube-system         azure-policy-webhook-69447c446b-6v9d4    1/1     Running 
+kube-system         cilium-lcdf9                             1/1     Running 
+kube-system         cilium-operator-55d5c8ccc6-wrg2v         1/1     Running 
+kube-system         cloud-node-manager-kwmzn                 1/1     Running 
+kube-system         coredns-6f776c8fb5-cqpvp                 1/1     Running 
+kube-system         coredns-6f776c8fb5-rw4zv                 1/1     Running 
+kube-system         coredns-autoscaler-79bcb4fd6b-7zzb7      1/1     Running 
+kube-system         csi-azuredisk-node-lfrvz                 3/3     Running 
+kube-system         csi-azurefile-node-sjwlc                 3/3     Running 
+kube-system         metrics-server-85db94b47c-86vx7          2/2     Running 
+kube-system         metrics-server-85db94b47c-dg6x8          2/2     Running 
+```
 
 See below for how to enable this feature on an existing AKS cluster:
 
@@ -118,15 +144,20 @@ See below for how to enable this feature on an existing AKS cluster:
 {: .prompt-warning}
 
 ```powershell
+# create api server subnet with proper delegation
+az network vnet subnet create -g "resourceGroup" --vnet-name "aks-vnet-xxxx" --name "api-subnet" --address-prefixes "10.234.0.0/24" --delegations "Microsoft.ContainerService/managedClusters"
+
+# enable vnet integration for the cluster
 az aks update --name "clusterName" --resource-group "resourceGroup" --enable-apiserver-vnet-integration --apiserver-subnet-id "apiserver-subnet-resource-id"
 ```
 
 In practice, combining both technologies offers the best of both worlds:
 
 - Control plane → Nodes (kubelet API): Direct access via private IPs and internal load balancer.
-- Nodes → Control plane: Direct access to the API server using private IPs through the load balancer.
-- Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent.
+- Nodes → Control plane: Direct access to the API server using private IPs through same load balancer.
+- a) Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent for Azure CNI Overlay.
+- b) Control plane → Admission Controller Webhooks: Routed directly when using Azure CNI Flat network (non-overlay).
 
 ## Conclusion
 
-By enabling direct access from the managed control plane to the kubelet API over private IPs, it brings AKS closer to the operational flexibility of self-managed clusters where exposing the kubelet API on tcp:10250 is straightforward. In the past, such direct communication wasn’t possible in cloud-managed environments due to network isolation which is one of the key reasons Konnectivity was introduced in order to securely bridge that gap. 😊
+By enabling direct access from the managed control plane to the kubelet API over private IPs, it brings AKS closer to the operational flexibility of self-managed clusters where exposing the kubelet API on tcp:10250 is straightforward. In the past, such direct communication wasn’t possible in cloud-managed environments due to network isolation which is one of the key reasons Konnectivity was introduced in order to securely bridge that gap. Furthermore, this enhancement also enables direct connectivity to webhook services in non-overlay network setups. 😊
