@@ -68,12 +68,14 @@ kubectl get networkpolicy konnectivity-agent -n kube-system
 ## 🧩 Admission Controller Webhooks: Konnectivity used as well?
 
 > Short answer: Yes, they are! 😊
-{: .prompt-info}
+{: .prompt-tip}
 
 When internal admission webhooks are deployed as services within the cluster, they are typically accessed via cluster DNS or service IPs. In managed k8s environments where the API server runs outside the cluster, the API server also leverages `Konnectivity` to securely reach these internal services. This ensures seamless communication without requiring direct network access to the cluster.
 
-> This also means, deleting the above mentioned `networkPolicy` will also break Admission Controller Webhooks, which are essential for validating and mutating requests before they reach the API server. Without proper connection we then relying on the defined `failurePolicy` within the webhook configuration. For instance, having it defined as `ignore` would simply result in bypassing the webhook, while `fail` would cause the API server to reject requests that require webhook validation or mutation even while dealing with proper yaml configuration.
+> This also means, deleting the above mentioned `networkPolicy` while also having some default `outbound block any` will break Admission Controller Webhooks too, which are essential for validating and mutating api requests. And yes, if that happens, you're likely in for a lot more trouble than just broken webhooks 😊
 {: .prompt-warning}
+
+Without proper connection we then relying on the defined `failurePolicy` within the webhook configuration. For instance, having it defined as `ignore` would simply result in bypassing the webhook, while `fail` would cause the API server to reject requests that require webhook validation or mutation even while dealing with proper yaml configuration.
 
 ```bash
 kubectl get validatingwebhookconfigurations -o yaml
@@ -153,10 +155,10 @@ az aks update --name "clusterName" --resource-group "resourceGroup" --enable-api
 
 In practice, combining both technologies will provide you the following:
 
-- Control plane → Nodes (kubelet API): Direct access via private IPs and internal load balancer.
-- Nodes → Control plane: Direct access to the API server using private IPs through same load balancer.
-- a) Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent for Azure CNI Overlay.
-- b) Control plane → Admission Controller Webhooks: Routed directly when using Azure CNI Flat network (non-overlay).
+-✅ Control plane → Nodes (kubelet API): Direct access via private IPs and internal load balancer.
+-✅ Nodes → Control plane: Direct access to the API server using private IPs through same load balancer.
+-⛔ a) Control plane → Admission Controller Webhooks: Still routed securely via the Konnectivity agent for Azure CNI Overlay.
+-✅ b) Control plane → Admission Controller Webhooks: Routed directly when using Azure CNI Flat network (non-overlay).
 
 ## Conclusion
 
