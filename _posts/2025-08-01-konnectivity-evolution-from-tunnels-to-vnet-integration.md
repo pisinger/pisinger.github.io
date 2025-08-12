@@ -155,10 +155,13 @@ az aks update --name "clusterName" --resource-group "resourceGroup" --enable-api
 
 In practice, combining both technologies will provide you the following:
 
--✅ Nodes → Control plane: Direct access to the API server using private IPs and internal LB.
--✅ Control plane → Nodes (kubelet API): Direct access via private IPs from within LB subnet.
--⛔ a) Control plane → Admission Webhooks: Still routed via Konnectivity for Azure CNI Overlay.
--✅ b) Control plane → Admission Webhooks: Routed directly on Azure CNI Flat network.
+✅ Nodes → Control plane: Direct access to the API server using private IPs and internal LB.
+
+✅ Control plane → Nodes (kubelet API): Direct access via private IPs from within LB subnet.
+
+⛔ a) Control plane → Admission Webhooks: Still routed via Konnectivity for Azure CNI Overlay.
+
+✅ b) Control plane → Admission Webhooks: Routed directly on Azure CNI Flat network.
 
 ## Conclusion
 
