@@ -57,13 +57,13 @@ Set-VMNetworkAdapter -VMName "MyLinuxVM" -Name "Ethernet1" -PortMirroring Source
 *Option A - Capture directly on the host* using the management adapter of the switch:
 
 ```powershell
-Set-VMNetworkAdapter -ManagementOS -Name "ExternalSwitch" -PortMirroring Destination
+Set-VMNetworkAdapter -ManagementOS -Name "ExternalSwitch_1" -PortMirroring Destination
 ```
 
 *Option B - Capture inside another VM* by adding a dedicated span adapter:
 
 ```powershell
-Add-VMNetworkAdapter -VMName "CaptureVM" -Name "iface-span-port" -SwitchName "ExternalSwitch1"
+Add-VMNetworkAdapter -VMName "CaptureVM" -Name "iface-span-port" -SwitchName "ExternalSwitch_1"
 Get-VMNetworkAdapter -VMName "CaptureVM" | Where-Object Name -eq "iface-span-port" | Set-VMNetworkAdapter -PortMirroring Destination
 ```
 
