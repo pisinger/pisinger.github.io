@@ -111,7 +111,7 @@ Mapping each scan function to its protocol and well-known ports.
 
 `DeviceNetworkEvents` is where this becomes operationally useful at scale. The query below uses the `PSScript_` path as the signal, decorates results with connection outcomes, and summarises by minute per prober device and target - giving you the exact port sets MDE hit against each host:
 
-```kql
+```shell
 DeviceNetworkEvents
 | where RemoteIPType in ("Private")
 | where InitiatingProcessFileName == "powershell.exe" and InitiatingProcessCommandLine has @"Defender Advanced Threat Protection\Downloads\PSScript_"
@@ -126,7 +126,7 @@ The `make_set(RemotePort)` per target is particularly useful - it surfaces exact
 
 Below a list of scanned ports in my enviornment
 
-```txt
+```shell
 21, 22, 23, 25, 53, 80, 88, 106, 111, 135, 139, 
 389, 443, 445, 515, 548, 623, 631, 660, 808, 
 1433, 1434, 1500, 1501, 1521, 1720, 2049, 2222, 2869, 
@@ -146,12 +146,11 @@ The `PSScript_` is launched with its parameters as a base64 blob. To decode and 
 ```powershell
 $bytes = [System.Convert]::FromBase64String($Base64String)
 ([System.Text.Encoding]::UTF8.GetString($bytes) | ConvertFrom-Json).ScannerArgs | ConvertFrom-Json
-
 ```
 
 The decoded JSON reveals target IP and MAC, the probing machine's network adapters, a `CvesToScan` array, and a `ScanFeatures` field. When `CvesToScan` is empty, it's a pure discovery run - no CVE probing:
 
-```powershell
+```shell
 IpsToScan          : 10.40.0.112,10.40.0.115
 Guid               : 0b2caa18-11ff-43eb-b304-a74078b586d2
 MachineId          : 2e6d023b29a144ae9284e3eafc78aad234781e
@@ -166,7 +165,7 @@ ScanFeatures       : {System.Object[], System.Object[]}
 
 If you want to have the `ScannerArgs` decoded directly via KQL, run the below query:
 
-```kql
+```shell
 DeviceProcessEvents
 | where ProcessCommandLine has "-ParamsAsBase64"
 | extend Base64Value = extract(@"-ParamsAsBase64\s+(\S+)", 1, ProcessCommandLine)
