@@ -22,7 +22,7 @@ Each assignment attaches an owner (an email address) to a recommendation with an
 
 The concept is solid, but over time governance assignments accumulate stale owners - people who have left the organisation, distribution lists that no longer exist, or addresses that were set during a pilot and never revisited. At that point, the assignments are noise: they show up as assigned but nobody is actually acting on them. This is as even when owners on resources change, the old assignments don't automatically update or remove themselves. They just linger until someone manually cleans them up.
 
-The natural instinct is to fix this through the portal. As far as I can tell, there's no bulk management view that lets you select and remove owners across hundreds of assignments in one go. If you find one, update this post accordingly - but in the meantime, the API is the way to go.
+The natural instinct is to fix this through the portal. As far as I can tell, there's no bulk management view that lets you select and remove owners across hundreds of assignments in one go. Thus the API is the way to go.
 
 > ⚠️ The approach below uses `DELETE` to remove the governance assignment entirely. If you want to reassign to a new owner instead of removing, swap the method to `PATCH` and include the updated owner in the request body. Same approach, different HTTP verb.
 {: .prompt-warning}
