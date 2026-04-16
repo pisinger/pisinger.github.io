@@ -3,11 +3,13 @@ title: Seeding a Sentinel PoC Workspace with Dummy Security Logs
 author: pit
 date: 2026-04-14
 categories: [Blogging]
-tags: [azure, sentinel, log-analytics, powershell, defender, logs-ingestion-api, dce, dcr, poc]
+tags: [azure, sentinel, log analytics, powershell, defender, logs ingestion api, dce, dcr, poc, vibe coding]
 render_with_liquid: false
 ---
 
 An empty `Microsoft Sentinel` workspace is a bit of a blank canvas problem - great if you're starting fresh, less useful when you're trying to demonstrate detection logic, run a CTF, or help an analyst get familiar with the environment before real data flows in. Here's a mostly `vibe-coded` script that provisions the full ingestion stack and starts pumping synthetic security logs from day one.
+
+You find the script on [GitHub](https://github.com/pisinger/scripts-lib/blob/main/powershell/ingest-dummy-data-into-sentinel.ps1)
 
 ## The Problem With Empty Workspaces
 
@@ -33,7 +35,7 @@ Once that infrastructure exists, subsequent runs skip straight to generating and
 > ⚠️ NOTE: This script has been validated on Linux environments. On Windows clients, execution may be blocked by Defender’s AMSI engine, which can flag the script as suspicious and report it as `'Trojan:PowerShell/FakeCaptcha.Y!MTB' launched by pwsh.exe`.
 {: .prompt-warning}
 
-You find the script on [GitHub](https://github.com/pisinger/scripts-lib/blob/main/powershell/ingest-dummy-data-into-sentinel.ps1)
+
 
 Five tables get created by default:
 
