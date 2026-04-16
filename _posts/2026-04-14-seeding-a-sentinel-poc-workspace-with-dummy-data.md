@@ -9,7 +9,8 @@ render_with_liquid: false
 
 An empty `Microsoft Sentinel` workspace is a bit of a blank canvas problem - great if you're starting fresh, less useful when you're trying to demonstrate detection logic, run a CTF, or help an analyst get familiar with the environment before real data flows in. Here's a mostly `vibe-coded` script that provisions the full ingestion stack and starts pumping synthetic security logs from day one.
 
-You find the script on [GitHub](https://github.com/pisinger/scripts-lib/blob/main/powershell/ingest-dummy-data-into-sentinel.ps1)
+> You find the script on [GitHub](https://github.com/pisinger/scripts-lib/blob/main/powershell/ingest-dummy-data-into-sentinel.ps1)
+{: .prompt-tip}
 
 ## The Problem With Empty Workspaces
 
@@ -34,8 +35,6 @@ Once that infrastructure exists, subsequent runs skip straight to generating and
 
 > ⚠️ NOTE: This script has been validated on Linux environments. On Windows clients, execution may be blocked by Defender’s AMSI engine, which can flag the script as suspicious and report it as `'Trojan:PowerShell/FakeCaptcha.Y!MTB' launched by pwsh.exe`.
 {: .prompt-warning}
-
-
 
 Five tables get created by default:
 
