@@ -7,15 +7,8 @@
 {%- endif -%}
 ';
 
-/* Responsive table overflow — tables scroll horizontally rather than overflowing */
+/* Smooth touch scrolling on mobile for wide tables */
 
 .table-wrapper {
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-
-  > table {
-    width: max-content;
-    min-width: 100%;
-    max-width: none;
-  }
 }
