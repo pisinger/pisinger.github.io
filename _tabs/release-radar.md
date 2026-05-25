@@ -6,9 +6,11 @@ title: Release Radar
 ---
 
 Weekly digest covering Azure, security tooling, and notable releases I'm tracking.
+{% if site.release_radar.size > 0 %}
 <a href="/feed/release_radar.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
 </a>
+{% endif %}
 
 {% assign digests = site.release_radar | sort: 'date' | reverse %}
 

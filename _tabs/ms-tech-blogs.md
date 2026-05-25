@@ -6,9 +6,11 @@ title: MS Tech Blogs
 ---
 
 Curated roundups of posts published on [techcommunity.microsoft.com](https://techcommunity.microsoft.com) for the products I track.
+{% if site.ms_tech_blogs.size > 0 %}
 <a href="/feed/ms_tech_blogs.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
 </a>
+{% endif %}
 
 {% assign entries = site.ms_tech_blogs | sort: 'date' | reverse %}
 
