@@ -1,7 +1,7 @@
 ---
 # the default layout is 'page'
 icon: fas fa-info-circle
-order: 5
+order: 6
 ---
 
 > Hey there and welcome to my blog. I'm Pit, a tech guy from Germany with over a decade of experience in the IT industry. I currently work as a Security Architect and Consultant at Water IT, specializing in XDR, SIEM, SOAR, Detection & Hunting, and Containers - thus expect to read something about KQL, Defender, Sentinel, Azure 🫡😅

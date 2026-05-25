@@ -2,7 +2,7 @@
 #
 # Check for changed posts
 
-[:posts, :release_radar].each do |collection|
+[:posts, :release_radar, :ms_tech_blogs].each do |collection|
   Jekyll::Hooks.register collection, :post_init do |doc|
 
     commit_num = `git rev-list --count HEAD "#{ doc.path }"`

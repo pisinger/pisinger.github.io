@@ -1,0 +1,17 @@
+{% assign MAX_ENTRIES = 5 %}
+{% assign entries = site.ms_tech_blogs | sort: 'date' | reverse %}
+
+{% if entries.size > 0 %}
+<section id="ms-tech-blogs-panel">
+  <h2 class="panel-heading">
+    <i class="fas fa-newspaper" aria-hidden="true"></i> MS Tech Blogs
+  </h2>
+  <ul class="content list-unstyled ps-0 pb-1 ms-1 mt-2">
+    {% for entry in entries limit: MAX_ENTRIES %}
+    <li class="text-truncate lh-lg">
+      <a href="{{ entry.url | relative_url }}">{{ entry.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

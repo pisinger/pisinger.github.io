@@ -174,6 +174,10 @@ collections:
     output: true
     sort_by: date
     permalink: /release-radar/:path/
+  ms_tech_blogs:
+    output: true
+    sort_by: date
+    permalink: /ms-tech-blogs/:path/
 
 defaults:
   - scope:
@@ -204,6 +208,14 @@ defaults:
       comments: true
       toc: true
       permalink: /release-radar/:path/
+  - scope:
+      path: ""
+      type: ms_tech_blogs
+    values:
+      layout: post
+      comments: true
+      toc: true
+      permalink: /ms-tech-blogs/:path/
 
 sass:
   style: compressed
@@ -228,6 +240,7 @@ exclude:
   - rollup.config.js
   - "package*.json"
   - "_release_radar/_template.md"
+  - "_ms_tech_blogs/_template.md"
 
 jekyll-archives:
   enabled: [categories, tags]
