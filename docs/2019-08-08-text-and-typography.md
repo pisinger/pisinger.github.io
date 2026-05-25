@@ -93,6 +93,9 @@ Moon
 | Island Trading               | Helen Bennett    |      UK |
 | Magazzini Alimentari Riuniti | Giovanni Rovelli |   Italy |
 
+| Left | Center | Right |
+| :--- | :----: | ----: |
+
 ## Links
 
 <http://127.0.0.1:4000>
