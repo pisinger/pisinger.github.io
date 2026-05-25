@@ -149,11 +149,6 @@ pwa:
 
 paginate: 10
 
-feed:
-  collections:
-    - release_radar
-    - ms_tech_blogs
-
 # The base URL of your site
 baseurl: ""
 
