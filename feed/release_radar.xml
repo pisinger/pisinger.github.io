@@ -19,7 +19,9 @@ layout: null
     <published>{{ entry.date | date_to_xmlschema }}</published>
     <updated>{{ entry.last_modified_at | default: entry.date | date_to_xmlschema }}</updated>
     <id>{{ entry.url | absolute_url }}</id>
-    <content type="html" xml:base="{{ entry.url | absolute_url }}">{{ entry.content | xml_escape }}</content>
+    {% assign teaser = entry.description | default: entry.excerpt | strip_html | normalize_whitespace | truncatewords: 60 %}
+    <summary type="html">{{ teaser | xml_escape }}</summary>
+    <content type="html" xml:base="{{ entry.url | absolute_url }}">&lt;p&gt;{{ teaser | xml_escape }}&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;{{ entry.url | absolute_url }}&quot;&gt;Read the full Release Radar&lt;/a&gt;&lt;/p&gt;</content>
     <author>
       <name>{% if entry.author %}{{ site.data.authors[entry.author].name | default: entry.author | xml_escape }}{% else %}{{ site.social.name | xml_escape }}{% endif %}</name>
     </author>
