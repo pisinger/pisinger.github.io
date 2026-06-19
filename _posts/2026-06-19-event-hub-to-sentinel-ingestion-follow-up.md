@@ -26,11 +26,12 @@ I would also like to use the same pattern for `CloudDnsEvents`, but as of writin
 
 The overall architecture stays the same:
 
-- Event Hub receives the source data.
-- A Data Collection Rule uses the special Event Hub data import stream.
-- The DCR sends the data to a custom table in the Sentinel workspace.
-- The DCR managed identity receives `Azure Event Hubs Data Receiver` on the Event Hub.
-- A Data Collection Rule Association (DCRA) links the Event Hub to the DCR.
+>- Event Hub receives the source data.
+>- A Data Collection Rule uses the special Event Hub data import stream.
+>- The DCR sends the data to a custom table in the Sentinel workspace.
+>- The DCR managed identity receives `Azure Event Hubs Data Receiver` on the Event Hub.
+>- A Data Collection Rule Association (DCRA) links the Event Hub to the DCR.
+{: .prompt-info}
 
 The improvement is mostly in how the script models and deploys this pipeline.
 
@@ -46,14 +47,9 @@ The script now starts with the key Azure resource IDs as parameters:
 param(
     # needs to match DCE location
     $location = "westeurope",
-
     $workspaceId = "/subscriptions/<sub_id>/resourcegroups/<resource_group>/providers/microsoft.operationalinsights/workspaces/<workspace_name>",
-
     $dce_id = "/subscriptions/<sub_id>/resourceGroups/<resource_group>/providers/Microsoft.Insights/dataCollectionEndpoints/<data_collection_endpoint_name>",
-
-    $eventHubNamespaceId = "/subscriptions/<sub_id>/resourceGroups/<resource_group>/providers/Microsoft.EventHub/namespaces/<event_hub_namespace>",
-
-    $resourceSuffix = ""
+    $eventHubNamespaceId = "/subscriptions/<sub_id>/resourceGroups/<resource_group>/providers/Microsoft.EventHub/namespaces/<event_hub_namespace>"
 )
 ```
 
@@ -157,15 +153,10 @@ For raw Event Hub ingestion, the minimal schema is still usually enough:
 - `TimeGenerated`
 - `RawData`
 
-For Basic or Analytics tables you can add additional columns, including dynamic columns where supported. For Auxiliary tables, keep the schema limitations in mind and test the exact shape you want before using it at scale.
-
 ## 🌊 Dynamic DCR Stream Declarations
 
-The DCR still uses the special Event Hub stream:
-
-```txt
-Custom-MyEventHubStream
-```
+> The DCR still uses the special Event Hub stream: Custom-MyEventHubStream
+{: .prompt-tip}
 
 That part has not changed. What changed is how the stream declaration is created. The script now builds the stream declaration from the same column definitions used for the custom table:
 
@@ -252,7 +243,7 @@ That last point is easy to overlook. In real environments, Event Hub namespaces 
 
 When rerunning the script against an already configured source, the output should look similar to this:
 
-```txt
+```shell
 ✅ Event hub already exists: CloudProcessEvents --> insights-logs-advancedhunting-cloudprocessevents
 Update existing workspace table: CloudProcessEvents -> 202
 Creating DCR for event hub: CloudProcessEvents  -> Succeeded
@@ -266,12 +257,13 @@ That is the behavior I want from this kind of deployment helper: update what can
 
 The core Azure Monitor requirements from the first post still apply:
 
-- The Log Analytics workspace must use a supported SKU for Event Hub data imports.
-- The Data Collection Endpoint must already exist.
-- The DCR uses `Custom-MyEventHubStream` for Event Hub data import.
-- The DCR managed identity needs `Azure Event Hubs Data Receiver` on the Event Hub.
-- The DCRA must be created at the Event Hub scope.
-- If Event Hub public access is disabled, make sure the relevant trusted Microsoft services path is allowed.
+>- The Log Analytics workspace must use a supported SKU for Event Hub data imports.
+>- The Data Collection Endpoint must already exist.
+>- The DCR uses `Custom-MyEventHubStream` for Event Hub data import.
+>- The DCR managed identity needs `Azure Event Hubs Data Receiver` on the Event Hub.
+>- The DCRA must be created at the Event Hub scope.
+>- If Event Hub public access is disabled, make sure the relevant trusted Microsoft services path is allowed.
+{: .prompt-warning}
 
 Also keep the region requirements in mind. The DCRA is scoped to the Event Hub, while your workspace, DCE, and DCR may be in a different place depending on your design and supported regions.
 
@@ -279,6 +271,9 @@ Also keep the region requirements in mind. The DCRA is scoped to the Event Hub, 
 
 This follow-up is less about a new Azure feature and more about making the deployment pattern easier to reuse.
 
-The Event Hub to Sentinel ingestion path is still very powerful: Event Hub handles high-volume streaming, Azure Monitor handles the pull into Log Analytics, and Sentinel can query the resulting custom tables without a custom consumer service in the middle.
+The Event Hub to Sentinel ingestion path is still very powerful: Event Hub handles high-volume streaming, Azure Monitor handles the pull into Log Analytics, and Sentinel can query the resulting custom tables without a custom consumer service in the middle. 
+
+> Note: From what I see this feature is still in preview. So check the latest documentation and announcements for any changes or updates to the capabilities and requirements.
+{: .prompt-info}
 
 With the updated script, onboarding another source mostly becomes a data map change instead of a full copy-paste deployment exercise. That is exactly where this pattern becomes useful at scale.

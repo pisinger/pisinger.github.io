@@ -287,7 +287,7 @@ Traditional endpoint controls are still essential. If an agent downloads malware
 But prompt injection can happen before all of that. The agent may be about to perform a harmful action using normal tools and normal permissions. Runtime protection gives Defender a chance to inspect the prompt and tool boundary before the endpoint only sees another trusted process doing work.
 
 > That is the real difference: AV/RTP protects the endpoint from malicious artifacts and behavior. AI agent runtime protection protects the agent workflow from malicious instructions embedded in content the agent consumes.
-{: .prompt-warning}
+{: .prompt-tip}
 
 ## 🧾 Conclusion
 
