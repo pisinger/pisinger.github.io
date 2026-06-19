@@ -61,7 +61,7 @@ This matters because prompt injection is usually not visible as a malicious file
 - command output that tries to steer the next agent action
 
 > Without hooks, Defender can still see endpoint behavior later, but it has less context. With hooks, Defender can evaluate the prompt, the planned tool call, and the tool output inline. That gives it a chance to audit or block before the agent turns injected text into an action.
-{: .prompt-info}
+{: .prompt-warning}
 
 ## 🧩 Supported Agents and Requirements
 
@@ -254,7 +254,8 @@ For GitHub Copilot CLI, the policy output on my machine looked like this:
 }
 ```
 
-The important detail is that each Copilot hook resolves the Defender install location from `HKLM:\SOFTWARE\Microsoft\Windows Defender`, builds the path to `DefenderAgentScan.exe`, checks that it exists, and then executes it with a 12-second timeout.
+> The important detail is that each Copilot hook resolves the Defender install location from `HKLM:\SOFTWARE\Microsoft\Windows Defender`, builds the path to `DefenderAgentScan.exe`, checks that it exists, and then executes it with a 12-second timeout.
+{: .prompt-tip}
 
 That matches the runtime-protection model: Copilot exposes lifecycle and tool-use hook points, while Defender wires those points back to its own platform component.
 
@@ -269,12 +270,13 @@ Before enabling block mode broadly, I would validate four things:
 
 The investigation side matters. A prompt injection alert is not just "malware blocked." It should answer:
 
-- Which user and device ran the agent?
-- Which agent was involved?
-- What content entered the agent context?
-- What tool call was about to happen?
-- Was the action blocked or only audited?
-- Did any follow-on process, file, or network activity happen anyway?
+>- Which user and device ran the agent?
+>- Which agent was involved?
+>- What content entered the agent context?
+>- What tool call was about to happen?
+>- Was the action blocked or only audited?
+>- Did any follow-on process, file, or network activity happen anyway?
+{: .prompt-warning}
 
 ## 🧱 Why This Complements Existing Defender Controls
 
@@ -284,7 +286,8 @@ Traditional endpoint controls are still essential. If an agent downloads malware
 
 But prompt injection can happen before all of that. The agent may be about to perform a harmful action using normal tools and normal permissions. Runtime protection gives Defender a chance to inspect the prompt and tool boundary before the endpoint only sees another trusted process doing work.
 
-That is the real difference: AV/RTP protects the endpoint from malicious artifacts and behavior. AI agent runtime protection protects the agent workflow from malicious instructions embedded in content the agent consumes.
+> That is the real difference: AV/RTP protects the endpoint from malicious artifacts and behavior. AI agent runtime protection protects the agent workflow from malicious instructions embedded in content the agent consumes.
+{: .prompt-warning}
 
 ## 🧾 Conclusion
 
