@@ -1,5 +1,5 @@
 ---
-title: Follow-up - Event Hub to Sentinel Ingestion with a Reusable PowerShell Script
+title: Event Hub to Sentinel Ingestion (Follow-up)
 author: pit
 date: 2026-06-19
 categories: [Blogging, Tutorial]
@@ -14,7 +14,7 @@ Since then I have improved the deployment script quite a bit. The original versi
 > The updated script is available here: <https://github.com/pisinger/scripts-lib/blob/main/powershell/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1>
 {: .prompt-tip}
 
-## My Use Case
+## 🎯 My Use Case
 
 My current use case is Microsoft Defender XDR data that I want to make available in Sentinel, especially tables that cannot yet be enabled directly for Data Lake.
 
@@ -22,7 +22,7 @@ One example is `CloudProcessEvents`. Defender XDR can stream this table into Eve
 
 I would also like to use the same pattern for `CloudDnsEvents`, but as of writing this blog post, that table is not covered by the Defender streaming API at all. That is why you will see it in the backup example data map, but not in the active `$dataMap` used by the script.
 
-## What Changed?
+## 🔄 What Changed?
 
 The overall architecture stays the same:
 
@@ -38,11 +38,11 @@ Instead of hard-coding a single set of JSON templates and replacing placeholder 
 
 That makes it much easier to onboard one more data source without rewriting the deployment logic.
 
-## Parameterized Inputs
+## ⚙️ Parameterized Inputs
 
 The script now starts with the key Azure resource IDs as parameters:
 
-```powershell
+```shell
 param(
     # needs to match DCE location
     $location = "westeurope",
@@ -61,7 +61,7 @@ This is a small change, but it matters. You can now keep the deployment logic in
 
 The script also derives the Event Hub namespace name, workspace resource group, workspace resource group ID, and Event Hub resource group from those IDs:
 
-```powershell
+```shell
 $eventHubNamespaceName = $eventHubNamespaceId.Split("/")[-1]
 $resourceGroup = $workspaceId.Split("/")[-5]
 $resourceGroupId = ($workspaceId.Split("/providers",2))[0]
@@ -70,18 +70,18 @@ $resourceGroupEventHub = $eventHubNamespaceId.Split("/")[-5]
 
 This is especially useful when the Event Hub namespace and Sentinel workspace are not in the same resource group.
 
-## A Better Data Map
+## 🗺️ A Better Data Map
 
 The biggest improvement is the new `$dataMap` structure. Each source now defines the Sentinel table name, Event Hub name, partition count, table plan, retention, and table columns in one place.
 
-```powershell
+```shell
 $dataMap = @{
     "CloudProcessEvents" = @{
         name = "CloudProcessEvents";
         # use this eh name so we can simply re-use the auto created event hubs from XDR
         eh_name = "insights-logs-advancedhunting-cloudprocessevents"
         partitions = 10;
-		# aux = data lake
+        # aux = data lake
         plan = "Auxiliary";
         totalRetentionInDays = 180;
         columns = @(
@@ -104,11 +104,11 @@ insights-logs-advancedhunting-cloudprocessevents
 
 That is cleaner than forcing your Sentinel table names to match the Event Hub naming exactly.
 
-## Idempotent Event Hub Creation
+## 🔁 Idempotent Event Hub Creation
 
 The original walkthrough showed how to create Event Hubs from the source map. The updated script first checks whether the Event Hub already exists:
 
-```powershell
+```shell
 foreach ($table in $dataMap.keys) {
     $item = $datamap[$table]
 
@@ -125,11 +125,11 @@ foreach ($table in $dataMap.keys) {
 
 This makes the script safer to rerun. If the Event Hub already exists, the script moves on instead of failing or trying to recreate it.
 
-## Dynamic Custom Table Schema
+## 🧱 Dynamic Custom Table Schema
 
 The custom table payload is also generated from the data map now. This means each source can define its own columns without maintaining separate JSON templates.
 
-```powershell
+```shell
 $columnsJson = $item.columns | ForEach-Object {
     @{
         name = $_.name;
@@ -159,7 +159,7 @@ For raw Event Hub ingestion, the minimal schema is still usually enough:
 
 For Basic or Analytics tables you can add additional columns, including dynamic columns where supported. For Auxiliary tables, keep the schema limitations in mind and test the exact shape you want before using it at scale.
 
-## Dynamic DCR Stream Declarations
+## 🌊 Dynamic DCR Stream Declarations
 
 The DCR still uses the special Event Hub stream:
 
@@ -169,7 +169,7 @@ Custom-MyEventHubStream
 
 That part has not changed. What changed is how the stream declaration is created. The script now builds the stream declaration from the same column definitions used for the custom table:
 
-```powershell
+```shell
 $columns = $item.columns | ForEach-Object {
     @{
         name = $_.name;
@@ -208,11 +208,11 @@ For a table named `CloudProcessEvents_CL`, the output stream becomes:
 Custom-CloudProcessEvents_CL
 ```
 
-## Role Assignment and DCRA Checks
+## 🔐 Role Assignment and DCRA Checks
 
 The updated script also checks whether the DCR managed identity already has the required Event Hub receiver role:
 
-```powershell
+```shell
 if (-not ($(Get-AzRoleAssignment -ObjectId $principalId -RoleDefinitionName "Azure Event Hubs Data Receiver" -Scope $EventHubId))) {
     Write-Host "Assigning Event Hub Data Receiver role to DCR identity for event hub:" $item.name -ForegroundColor Cyan
     New-AzRoleAssignment -ObjectId $principalId -RoleDefinitionName "Azure Event Hubs Data Receiver" -Scope $EventHubId
@@ -225,19 +225,19 @@ else {
 
 The DCRA deployment uses the real Event Hub name from `eh_name`, which is important when the logical source name and Event Hub resource name differ:
 
-```powershell
+```shell
 $associateTemplate = $dcrAssociateParams -replace "var_EventHubResourceID", $($eventHubNamespaceId + "/eventhubs/" + $item.eh_name)
 ```
 
 The script checks for an existing association before deploying it:
 
-```powershell
+```shell
 $existingAssoc = Invoke-AzRestMethod -Path $($eventHubNamespaceId + "/eventhubs/" + $item.eh_name + "/providers/Microsoft.Insights/dataCollectionRuleAssociations/" + $dcrAssocName + "?api-version=2023-03-11") -Method GET
 ```
 
 This is another practical improvement for reruns and iterative testing.
 
-## Why This Matters
+## 💡 Why This Matters
 
 The first version was great for explaining the feature. The improved version is closer to something you can keep using:
 
@@ -262,7 +262,7 @@ Creating DCR for event hub: CloudProcessEvents  -> Succeeded
 
 That is the behavior I want from this kind of deployment helper: update what can be updated, skip what is already in place, and make the state visible while it runs.
 
-## Quick Reminder
+## 📌 Quick Reminder
 
 The core Azure Monitor requirements from the first post still apply:
 
@@ -275,7 +275,7 @@ The core Azure Monitor requirements from the first post still apply:
 
 Also keep the region requirements in mind. The DCRA is scoped to the Event Hub, while your workspace, DCE, and DCR may be in a different place depending on your design and supported regions.
 
-## Conclusion
+## 🧾 Conclusion
 
 This follow-up is less about a new Azure feature and more about making the deployment pattern easier to reuse.
 
