@@ -8,10 +8,10 @@ layout: null
   <link href="{{ '/' | absolute_url }}" rel="alternate" type="text/html"/>
   <updated>{{ site.time | date_to_xmlschema }}</updated>
   <id>{{ page.url | absolute_url }}</id>
-  <title type="html">{{ site.title | xml_escape }} – Release Radar</title>
+  <title type="html">{{ site.title | xml_escape }} - MS Release Radar</title>
   <subtitle>{{ site.description | xml_escape }}</subtitle>
 
-  {% assign entries = site.release_radar | sort: 'date' | reverse %}
+  {% assign entries = site.ms_release_radar | sort: 'date' | reverse %}
   {% for entry in entries limit: 10 %}
   <entry>
     <title type="html">{{ entry.title | xml_escape }}</title>
@@ -21,7 +21,7 @@ layout: null
     <id>{{ entry.url | absolute_url }}</id>
     {% assign teaser = entry.description | default: entry.excerpt | strip_html | normalize_whitespace | truncatewords: 60 %}
     <summary type="html">{{ teaser | xml_escape }}</summary>
-    <content type="html" xml:base="{{ entry.url | absolute_url }}">&lt;p&gt;{{ teaser | xml_escape }}&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;{{ entry.url | absolute_url }}&quot;&gt;Read the full Release Radar&lt;/a&gt;&lt;/p&gt;</content>
+    <content type="html" xml:base="{{ entry.url | absolute_url }}">&lt;p&gt;{{ teaser | xml_escape }}&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;{{ entry.url | absolute_url }}&quot;&gt;Read the full MS Release Radar&lt;/a&gt;&lt;/p&gt;</content>
     <author>
       <name>{% if entry.author %}{{ site.data.authors[entry.author].name | default: entry.author | xml_escape }}{% else %}{{ site.social.name | xml_escape }}{% endif %}</name>
     </author>

@@ -1,7 +1,7 @@
 ---
 layout: page
 icon: fas fa-newspaper
-order: 5
+order: 6
 title: MS Tech Blogs
 ---
 

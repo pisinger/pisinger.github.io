@@ -170,10 +170,14 @@ collections:
   tabs:
     output: true
     sort_by: order
-  release_radar:
+  ms_release_radar:
     output: true
     sort_by: date
-    permalink: /release-radar/:path/
+    permalink: /ms-release-radar/:path/
+  wiz_release_radar:
+    output: true
+    sort_by: date
+    permalink: /wiz-release-radar/:path/
   ms_tech_blogs:
     output: true
     sort_by: date
@@ -202,12 +206,20 @@ defaults:
       permalink: /:title/
   - scope:
       path: ""
-      type: release_radar
+      type: ms_release_radar
     values:
       layout: post
       comments: true
       toc: true
-      permalink: /release-radar/:path/
+      permalink: /ms-release-radar/:path/
+  - scope:
+      path: ""
+      type: wiz_release_radar
+    values:
+      layout: post
+      comments: true
+      toc: true
+      permalink: /wiz-release-radar/:path/
   - scope:
       path: ""
       type: ms_tech_blogs
@@ -239,7 +251,8 @@ exclude:
   - purgecss.js
   - rollup.config.js
   - "package*.json"
-  - "_release_radar/_template.md"
+  - "_ms_release_radar/_template.md"
+  - "_wiz_release_radar/_template.md"
   - "_ms_tech_blogs/_template.md"
 
 jekyll-archives:

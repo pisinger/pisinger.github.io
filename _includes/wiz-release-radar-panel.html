@@ -1,10 +1,10 @@
 {% assign MAX_DIGESTS = 5 %}
-{% assign digests = site.release_radar | sort: 'date' | reverse %}
+{% assign digests = site.wiz_release_radar | sort: 'date' | reverse %}
 
 {% if digests.size > 0 %}
-<section id="release-radar-panel">
+<section id="wiz-release-radar-panel">
   <h2 class="panel-heading">
-    <i class="fas fa-satellite-dish" aria-hidden="true"></i> Release Radar
+    <i class="fas fa-magic" aria-hidden="true"></i> Wiz Release Radar
   </h2>
   <ul class="content list-unstyled ps-0 pb-1 ms-1 mt-2">
     {% for digest in digests limit: MAX_DIGESTS %}

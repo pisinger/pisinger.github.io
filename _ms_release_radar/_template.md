@@ -1,5 +1,5 @@
 ---
-title: "Release Radar — Week of YYYY-MM-DD"
+title: "MS Release Radar - Week of YYYY-MM-DD"
 author: pit
 date: YYYY-MM-DD
 published: false
@@ -10,12 +10,12 @@ render_with_liquid: false
 
 ## Azure
 
-- …
+- ...
 
 ## Security / Defender / Sentinel
 
-- …
+- ...
 
 ## Other
 
-- …
+- ...
