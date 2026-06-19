@@ -60,7 +60,8 @@ This matters because prompt injection is usually not visible as a malicious file
 - attacker-controlled issue or ticket content
 - command output that tries to steer the next agent action
 
-Without hooks, Defender can still see endpoint behavior later, but it has less context. With hooks, Defender can evaluate the prompt, the planned tool call, and the tool output inline. That gives it a chance to audit or block before the agent turns injected text into an action.
+> Without hooks, Defender can still see endpoint behavior later, but it has less context. With hooks, Defender can evaluate the prompt, the planned tool call, and the tool output inline. That gives it a chance to audit or block before the agent turns injected text into an action.
+{: .prompt-info}
 
 ## 🧩 Supported Agents and Requirements
 
@@ -100,16 +101,14 @@ There is one practical requirement that is easy to underestimate: the agent has 
 
 After the Defender platform update that includes this feature, there are also new or newly relevant binaries under the Defender platform directory. In my test environment, the platform path was:
 
-```txt
-C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\
-```
+> C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\
+{: .prompt-info}
 
 In that build, the two relevant files were:
 
-```txt
-C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\DefenderAgentScan.exe
-C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\DefenderAiPlatformHost.exe
-```
+> C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\DefenderAgentScan.exe
+> C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26060.3006-0\DefenderAiPlatformHost.exe
+{: .prompt-info}
 
 `DefenderAgentScan.exe` is the binary referenced by the Copilot hook policy. When a hook fires, the policy resolves the Defender install location and runs this executable. `DefenderAiPlatformHost.exe` is another Defender platform binary present in the same build; I would include it in process and file inventory validation because it is the AI platform host, even though the Copilot hook policy shown below points to `DefenderAgentScan.exe`.
 
@@ -203,7 +202,7 @@ switch ($type) {
 
 This gives you a quick way to check whether Defender-related policy exists for GitHub Copilot or Claude Code.
 
-If `jq` is not available on the endpoint, use the native PowerShell JSON parser instead:
+If `jq` is not available on your client, use the native PowerShell JSON parser instead:
 
 ```shell
 (Get-ItemProperty "HKLM:\SOFTWARE\Policies\GitHub\Copilot\Defender").Policy | ConvertFrom-Json
