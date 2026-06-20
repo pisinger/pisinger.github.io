@@ -178,7 +178,7 @@ collections:
     output: true
     sort_by: date
     permalink: /wiz-release-radar/:path/
-ms_tech_news:
+  ms_tech_news:
     output: true
     sort_by: date
     permalink: /ms-tech-news/:path/
@@ -220,7 +220,7 @@ defaults:
       comments: true
       toc: true
       permalink: /wiz-release-radar/:path/
-- scope:
+  - scope:
       path: ""
       type: ms_tech_news
     values:
