@@ -3,7 +3,7 @@ title: Retrieve Azure VM Run Commands through Defender AH tables (PoC)
 author: pit
 date: 2025-06-06
 categories: [Blogging, Tutorial, PoC]
-tags: [defender, detection, hunting, azure, RunCommands]
+tags: [defender, detection, hunting, azure, runcommands]
 render_with_liquid: false
 ---
 

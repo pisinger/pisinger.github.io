@@ -2,8 +2,8 @@
 title: Ingestion into Sentinel via Event Hub made simple
 author: pit
 date: 2025-07-10
-categories: [Blogging, Tutorial]
-tags: [azure, Event Hub, Sentinel, DCR, Azure Monitor, Log Analytics, ingestion, data collection]
+categories: [blogging, tutorial]
+tags: [azure, event hub, sentinel, dcr, azure monitor, log analytics, ingestion, data collection]
 render_with_liquid: false
 ---
 

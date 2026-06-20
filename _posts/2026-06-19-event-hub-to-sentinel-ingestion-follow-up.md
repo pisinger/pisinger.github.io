@@ -3,7 +3,7 @@ title: Event Hub to Sentinel Ingestion (Follow-up)
 author: pit
 date: 2026-06-19
 categories: [Blogging, Tutorial]
-tags: [azure, Event Hub, Sentinel, DCR, Azure Monitor, Log Analytics, ingestion, data collection, powershell]
+tags: [azure, event hub, sentinel, dcr, azure monitor, log analytics, ingestion, data collection, powershell]
 render_with_liquid: false
 ---
 
@@ -53,18 +53,7 @@ param(
 )
 ```
 
-This is a small change, but it matters. You can now keep the deployment logic intact and only pass the environment-specific values when running the script.
-
-The script also derives the Event Hub namespace name, workspace resource group, workspace resource group ID, and Event Hub resource group from those IDs:
-
-```shell
-$eventHubNamespaceName = $eventHubNamespaceId.Split("/")[-1]
-$resourceGroup = $workspaceId.Split("/")[-5]
-$resourceGroupId = ($workspaceId.Split("/providers",2))[0]
-$resourceGroupEventHub = $eventHubNamespaceId.Split("/")[-5]
-```
-
-This is especially useful when the Event Hub namespace and Sentinel workspace are not in the same resource group.
+You now keep the deployment logic intact and only pass the environment-specific values when running the script. Everything else (namespace name, resource groups, and so on) is derived from these IDs, so the Event Hub namespace and Sentinel workspace can live in different resource groups.
 
 ## 🗺️ A Better Data Map
 
@@ -94,7 +83,7 @@ The important part is the split between `name` and `eh_name`.
 
 In the example above, the source is modeled as `CloudProcessEvents`, while the Event Hub itself uses the Defender streaming naming convention:
 
-```txt
+```shell
 insights-logs-advancedhunting-cloudprocessevents
 ```
 
@@ -102,20 +91,11 @@ That is cleaner than forcing your Sentinel table names to match the Event Hub na
 
 ## 🔁 Idempotent Event Hub Creation
 
-The original walkthrough showed how to create Event Hubs from the source map. The updated script first checks whether the Event Hub already exists:
+The original walkthrough created Event Hubs straight from the source map. The updated script first checks whether the Event Hub already exists, and only creates it if it does not:
 
 ```shell
-foreach ($table in $dataMap.keys) {
-    $item = $datamap[$table]
-
-    if (-not $(Get-AzEventHub -ResourceGroupName $resourceGroupEventHub -NamespaceName $eventHubNamespaceName -Name $item.eh_name -ErrorAction SilentlyContinue)) {
-        Write-Host $("Creating event hub: " + $item.name + " --> " + $item.eh_name) -ForegroundColor Cyan
-        New-AzEventHub -ResourceGroupName $resourceGroupEventHub -NamespaceName $eventHubNamespaceName -Name $item.eh_name -RetentionTimeInHour 24 -PartitionCount $item.partitions -CleanupPolicy Delete -Verbose
-    }
-    else {
-        Write-Host $("Event hub already exists: " + $item.name + " --> " + $item.eh_name) -ForegroundColor Green
-        continue
-    }
+if (-not $(Get-AzEventHub ... -Name $item.eh_name -ErrorAction SilentlyContinue)) {
+    New-AzEventHub ... -Name $item.eh_name -PartitionCount $item.partitions
 }
 ```
 
@@ -155,7 +135,7 @@ For raw Event Hub ingestion, the minimal schema is still usually enough:
 
 ## 🌊 Dynamic DCR Stream Declarations
 
-> The DCR still uses the special Event Hub stream: Custom-MyEventHubStream
+> The DCR still uses the special Event Hub stream: `Custom-MyEventHubStream`
 {: .prompt-tip}
 
 That part has not changed. What changed is how the stream declaration is created. The script now builds the stream declaration from the same column definitions used for the custom table:
@@ -201,30 +181,7 @@ Custom-CloudProcessEvents_CL
 
 ## 🔐 Role Assignment and DCRA Checks
 
-The updated script also checks whether the DCR managed identity already has the required Event Hub receiver role:
-
-```shell
-if (-not ($(Get-AzRoleAssignment -ObjectId $principalId -RoleDefinitionName "Azure Event Hubs Data Receiver" -Scope $EventHubId))) {
-    Write-Host "Assigning Event Hub Data Receiver role to DCR identity for event hub:" $item.name -ForegroundColor Cyan
-    New-AzRoleAssignment -ObjectId $principalId -RoleDefinitionName "Azure Event Hubs Data Receiver" -Scope $EventHubId
-}
-else {
-    Write-Host "Role assignment already exists for event hub:" $item.name -ForegroundColor Green
-    continue
-}
-```
-
-The DCRA deployment uses the real Event Hub name from `eh_name`, which is important when the logical source name and Event Hub resource name differ:
-
-```shell
-$associateTemplate = $dcrAssociateParams -replace "var_EventHubResourceID", $($eventHubNamespaceId + "/eventhubs/" + $item.eh_name)
-```
-
-The script checks for an existing association before deploying it:
-
-```shell
-$existingAssoc = Invoke-AzRestMethod -Path $($eventHubNamespaceId + "/eventhubs/" + $item.eh_name + "/providers/Microsoft.Insights/dataCollectionRuleAssociations/" + $dcrAssocName + "?api-version=2023-03-11") -Method GET
-```
+The updated script applies the same idempotent pattern to the last two steps: it assigns the `Azure Event Hubs Data Receiver` role to the DCR managed identity only if it is missing, and it checks for an existing Data Collection Rule Association before creating one. Both use the real Event Hub name from `eh_name`, which matters when the logical source name and the Event Hub resource name differ.
 
 This is another practical improvement for reruns and iterative testing.
 
@@ -245,8 +202,8 @@ When rerunning the script against an already configured source, the output shoul
 
 ```shell
 ✅ Event hub already exists: CloudProcessEvents --> insights-logs-advancedhunting-cloudprocessevents
-Update existing workspace table: CloudProcessEvents -> 202
-Creating DCR for event hub: CloudProcessEvents  -> Succeeded
+ℹ️ Update existing workspace table: CloudProcessEvents -> 202
+✅ Creating DCR for event hub: CloudProcessEvents  -> Succeeded
 ✅ Role assignment already exists for event hub: CloudProcessEvents
 ✅ Associating DCR already done for event hub: CloudProcessEvents
 ```
@@ -274,6 +231,6 @@ This follow-up is less about a new Azure feature and more about making the deplo
 The Event Hub to Sentinel ingestion path is still very powerful: Event Hub handles high-volume streaming, Azure Monitor handles the pull into Log Analytics, and Sentinel can query the resulting custom tables without a custom consumer service in the middle. 
 
 > Note: From what I see this feature is still in preview. So check the latest documentation and announcements for any changes or updates to the capabilities and requirements.
-{: .prompt-info}
+{: .prompt-warning}
 
 With the updated script, onboarding another source mostly becomes a data map change instead of a full copy-paste deployment exercise. That is exactly where this pattern becomes useful at scale.
