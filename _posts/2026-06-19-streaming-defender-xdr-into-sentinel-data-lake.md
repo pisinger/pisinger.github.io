@@ -1,9 +1,9 @@
 ---
-title: Event Hub to Sentinel Ingestion (Follow-up)
+title: Streaming Defender XDR into the Sentinel Data Lake - Event Hub and DCR, Made Reusable
 author: pit
 date: 2026-06-19
 categories: [Blogging, Tutorial]
-tags: [azure, event hub, sentinel, dcr, azure monitor, log analytics, ingestion, data collection, powershell]
+tags: [azure, event hub, sentinel, dcr, azure monitor, log analytics, data lake, ingestion, data collection, powershell]
 render_with_liquid: false
 ---
 
@@ -14,6 +14,7 @@ Since then I have improved the deployment script quite a bit. The original versi
 > The updated script is available here: <https://github.com/pisinger/scripts-lib/blob/main/powershell/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1>
 {: .prompt-tip}
 
+
 ## 🎯 My Use Case
 
 My current use case is Microsoft Defender XDR data that I want to make available in Sentinel, especially tables that cannot yet be enabled directly for Data Lake.
@@ -21,6 +22,22 @@ My current use case is Microsoft Defender XDR data that I want to make available
 One example is `CloudProcessEvents`. Defender XDR can stream this table into Event Hub, and from there the updated script can create the matching Event Hub to DCR to Sentinel ingestion path.
 
 I would also like to use the same pattern for `CloudDnsEvents`, but as of writing this blog post, that table is not covered by the Defender streaming API at all. That is why you will see it in the backup example data map, but not in the active `$dataMap` used by the script.
+
+The whole flow, from [Defender XDR streaming api](https://learn.microsoft.com/en-us/defender-xdr/streaming-api) all the way into the Sentinel data lake, looks like this:
+
+```text
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────────┐
+  │ Defender XDR │ ──► │  Event Hub   │ ──► │   DCR/DCE    │ ──► │ Sentinel         │
+  │  streaming   │     │  namespace   │     │  (+ DCRA)    │     │ Data Lake (Aux)  │
+  └──────────────┘     └──────────────┘     └──────────────┘     └──────────────────┘
+
+  what the script does:
+  #  1 - create event hubs within namespace if not exist  
+  #  2 - create custom table of type aux, basic or analytics   -> make sure DCE is linked to workspace
+  #  3 - create DCR to send data into above custom table       -> deploy custom template
+  #  4 - associate the DCR with the event hub (DCRA)           -> deploy custom template
+  #  5 - assign event hub receiver permission to DCR identity  -> role assignment
+```
 
 ## 🔄 What Changed?
 
