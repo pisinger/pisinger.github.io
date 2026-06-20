@@ -178,10 +178,10 @@ collections:
     output: true
     sort_by: date
     permalink: /wiz-release-radar/:path/
-  ms_tech_blogs:
+ms_tech_news:
     output: true
     sort_by: date
-    permalink: /ms-tech-blogs/:path/
+    permalink: /ms-tech-news/:path/
 
 defaults:
   - scope:
@@ -222,12 +222,12 @@ defaults:
       permalink: /wiz-release-radar/:path/
   - scope:
       path: ""
-      type: ms_tech_blogs
+type: ms_tech_news
     values:
       layout: post
       comments: true
       toc: true
-      permalink: /ms-tech-blogs/:path/
+      permalink: /ms-tech-news/:path/
 
 sass:
   style: compressed
@@ -253,7 +253,7 @@ exclude:
   - "package*.json"
   - "_ms_release_radar/_template.md"
   - "_wiz_release_radar/_template.md"
-  - "_ms_tech_blogs/_template.md"
+  - "_ms_tech_news/_template.md"
 
 jekyll-archives:
   enabled: [categories, tags]

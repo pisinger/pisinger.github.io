@@ -1,10 +1,10 @@
-{% assign MAX_ENTRIES = 5 %}
-{% assign entries = site.ms_tech_blogs | sort: 'date' | reverse %}
+{% assign MAX_ENTRIES = 3 %}
+{% assign entries = site.ms_tech_news | sort: 'date' | reverse %}
 
 {% if entries.size > 0 %}
-<section id="ms-tech-blogs-panel">
+<section id="ms-tech-news-panel">
   <h2 class="panel-heading">
-    <i class="fas fa-newspaper" aria-hidden="true"></i> MS Tech Blogs
+    <i class="fas fa-newspaper" aria-hidden="true"></i> MS Tech News
   </h2>
   <ul class="content list-unstyled ps-0 pb-1 ms-1 mt-2">
     {% for entry in entries limit: MAX_ENTRIES %}

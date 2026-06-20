@@ -1,5 +1,5 @@
 ---
-title: "MS Tech Blogs — YYYY-MM-DD"
+title: "MS Tech News — YYYY-WW"
 author: pit
 date: YYYY-MM-DD
 published: false

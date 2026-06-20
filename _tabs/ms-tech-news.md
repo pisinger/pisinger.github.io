@@ -2,17 +2,17 @@
 layout: page
 icon: fas fa-newspaper
 order: 6
-title: MS Tech Blogs
+title: MS Tech News
 ---
 
 Curated roundups of posts published on [techcommunity.microsoft.com](https://techcommunity.microsoft.com) for the products I track.
-{% if site.ms_tech_blogs.size > 0 %}
-<a href="/feed/ms_tech_blogs.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
+{% if site.ms_tech_news.size > 0 %}
+<a href="/feed/ms_tech_news.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
 </a>
 {% endif %}
 
-{% assign entries = site.ms_tech_blogs | sort: 'date' | reverse %}
+{% assign entries = site.ms_tech_news | sort: 'date' | reverse %}
 
 {% if entries.size == 0 %}
 *First roundup coming soon.*

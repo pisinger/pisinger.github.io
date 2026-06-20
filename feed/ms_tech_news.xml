@@ -8,10 +8,10 @@ layout: null
   <link href="{{ '/' | absolute_url }}" rel="alternate" type="text/html"/>
   <updated>{{ site.time | date_to_xmlschema }}</updated>
   <id>{{ page.url | absolute_url }}</id>
-  <title type="html">{{ site.title | xml_escape }} – MS Tech Blogs</title>
+  <title type="html">{{ site.title | xml_escape }} – MS Tech News</title>
   <subtitle>{{ site.description | xml_escape }}</subtitle>
 
-  {% assign entries = site.ms_tech_blogs | sort: 'date' | reverse %}
+  {% assign entries = site.ms_tech_news | sort: 'date' | reverse %}
   {% for entry in entries limit: 10 %}
   <entry>
     <title type="html">{{ entry.title | xml_escape }}</title>
