@@ -14,6 +14,8 @@ Microsoft lists 46 Defender for Identity alert entries between January and June 
 That's not just a minor update cycle; it's a product transformation that is easy to miss when most of the detection engineering conversation is about which Analytic Rules are available in Content Hub, or whether to build custom detections at all. The important part is the direction of travel: Entra ID sync application abuse, OAuth and AiTM patterns, session cookie replay, Conditional Access bypass indicators, Intune registration activity, and third-party identity provider signals are becoming first-party identity detection coverage.
 
 > Full catalog of all Defender for Identity alerts: <https://learn.microsoft.com/en-us/defender-for-identity/alerts-xdr>
+{: .prompt-info}
+
 > What's-new changelog: <https://learn.microsoft.com/en-us/defender-for-identity/whats-new>
 {: .prompt-info}
 
@@ -78,7 +80,10 @@ The time-to-value shift is significant. A custom KQL detection for a `suspicious
 
 ## SOC Optimization — The Technique-led Gap Analysis
 
-Rather than a line-by-line audit of every custom rule, take a technique-led approach. Start by exporting your custom identity rules with their MITRE Technique (e.g. `T1558.003` for Kerberoasting) and mapping them against the MITRE column in the MDI alert table. Where MDI now ships a high-fidelity alert for the same technique, that custom rule becomes your first potential candidate for retirement.
+Rather than a line-by-line audit of every custom rule, take a technique-led approach. Start by exporting your custom identity rules with their MITRE Technique (e.g. `T1558.003` for Kerberoasting) and mapping them against the MITRE column in the MDI alert table. 
+
+> Where MDI now ships a high-fidelity alert for the same technique, that custom rule becomes your first potential candidate for retirement.
+{: .prompt-tip}
 
 ## Depth vs. Breadth: Do I only need one rule per Technique?
 
@@ -95,4 +100,4 @@ The goal isn't just to have a single "Kerberoasting" rule. The goal is to let th
 46 newly listed alert entries in six months is a pace that's easy to miss if you're heads-down on daily operations. They are not all net-new detections, but the cumulative effect is still real: Defender for Identity has quietly become a much more complete detection surface for identity threats across Entra ID, on-prem AD, and increasingly third-party IdPs like SailPoint. This is a huge step forward and a significant opportunity for SOC teams to optimize their detection catalog and focus on the truly unique scenarios in their environment.
 
 > It’s less about "deleting everything" and more about retiring the technical debt of maintaining rules for problems that Microsoft has finally solved natively. It frees you up to focus on the stuff that is *truly* unique to your environment. If you haven't looked at the alert catalog since last year, it's worth an afternoon with the what's-new page and a review of your current Sentinel detection inventory. You might find more overlap than you expect.
-{: .prompt-info}
+{: .prompt-tip}
