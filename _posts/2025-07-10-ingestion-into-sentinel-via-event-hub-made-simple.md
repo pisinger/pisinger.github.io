@@ -12,6 +12,9 @@ Hey there 🖖 - In this blog post, I want to introduce you to a preview feature
 > Spoiler alert: In my opinion this is truly a game changer for anyone working with large data volumes streamed to Event Hub and looking to leverage that data in Sentinel! 🚀🥳
 {: .prompt-info}
 
+> updated version: <https://pisinger.github.io/posts/streaming-defender-xdr-into-sentinel-data-lake/>
+{: .prompt-tip}
+
 What you can expect from this blog post:
 
 - We will explore a new Azure Monitor feature (currently in preview) that allows you to retrieve data from an Event Hub and send it to a Log Analytics workspace using a Data Collection Endpoint (DCE) and Data Collection Rule (DCR).
