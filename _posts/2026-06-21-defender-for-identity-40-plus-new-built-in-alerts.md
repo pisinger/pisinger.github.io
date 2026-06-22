@@ -9,19 +9,22 @@ render_with_liquid: false
 
 Was catching up on the Defender for Identity what's-new page the other day and kept scrolling. And scrolling. New alert after new alert, month after month.
 
-Microsoft lists 46 Defender for Identity alert entries between January and June 2026. I wouldn't call all 46 "net-new" detections. Some Active Directory items such as Pass-the-Ticket, DCSync, and Golden Ticket style detections map to familiar MDI detection families that were further improved rather than introduced. But even with that conservative filter, we're still looking at a large number of new or materially expanded built-in detections across Entra ID, hybrid identity, and third-party identity providers.
-
-That's not just a minor update cycle; it's a product transformation that is easy to miss when most of the detection engineering conversation is about which Analytic Rules are available in Content Hub, or whether to build custom detections at all. The important part is the direction of travel: Entra ID sync application abuse, OAuth and AiTM patterns, session cookie replay, Conditional Access bypass indicators, Intune registration activity, and third-party identity provider signals are becoming first-party identity detection coverage.
-
-> Full catalog of all Defender for Identity alerts: <https://learn.microsoft.com/en-us/defender-for-identity/alerts-xdr>
-{: .prompt-info}
-
 > What's-new changelog: <https://learn.microsoft.com/en-us/defender-for-identity/whats-new>
 {: .prompt-info}
+
+Microsoft lists 46 Defender for Identity alert entries between January and June 2026. I wouldn't call all 46 "net-new" detections. Some Active Directory items such as Pass-the-Ticket, DCSync, and Golden Ticket style detections map to familiar MDI detection families that were further improved rather than introduced. But even with that conservative filter, we're still looking at a large number of new or materially expanded built-in detections across Entra ID, hybrid identity, and third-party identity providers.
+
+> That's not just a minor update cycle; it's a product transformation that is easy to miss when most of the detection engineering conversation is about which Analytic Rules are available in Content Hub, or whether to build custom detections at all. 
+{: .prompt-tip}
+
+The important part is the direction of travel: Entra ID sync application abuse, OAuth and AiTM patterns, session cookie replay, Conditional Access bypass indicators, Intune registration activity, and third-party identity provider signals are becoming first-party identity detection coverage.
 
 ## The 2026 Alert Wave
 
 Here is the breakdown of alert entries Microsoft added to the Defender for Identity alert catalog since January. I would still review each candidate before retiring local content, because "newly listed" does not automatically mean "fully equivalent to your custom rule."
+
+> Defender Identity Alert Reference: <https://learn.microsoft.com/en-us/defender-for-identity/alerts-xdr>
+{: .prompt-info}
 
 | Month | Category | Alert |
 |---|---|---|
