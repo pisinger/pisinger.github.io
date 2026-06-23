@@ -52,6 +52,9 @@ Runtime protection needs to inspect the agent loop before a risky action becomes
 
 Hooks are the integration points that make that possible. Instead of trying to infer everything from the outside by watching processes, Defender can receive structured payloads from the agent at the exact points where prompt injection matters.
 
+> Defender's runtime protection rides the hook framework exposed by supported agents such as Claude Code and GitHub Copilot CLI. The registry and managed-settings angle is the governance layer: who is allowed to register hooks, which hook policy is present, and whether the agent-side integration is configured. Defender is a consumer of the same hook surface. The consequence: coverage is only as good as the agent's hook support. No hooks, no protection.
+{: .prompt-warning}
+
 This matters because prompt injection is usually not visible as a malicious file. It often appears as text flowing through the agent:
 
 - hidden instructions in documentation
@@ -61,7 +64,7 @@ This matters because prompt injection is usually not visible as a malicious file
 - attacker-controlled issue or ticket content
 - command output that tries to steer the next agent action
 
-> Without hooks, Defender can still see endpoint behavior later, but it has less context. With hooks, Defender can evaluate the prompt, the planned tool call, and the tool output inline. That gives it a chance to audit or block before the agent turns injected text into an action.
+> Without hooks, Defender can still see endpoint behavior later, but it has less context. With hooks, Defender can evaluate the user prompt, the planned tool call, and the tool response inline. That gives it a chance to audit or block before the agent turns injected text into an action.
 {: .prompt-warning}
 
 ## 🧩 Supported Agents and Requirements
@@ -96,7 +99,7 @@ For the scripts below, also plan for:
 - Access to the relevant `HKLM:\SOFTWARE\Policies\...` registry paths.
 - `jq` if you want the exact formatting shown in the hook inspection script, or `ConvertFrom-Json` if you prefer a native PowerShell-only option.
 
-There is one practical requirement that is easy to underestimate: the agent has to participate. Runtime protection is not just scanning arbitrary text files on disk. It works at the agent runtime boundary, so supported hooks are what let Defender see the relevant payloads.
+There is one practical requirement that is easy to underestimate: the agent has to participate. Runtime protection is not just scanning arbitrary text files on disk, and it is not triggered merely because a policy key exists. It works at the agent runtime boundary, so supported hooks are what let Defender see the relevant payloads.
 
 ## 🛡️ Defender Platform Binaries
 
@@ -164,7 +167,7 @@ Get-MpPreference | Select-Object AiAgentProtection
 
 ## 🔎 Inspect AI Agent Hook Configuration
 
-The hook configuration is written under policy registry locations for supported agents. This is useful when validating whether the agent-side integration is actually present.
+The hook configuration is written under policy registry locations for supported agents. This is useful when validating whether the agent-side integration is actually present, but the registry is not the runtime protection path by itself.
 
 ```shell
 param(
@@ -186,6 +189,8 @@ switch ($type) {
 ```
 
 This gives you a quick way to check whether Defender-related policy exists for GitHub Copilot or Claude Code.
+
+The policy proves that the hook registration is governed and visible. It does not mean Defender is polling the registry for prompt injection. When the supported agent reaches a hook point, it invokes the configured Defender component and passes the relevant runtime payload through that hook surface.
 
 If `jq` is not available on your client, use the native PowerShell JSON parser instead:
 
@@ -214,7 +219,7 @@ For GitHub Copilot CLI, the policy output on my machine wired up five hook point
 > The important detail is that every Copilot hook resolves the Defender install location from `HKLM:\SOFTWARE\Microsoft\Windows Defender`, builds the path to `DefenderAgentScan.exe`, checks that it exists, and then executes it with a 12-second timeout.
 {: .prompt-tip}
 
-That matches the runtime-protection model: Copilot exposes lifecycle and tool-use hook points, while Defender wires those points back to its own platform component.
+That matches the runtime-protection model: Copilot exposes lifecycle and tool-use hook points, while Defender wires those points back to its own platform component. The same governance pattern explains why managed settings matter without making them the security boundary. They control and expose hook registration; the inspection still happens when the agent crosses user-prompt, pre-tool-call, or post-tool-response boundaries.
 
 ## ✅ What to Validate During Rollout
 
@@ -250,4 +255,4 @@ But prompt injection can happen before all of that. The agent may be about to pe
 
 Local AI agents are endpoint software with user-level reach, tool access, and a steady stream of untrusted input. That makes them useful, but it also creates a new control point that classic AV was not designed to understand on its own.
 
-Hooks are the practical bridge. They let Defender inspect the agent loop at the moments that matter: prompt intake, pre-tool execution, and tool response handling. For organizations already standardizing on Defender for Endpoint, this is a logical next layer: start in audit, validate the hooks and alerts, then enforce block mode where the operational impact is understood.
+Hooks are the practical bridge. They let Defender inspect the agent loop at the moments that matter: prompt intake, pre-tool execution, and tool response handling. Registry policy and managed settings decide how that bridge is registered and governed, but the runtime protection rides the hook framework itself. For organizations already standardizing on Defender for Endpoint, this is a logical next layer: start in audit, validate the hooks and alerts, then enforce block mode where the operational impact is understood.
