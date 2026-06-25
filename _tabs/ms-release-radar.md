@@ -5,7 +5,7 @@ order: 4
 title: MS Release Radar
 ---
 
-Weekly digest covering Microsoft Azure, security tooling, and notable releases I'm tracking.
+A curated list of Microsoft Defender and Azure service release notes I track — refreshed weekly, with monthly lookbacks. Want to filter and dig in? Try the [ms-release-radar-app](https://pisinger.tngx-voice.com/ms-release-radar/).
 {% if site.ms_release_radar.size > 0 %}
 <a href="/feed/ms_release_radar.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
