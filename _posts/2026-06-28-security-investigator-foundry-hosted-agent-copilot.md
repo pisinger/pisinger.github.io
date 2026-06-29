@@ -11,16 +11,19 @@ Hi there!
 
 I am a big fan of [SCStelz/security-investigator](https://github.com/SCStelz/security-investigator). It combines GitHub Copilot, MCP, reusable KQL, and specialized SOC skills - and shows how much domain knowledge can live in `.github/copilot-instructions.md` and `SKILL.md` instead of application code.
 
-My hosted example derives its skills and instructions from that MIT-licensed project, then narrows the runtime: Sentinel Data Exploration is primary, direct Graph calls are disabled, and missing Triage tools fall back to Data Lake KQL.
+My hosted example derives its skills and instructions from that project, then narrows the runtime: Sentinel Data Exploration is primary, direct Graph calls are disabled, and missing Triage tools fall back to Data Lake KQL.
 
 > 👉 The code lives in my repo: [pisinger/security-investigator → foundry-agents](https://github.com/pisinger/security-investigator/tree/main/foundry-agents). This post walks through the Copilot SDK build ([`agent-security-investigator-github-copilot`](https://github.com/pisinger/security-investigator/tree/main/foundry-agents/agent-security-investigator-github-copilot)); the Microsoft Agent Framework sibling ([`agent-security-investigator-agent-framework`](https://github.com/pisinger/security-investigator/tree/main/foundry-agents/agent-security-investigator-agent-framework)) sits next to it and shares the same skills, queries, and toolbox.
 {: .prompt-tip}
 
-I already use those skills heavily in VS Code and, more recently, in the GitHub Copilot CLI. The next question was how to make the same capability available as a **standalone agent** - with its own identity and endpoint, ready for automation, other applications, or Teams as a new SOC team member. The twist: rather than rebuild it on a Microsoft-native stack, I wanted to **bring my own harness** and keep the exact GitHub Copilot loop I already run locally.
+> If you want to jump directly to the deployment, see [Deploy the example](#-deploy-the-example) below. The rest of this post explains the design choices and how to bring your own harness into a Foundry hosted agent.
+{: .prompt-info}
+
+I already use those skills heavily in VS Code and, more recently, in the GitHub Copilot CLI. The next question was how to make the same capability available as a **standalone agent** - with its own identity and endpoint, ready for automation, other applications, or Teams as a new SOC team member. The twist: rather than rebuild it on a Microsoft-native stack, I wanted to **bring my own harness** and keep the exact or at least similar GitHub Copilot loop I already run locally.
 
 This operationalizes rather than replaces the interactive experience. Copying skills is not enough: they describe behavior, but provide no production endpoint, identity, isolation, scaling, or observability. The complete agent must become a container image on an agent platform.
 
-This is where [Foundry hosted agents](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents) fit. I push the image; Foundry provides deployment, identity, sessions, stable invocation, scale-to-zero, and monitoring, while the container only implements the Responses protocol - so its reasoning harness remains my choice. The [GitHub Copilot SDK](https://github.com/github/copilot-sdk) runs the Copilot loop inside that container, and the same `.github` folder is used in both places:
+This is where [Foundry hosted agents](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents) come in. I just push the image; Foundry provides deployment, identity, sessions, stable invocation, scale-to-zero, and monitoring, while the container only implements the Responses protocol - so its reasoning harness remains my choice. The [GitHub Copilot SDK](https://github.com/github/copilot-sdk) runs the Copilot loop inside that container, and the same `.github` folder is used in both places:
 
 > **What you will get:** the same Copilot skills locally and hosted, a managed Foundry endpoint and identity, an independently versioned toolbox, and a repeatable `.env`-driven deployment.
 {: .prompt-info}
@@ -170,9 +173,10 @@ Direct Graph access is also intentionally disabled. Signals that can be obtained
 
 This is a design choice, not a harness limitation. The custom MCP owns API authentication, permissions, and the tool contract, while the hosted agent continues to consume one governed toolbox endpoint.
 
-### 🛠️ One manual toolbox step - attach Sentinel via the UI
+## 🛠️ One manual toolbox step - attach Sentinel via the UI
 
-This is the one step the script does **not** do for you, so it's worth calling out clearly.
+> This is the one step the script does **not** do for you, so it's worth calling out clearly.
+{: .prompt-warning}
 
 On a new environment, `agent/deploy.sh` only attaches the public **Microsoft Learn MCP** connection and enables Tool Search (`toolbox_search_preview`). A toolbox version must contain at least one source, and Learn is a useful, credential-free placeholder - but it provides **no security data**. The script deliberately stops there: wiring **Microsoft Sentinel – Data exploration** to a specific workspace is an access-scoped decision I'd rather make explicitly in the portal than bury in a script.
 
@@ -198,8 +202,12 @@ The [example deployment](https://github.com/pisinger/security-investigator/tree/
 After installing `azd`, clone the repository, work from the example root, and make sure the active Azure CLI subscription is the one you want to deploy into:
 
 ```bash
+git clone https://github.com/pisinger/security-investigator.git
+cd security-investigator/foundry-agents/agent-security-investigator-github-copilot
+
 az login
 az account set --subscription <subscription-id>
+
 ./agent/deploy.sh
 ```
 
@@ -207,24 +215,24 @@ That is the complete command path. The active `az account` context is authoritat
 
 Configuration lives in `agent/.env` (a committed `.env.example` is the fallback, so a fresh checkout can deploy as-is). Do not maintain a parallel collection of `azd env set` commands or shell exports: the file is loaded on every run, **wins over any matching shell export** so a stale `export` can't shadow it, and is synchronized into the selected `azd` environment. The one exception is `AZURE_SUBSCRIPTION_ID` and `AZURE_TENANT_ID`, which always follow the active `az account` context and are written back into the file. A compact starting point is:
 
-```dotenv
+```shell
 AZURE_RESOURCE_GROUP="ps-rg-foundry-1"
 AZURE_LOCATION="germanywestcentral"
 
 # Hosted-agent name and Foundry project name
 # (project is reused if found in the resource group, otherwise provisioned)
-AZURE_AI_AGENT_NAME=security-investigator-copilot-agent
-AZURE_AI_PROJECT_NAME=ps-default
+AZURE_AI_AGENT_NAME="security-investigator-copilot-agent"
+AZURE_AI_PROJECT_NAME="ps-default"
 
 # Model deployment: set these five together when changing model, so an
 # existing model's format/version/capacity is not mixed with the new one
-AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-5.4-mini
-AZURE_AI_MODEL_NAME=gpt-5.4-mini
-AZURE_AI_MODEL_FORMAT=OpenAI
-AZURE_AI_MODEL_DEPLOYMENT_VERSION=2026-03-17
-AZURE_AI_MODEL_DEPLOYMENT_CAPACITY=500
+AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-5.4-mini"
+AZURE_AI_MODEL_NAME="gpt-5.4-mini"
+AZURE_AI_MODEL_FORMAT="OpenAI"
+AZURE_AI_MODEL_DEPLOYMENT_VERSION="2026-03-17"
+AZURE_AI_MODEL_DEPLOYMENT_CAPACITY="500"
 
-TOOLBOX_MCP_NAME=ps-toolbox-default
+TOOLBOX_MCP_NAME="ps-toolbox-default"
 
 AGENT_CPU=2
 AGENT_MEMORY=4Gi
@@ -281,7 +289,7 @@ azd ai agent monitor
 ![The deployed hosted agent running an investigation from the Foundry portal](/assets/img/posts/security-investigator-foundry-hosted-agent-copilot/foundry-hosted-agent-run-example.png)
 _The hosted agent responding to an invocation - the same skills that run locally with `copilot`, now behind a managed Foundry endpoint._
 
-### 📦 One source of truth - skills, queries, and config synced from the repo root
+## 📦 One source of truth - skills, queries, and config synced from the repo root
 
 The skills, reusable KQL, and per-environment config are **not** maintained inside the agent folder. They live once at the repository root, and `deploy.sh` mirrors them into `agent/` right before the image is built - so the file you edit and the file the container runs are byte-for-byte identical.
 
@@ -343,7 +351,7 @@ Sentinel incident
 
 The appeal over wiring a Logic App or Function timer is that there's **no separate scheduler resource to provision**: the schedule lives next to the agent, shares the project's RBAC and connections, and each fire is recorded as a routine run linked to the agent's response and traces - so you review scheduled hunts in the same place as interactive ones. A Logic App or pipeline still makes sense when you need fan-out, approvals, or delivery into a ticketing system; routines cover the "just run this agent on a schedule" case without the extra plumbing.
 
-> **Routines are in preview.** If **Routines** isn't in the portal navigation, it isn't enabled for your region/subscription yet. Note the preview limits: one trigger and one action per routine, a five-minute minimum interval, a 30-second per-attempt downstream timeout, and "delivery acknowledged" is not the same as "the agent finished its work" - watch the run state and traces, not just the dispatch response. See [Automate agents with routines](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
+> **Routines are in preview** as of writing this blog post. If **Routines** isn't in the portal navigation, it isn't enabled for your region/subscription yet. Note the preview limits: one trigger and one action per routine, a five-minute minimum interval, a 30-second per-attempt downstream timeout, and "delivery acknowledged" is not the same as "the agent finished its work" - watch the run state and traces, not just the dispatch response. See [Automate agents with routines](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 {: .prompt-info}
 
 **An agentic investigation stage.** A coordinator can delegate identity investigation, endpoint analysis, or KQL generation to this specialist and combine its result with other agents.
