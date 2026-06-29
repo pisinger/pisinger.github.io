@@ -19,7 +19,7 @@ My hosted example derives its skills and instructions from that project, then na
 > If you want to jump directly to the deployment, see [Deploy the example](#-deploy-the-example) below. The rest of this post explains the design choices and how to bring your own harness into a Foundry hosted agent.
 {: .prompt-info}
 
-I already use those skills heavily in VS Code and, more recently, in the GitHub Copilot CLI. The next question was how to make the same capability available as a **standalone agent** - with its own identity and endpoint, ready for automation, other applications, or Teams as a new SOC team member. The twist: rather than rebuild it on a Microsoft-native stack, I wanted to **bring my own harness** and keep the exact or at least similar GitHub Copilot loop I already run locally.
+I already use those skills heavily in VS Code and, more recently, in the GitHub Copilot CLI. The next question was how to make the same capability available as a **standalone agent** - with its own identity and endpoint, ready for automation, other applications, or Teams as a new SOC team member. The twist: rather than rebuild it on a Microsoft-native stack, I wanted to **bring my own harness** and keep as close as possible to the GitHub Copilot loop I already run locally.
 
 This operationalizes rather than replaces the interactive experience. Copying skills is not enough: they describe behavior, but provide no production endpoint, identity, isolation, scaling, or observability. The complete agent must become a container image on an agent platform.
 
