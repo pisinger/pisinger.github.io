@@ -1,5 +1,5 @@
 ---
-title: "Bring Your Own Harness: Running Security Investigator as a Foundry Hosted Agent with GitHub Copilot"
+title: "Bring Your Own Harness: Running Security Investigator as Foundry Hosted Agent with GitHub Copilot"
 author: pit
 date: 2026-06-28
 categories: [blogging]
@@ -310,6 +310,9 @@ Each entry is `repo-root-source:agent-dest`. Directories are mirrored with `rsyn
 Because the root is authoritative, those copies are gitignored in the agent folder (`.github/skills/`, `.github/manifests/`, `queries/`, `config.json`, `config.json.template`). They are never committed twice, cannot drift, and exist in the agent tree only so the `Dockerfile`'s `COPY . user_agent/` bakes them into the image. The sibling [Agent Framework agent](https://github.com/pisinger/security-investigator/tree/main/foundry-agents/agent-security-investigator-agent-framework) uses the same mechanism but flattens the destinations to its own root (`skills/`, `manifests/`, `queries/`), because it does not read from `.github/` - the same sync function, only the `SYNCED_ASSETS` targets differ.
 
 `config.json` carries per-environment defaults: the Sentinel workspace, tenant and subscription, optional enrichment tokens, and the report output directory. `main.py` loads it from the agent working directory, exports the values as environment defaults (without clobbering anything already set), and folds them into a prompt preamble so the model targets the right workspace even when it has no file tool to read the JSON itself. `config.json.template` is the committed, secret-free shape; the real `config.json` stays local and gitignored at the repo root and in the agent copy alike.
+
+> ℹ️ **Set your Sentinel workspace in the root `config.json` before deploying.** The workspace, tenant, and subscription you put there are what the runtime folds into the prompt preamble, so the agent automatically targets the correct workspace without being told in each invocation. Edit it once at the repository root - `deploy.sh` copies it into the container image, so an empty or wrong workspace there means the hosted agent has no default workspace to query.
+{: .prompt-info}
 
 > 👉 Edit skills, queries, and `config.json` at the repository root, iterate locally with `copilot`, and let `deploy.sh` mirror the exact same files into the image. The agent folder's copies are generated, gitignored, and bundled - never the place to make changes.
 {: .prompt-tip}
