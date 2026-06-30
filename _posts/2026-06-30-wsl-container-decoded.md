@@ -7,9 +7,9 @@ tags: [wsl, wsl-containers, wslc, docker, docker-desktop, linux-containers, powe
 render_with_liquid: false
 ---
 
-Running a Linux container on Windows usually starts with the same instruction: install Docker Desktop. That works well, but it also means adding another desktop application, another update channel and another layer of management before the first container even starts.
+Running a Linux container on Windows usually begins with the same instruction: install Docker Desktop. It works, but it means one more desktop app, one more update channel, one more management layer before a single container starts. The alternative - running everything inside your WSL distro - drops the desktop app but still leaves you installing and operating Docker Engine by hand. The second path is where I lived.
 
-Microsoft is now adding a different path directly to WSL. The new **WSL Container** public preview brings a built-in container CLI called `wslc.exe` and an API that allows native Windows applications to run Linux containers. The CLI feels surprisingly familiar - but the API is the real game changer. A Windows application can now treat a Linux-backed service, database or processing engine as part of its own application architecture without using Docker Desktop as the vehicle to deploy and operate it.
+Microsoft is now adding a different path directly to WSL. The new **WSL Container** public preview brings a built-in container CLI called `wslc.exe` and an API that allows native Windows applications to run Linux containers. The CLI feels surprisingly familiar - but the API is the real game changer. A Windows application can now treat a Linux-backed service, database or processing engine as part of its own application architecture without using Docker Desktop or docker engine inside your distro as the vehicle to deploy and operate it.
 
 > WSL Container is currently available in the WSL pre-release channel. Microsoft is aiming for general availability in autumn 2026.
 {: .prompt-warning}
