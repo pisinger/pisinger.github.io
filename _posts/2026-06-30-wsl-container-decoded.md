@@ -11,13 +11,13 @@ Running a Linux container on Windows usually starts with the same instruction: i
 
 Microsoft is now adding a different path directly to WSL. The new **WSL Container** public preview brings a built-in container CLI called `wslc.exe` and an API that allows native Windows applications to run Linux containers. The CLI feels surprisingly familiar - but the API is the real game changer. A Windows application can now treat a Linux-backed service, database or processing engine as part of its own application architecture without using Docker Desktop as the vehicle to deploy and operate it.
 
-> WSL Container is currently available in the WSL pre-release channel. Microsoft is aiming for general availability in autumn 2026, so I would treat everything below as lab and evaluation material for now.
+> WSL Container is currently available in the WSL pre-release channel. Microsoft is aiming for general availability in autumn 2026.
 {: .prompt-warning}
 
 > The official announcement and documentation are available here: <https://devblogs.microsoft.com/commandline/wsl-container-is-now-available-for-public-preview/> and <https://learn.microsoft.com/en-us/windows/wsl/wsl-container>
 {: .prompt-info}
 
-## What WSL Container actually adds
+## 🧩 What WSL Container actually adds
 
 There are two parts to the feature:
 
@@ -56,7 +56,7 @@ Looking at the current open-source implementation also removes some of the myste
 > The current implementation can be followed in the [WSLCSession source](https://github.com/microsoft/WSL/blob/master/src/windows/wslcsession/WSLCSession.cpp). The public API is organised as `Session → Container → Process`: <https://wsl.dev/api-reference/>
 {: .prompt-tip}
 
-## The real game changer: Linux components inside Windows applications
+## 🚀 The real game changer: Linux components inside Windows applications
 
 `wslc.exe` is convenient, but Windows already had several ways to run Linux containers. Docker Desktop, Podman Desktop and Docker Engine inside a WSL distribution all solved that problem in one form or another.
 
@@ -83,7 +83,7 @@ The API also integrates with MSBuild and CMake, which means container build and 
 > ⚠️ This application API is still preview and may introduce breaking changes. Microsoft's API guidance is to use it now to evaluate feasibility and wait for general availability before deploying production-grade integrations. That matters even more for embedded databases and other stateful backends where upgrades, recovery, backup and data migration need a stable lifecycle contract: <https://wsl.dev/api-reference/>
 {: .prompt-warning}
 
-## Running it as background process?
+## ⏳ Running it as a background process?
 
 Yes. Background execution itself is not new.
 
@@ -115,7 +115,7 @@ This is where `wslc` fits better. Rather than leaving a process running in a gen
 
 This does not mean `wslc` is an always-on server. A reboot, user logoff or explicit termination of its session/runtime can still stop the underlying environment. The current preview should also not be assumed to restart every container automatically after Windows starts.
 
-## How different is it from Docker?
+## 🔄 How different is it from Docker?
 
 From the command line, not very different. Microsoft deliberately adopted the familiar container vocabulary, and the current command surface is already broad:
 
@@ -183,7 +183,7 @@ The difference is mostly around the product boundary:
 
 So I would not call it a feature-for-feature Docker Desktop replacement yet. If your workflow depends on Compose, a bundled Kubernetes cluster, the Docker Desktop UI, restart policies or its extension ecosystem, check those requirements carefully. Those capabilities are not represented in the current `wslc` command surface. For running and building individual Linux containers from Windows, however, WSL Container covers a useful amount of ground without another desktop product or a manually maintained Linux container host.
 
-## Defender visibility for WSL containers
+## 🛡️ Defender visibility for WSL containers
 
 The enterprise angle is also worth watching. Microsoft Defender for Endpoint already has a plugin for monitoring activity inside WSL distributions. Microsoft is extending that plugin so it also understands Linux container events generated through WSL Container.
 
@@ -194,7 +194,7 @@ It also makes the native application scenario more realistic. If a Windows appli
 > ⚠️ MDE awareness of WSL container events is currently a **private preview**. It should not be described as generally available coverage yet, and I have not validated its telemetry in my own environment. Microsoft provides a [private-preview signup form](https://forms.office.com/r/KFeDkeMpvS) from the announcement: <https://devblogs.microsoft.com/commandline/wsl-container-is-now-available-for-public-preview/>
 {: .prompt-warning}
 
-## Installing the preview
+## 🛠️ Installing the preview
 
 Open PowerShell and update WSL from the pre-release channel:
 
@@ -213,7 +213,7 @@ wslc run --help
 > `--pre-release` moves all of WSL onto preview bits, not only the container CLI, so use a test device or disposable lab. Check `wslc --help` if a later preview changes the commands below.
 {: .prompt-warning}
 
-## Configuring the managed session with settings.yaml
+## ⚙️ Configuring the managed session with settings.yaml
 
 WSL Container has its own per-user configuration file at `%LOCALAPPDATA%\wslc\settings.yaml`. This is separate from `%USERPROFILE%\.wslconfig`: `.wslconfig` controls regular WSL 2 virtual-machine behaviour, while `settings.yaml` provides defaults for the managed session used by the `wslc` CLI.
 
@@ -285,7 +285,7 @@ The default `wincred` backend creates generic Windows credentials with names beg
 
 Invalid values, unknown keys and malformed YAML produce warnings and fall back to built-in defaults. The behaviour above is based on the current preview's [settings parser](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.cpp), [managed-session creation](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [port-binding](https://github.com/microsoft/WSL/blob/master/src/windows/wslc/services/ContainerService.cpp) and [credential backends](https://github.com/microsoft/WSL/tree/master/src/windows/wslc/services).
 
-## Where WSL Container stores its state
+## 💾 Where WSL Container stores its state
 
 After using `wslc`, I found a user-specific session directory below `%LOCALAPPDATA%`:
 
@@ -331,15 +331,15 @@ drwx------  2 root root  4096 tmp
 drwx-----x  3 root root  4096 volumes
 ```
 
-Several of these directories only exist because a real Docker Engine is running. `engine-id`, `swarm`, `network`, `image`, `overlay2`, `buildkit` and `volumes` are all Docker Engine constructs - a pure containerd installation uses a completely different layout under `/var/lib/containerd` (for example `io.containerd.content.v1.content` and `io.containerd.snapshotter.v1.overlayfs`). The `containerd` folder you can see here is simply the embedded containerd that `dockerd` manages underneath itself, rooted at `/var/lib/docker/containerd`, which matches the `--containerd /run/containerd/containerd.sock` wiring in the WSL source.
+Several of these directories only exist because a real Docker Engine is running. `engine-id`, `swarm`, `network`, `image`, `overlay2`, `buildkit` and `volumes` are all Docker Engine constructs.
 
 So `storage.vhdx` is best understood as the session's "Docker mount" - the writable disk attached to an otherwise read-only utility VM whose operating system and daemon binaries ship separately with WSL. Your pulled images, named volumes and `wslc build` artefacts all live here.
 
-This also connects directly to the PostgreSQL example below: a regular `wslc volume create pgdata` volume is stored inside `storage.vhdx`. Removing and recreating the PostgreSQL container does not remove that volume, but deleting or corrupting `storage.vhdx` would remove the session's images, containers and normal named volumes. Do not manually edit, mount or delete either VHDX while the session is active. Use targeted `wslc container`, `wslc image` and `wslc volume` remove or prune commands instead—and remember that pruning unused volumes deletes their data.
+This also connects directly to the PostgreSQL example below: a regular `wslc volume create pgdata` volume is stored inside `storage.vhdx`. Removing and recreating the PostgreSQL container does not remove that volume, but deleting or corrupting `storage.vhdx` would remove the session's images, containers and normal named volumes. Do not manually edit, mount or delete either VHDX while the session is active. Use targeted `wslc container`, `wslc image` and `wslc volume` remove commands instead.
 
 These details come from the current preview implementation in Microsoft's WSL source: [session naming and storage paths](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [VHD and swap lifecycle](https://github.com/microsoft/WSL/blob/master/src/windows/wslcsession/WSLCSession.cpp), and [the storage-size setting](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.h).
 
-## Running PostgreSQL with persistent storage
+## 🐘 Running PostgreSQL with persistent storage
 
 Rather than stopping at `hello-world`, let's run something with state. The following example starts PostgreSQL, publishes it to Windows, writes data, removes the container and then proves that the data survived in a named volume.
 
@@ -401,7 +401,7 @@ The final command should return something similar to:
 
 At this point, any Windows PostgreSQL client can also connect to `localhost:5432` using the same database and credentials. The Linux workload is running inside WSL, but the published port is available directly from Windows.
 
-## Proving that the data is persistent
+## ✅ Proving that the data is persistent
 
 Stopping a database is easy. The more relevant test is whether its state survives when the container itself is deleted.
 
@@ -442,13 +442,13 @@ wslc volume remove pgdata
 > Removing `pgdata` permanently deletes the PostgreSQL files used in this example. Leave the volume in place if you want to reuse the database.
 {: .prompt-danger}
 
-## Where this appears to be going
+## 🔭 Where this appears to be going
 
 Microsoft is also using WSL Container to introduce lower-level improvements such as VirtioFS for faster Windows file access, Consomme networking for better compatibility with Windows VPN, proxy and security controls, and improved memory reclamation. These changes are initially scoped to WSL Container, with the intention of bringing them to regular WSL later. Docker Desktop, Podman Desktop and Rancher Desktop should benefit from those platform improvements as well.
 
 That makes the direction broader than replacing Docker Desktop. WSL is becoming the Windows-managed substrate for Linux development, container tooling and applications that quietly need a Linux component behind a native Windows experience. The CLI makes that substrate accessible to developers; the API makes it part of the Windows application platform.
 
-## Conclusion
+## 🧾 Conclusion
 
 For the basic PostgreSQL workflow, the look and feel is very close to Docker: pull an image, publish a port, attach a volume, inspect logs and use `exec`. Closing the terminal was already possible with background processes in traditional WSL, but `wslc` removes the manually operated distribution and daemon from that design. The main change is who owns the platform underneath it - WSL and Windows rather than you or a separate desktop container product.
 
