@@ -76,7 +76,7 @@ A Windows frontend could, for example, start a private PostgreSQL container duri
 
 This is a much cleaner option than using Docker as the delivery vehicle for an otherwise native Windows product. Docker Desktop no longer needs to become a separate product dependency, and the user does not need to understand distributions, daemons or container contexts merely to run one part of the application.
 
-The current preview is not a completely new container engine independent of the Docker/Moby stack. Microsoft's WSL source shows that each managed session starts `containerd` and `dockerd`, while image builds currently invoke `docker build` inside the utility VM. “Without Docker” therefore means that you do not need Docker Desktop as a product dependency or a Docker Engine that you install and operate yourself. WSL packages and manages those open-source runtime components behind `wslc.exe` and the Windows API. As this is still preview, that internal implementation could change before general availability.
+This is not a brand-new container engine, though - and that is the key. "Without Docker" means without Docker Desktop as a product dependency *and* without you installing, configuring or operating Docker yourself inside a WSL distribution. WSL still runs `containerd` and `dockerd` under the hood - builds currently invoke `docker build` - but packages and fully manages those open-source components for you behind `wslc.exe` and the Windows API.
 
 The API also integrates with MSBuild and CMake, which means container build and deployment steps can become part of the application's normal build process rather than a separate set of manual instructions.
 
@@ -100,11 +100,9 @@ Docker Desktop already hid most of that work behind its own WSL backend. Without
 > Microsoft documented WSL background-task support in 2017: <https://devblogs.microsoft.com/commandline/background-task-support-in-wsl/>. WSL instances are still tied to the Windows user lifecycle and are terminated when that user logs off: <https://learn.microsoft.com/en-us/windows/wsl/release-notes#build-20211>
 {: .prompt-info}
 
-None of those steps is difficult on its own, but together they are real, ongoing work that you carry for the lifetime of the environment - and it is exactly the part WSL Container takes off your hands.
+None of those steps is hard on its own, but together they are ongoing work you carry for the lifetime of the environment - and that is exactly the part WSL Container takes off your hands.
 
-This is where `wslc` is better for this particular use case. It does not merely leave a process running in a general-purpose Linux distribution. The WSL service creates a purpose-built, persistent container session and exposes it directly to Windows. You can start a detached container from PowerShell, close the terminal and return later without keeping Ubuntu open - or even installing a user distribution in the first place.
-
-The practical difference is ownership. With the older approach, *you* operate a Linux distribution and a container daemon. With `wslc`, Windows and WSL operate the container host while you manage the containers.
+This is where `wslc` fits better. Rather than leaving a process running in a general-purpose distribution, the WSL service creates a purpose-built, persistent container session and exposes it directly to Windows. You can start a detached container from PowerShell, close the terminal and return later without keeping Ubuntu open - or installing a user distribution at all. The practical difference is ownership: with the older approach *you* operate the distribution and daemon, whereas with `wslc` Windows and WSL operate the host while you manage the containers.
 
 | Background-container concern | Docker Engine inside a WSL distro | WSL Container |
 |---|---|---|
@@ -212,7 +210,7 @@ wslc --help
 wslc run --help
 ```
 
-> Updating with `--pre-release` moves WSL onto preview bits, not only the container CLI. I would use a test device or a disposable lab until the feature reaches general availability. The commands below follow the current preview documentation and source, so check `wslc --help` if a later preview changes the CLI.
+> `--pre-release` moves all of WSL onto preview bits, not only the container CLI, so use a test device or disposable lab. Check `wslc --help` if a later preview changes the commands below.
 {: .prompt-warning}
 
 ## Configuring the managed session with settings.yaml
@@ -285,7 +283,7 @@ The default `wincred` backend creates generic Windows credentials with names beg
 > When you run `wslc login` against a container registry, the credentials are not kept inside the Linux session - they are written to the **Windows Credential Manager** by default (the `wincred` backend). You can confirm this from Windows itself: open *Credential Manager → Windows Credentials* and look for generic entries named `wslc-credential/...`, or run `cmdkey /list:wslc-credential/*` in PowerShell. This means registry logins follow the Windows user's credential vault and DPAPI protection rather than living in a distro or a Docker `config.json`, which is worth knowing when you reason about where secrets actually reside.
 {: .prompt-info}
 
-Invalid values, unknown keys and malformed YAML produce warnings and fall back to built-in defaults. The behaviour above is based on the current preview's [settings parser and defaults](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.cpp), [managed-session creation](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [port-binding implementation](https://github.com/microsoft/WSL/blob/master/src/windows/wslc/services/ContainerService.cpp) and [credential backends](https://github.com/microsoft/WSL/tree/master/src/windows/wslc/services). As with the other implementation details in this post, they may change before general availability.
+Invalid values, unknown keys and malformed YAML produce warnings and fall back to built-in defaults. The behaviour above is based on the current preview's [settings parser](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.cpp), [managed-session creation](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [port-binding](https://github.com/microsoft/WSL/blob/master/src/windows/wslc/services/ContainerService.cpp) and [credential backends](https://github.com/microsoft/WSL/tree/master/src/windows/wslc/services).
 
 ## Where WSL Container stores its state
 
@@ -315,7 +313,7 @@ The `Length` values shown by PowerShell are the VHDX files' current on-disk allo
 
 ### storage.vhdx is simply a Docker data-root
 
-It is worth being precise about what `storage.vhdx` actually is, because it answers the earlier "without Docker" question directly. This disk is nothing exotic: it is a plain Docker Engine data-root mounted at `/var/lib/docker`. Looking inside it shows the standard `dockerd` layout, not a custom or containerd-only store:
+`storage.vhdx` answers the earlier "without Docker" question directly: it is a plain Docker Engine data-root mounted at `/var/lib/docker`, with the standard `dockerd` layout rather than a custom or containerd-only store:
 
 ```text
 drwx--x--x  4 root root  4096 buildkit
@@ -335,11 +333,11 @@ drwx-----x  3 root root  4096 volumes
 
 Several of these directories only exist because a real Docker Engine is running. `engine-id`, `swarm`, `network`, `image`, `overlay2`, `buildkit` and `volumes` are all Docker Engine constructs - a pure containerd installation uses a completely different layout under `/var/lib/containerd` (for example `io.containerd.content.v1.content` and `io.containerd.snapshotter.v1.overlayfs`). The `containerd` folder you can see here is simply the embedded containerd that `dockerd` manages underneath itself, rooted at `/var/lib/docker/containerd`, which matches the `--containerd /run/containerd/containerd.sock` wiring in the WSL source.
 
-This is the on-disk confirmation of what the earlier sections described: the session really does run `containerd` *and* `dockerd`, and your pulled images, named volumes and `wslc build` artefacts all live in this one Docker data-root. So `storage.vhdx` is best understood as "the Docker mount" for the session - the writable disk attached to an otherwise read-only utility VM whose operating system and daemon binaries ship separately with WSL.
+So `storage.vhdx` is best understood as the session's "Docker mount" - the writable disk attached to an otherwise read-only utility VM whose operating system and daemon binaries ship separately with WSL. Your pulled images, named volumes and `wslc build` artefacts all live here.
 
 This also connects directly to the PostgreSQL example below: a regular `wslc volume create pgdata` volume is stored inside `storage.vhdx`. Removing and recreating the PostgreSQL container does not remove that volume, but deleting or corrupting `storage.vhdx` would remove the session's images, containers and normal named volumes. Do not manually edit, mount or delete either VHDX while the session is active. Use targeted `wslc container`, `wslc image` and `wslc volume` remove or prune commands instead—and remember that pruning unused volumes deletes their data.
 
-These details come from the current preview implementation in Microsoft's WSL source: [session naming and storage-path creation](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [VHD creation, mounting and swap lifecycle](https://github.com/microsoft/WSL/blob/master/src/windows/wslcsession/WSLCSession.cpp), and [the session storage-size setting](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.h). They are implementation details and may change before general availability.
+These details come from the current preview implementation in Microsoft's WSL source: [session naming and storage paths](https://github.com/microsoft/WSL/blob/master/src/windows/service/exe/WSLCSessionManager.cpp), [VHD and swap lifecycle](https://github.com/microsoft/WSL/blob/master/src/windows/wslcsession/WSLCSession.cpp), and [the storage-size setting](https://github.com/microsoft/WSL/blob/master/src/windows/common/WSLCUserSettings.h).
 
 ## Running PostgreSQL with persistent storage
 
