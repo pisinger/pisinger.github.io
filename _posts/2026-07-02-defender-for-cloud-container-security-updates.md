@@ -1,5 +1,5 @@
 ---
-title: Defender for Cloud - Container Security Updates in the Last 6 Months
+title: Defender for Cloud - Container Security - What's New in the Last 6 Months
 author: pit
 date: 2026-07-02
 categories: [blogging]
