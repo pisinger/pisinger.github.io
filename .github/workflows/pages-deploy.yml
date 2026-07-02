@@ -20,7 +20,7 @@ permissions:
 # Allow one concurrent deployment
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -55,6 +55,9 @@ jobs:
           bundle exec htmlproofer _site \
             \-\-disable-external \
             \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
+
+      - name: Verify Pages entry point
+        run: test -s "_site${{ steps.pages.outputs.base_path }}/index.html"
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
