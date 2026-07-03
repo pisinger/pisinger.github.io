@@ -11,9 +11,11 @@ Defender for Cloud uses several built-in Azure roles behind the scenes. Finding 
 
 I flattened those definitions into one reference. Each section below keeps the role name, role ID, and description together with every `Action`, `NotAction`, and `DataAction` from the source data.
 
-Microsoft's Azure RBAC documentation is still the official starting point for understanding role assignments and built-in roles. Its built-in-role reference covers the broader Azure catalogue and links to individual permission definitions, but it does not bring every Defender-specific service role from this snapshot together in one Defender for Cloud view. Most of the roles included below are not listed in that published catalogue at all. That gap is the reason I created this consolidated list instead. The source snapshot contains 34 Defender for Cloud-related built-in roles and 372 individual permission entries.
+Microsoft's Azure RBAC documentation is still the official starting point for understanding role assignments and built-in roles. Its built-in-role reference covers the broader Azure catalogue and links to individual permission definitions, but it does not bring every Defender-specific service role from this snapshot together in one Defender for Cloud view. That gap is the reason I created this consolidated list instead. 
 
-> Official Azure RBAC documentation: <https://learn.microsoft.com/en-us/azure/role-based-access-control>
+The source snapshot contains 34 Defender for Cloud-related built-in roles and 372 individual permission entries.
+
+> Official Azure RBAC documentation: <https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles>
 {: .prompt-info}
 
 ## Roles at a Glance
@@ -74,7 +76,7 @@ Get-AzRoleDefinition | ForEach-Object {
 		NotActions     = ($perm.NotActions -join ';')
 		DataActions    = ($perm.DataActions -join ';')
 		NotDataActions = ($perm.NotDataActions -join ';')
-	}
+    }
 }
 ```
 
