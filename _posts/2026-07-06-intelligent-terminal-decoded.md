@@ -1,5 +1,5 @@
 ---
-title: "Windows Intelligent Terminal - ACP, Autofix and AI Agent Architecture"
+title: "Two Protocols and a Rust Bridge: How Windows Intelligent Terminal Works"
 author: pit
 date: 2026-07-06
 categories: [blogging]
@@ -12,7 +12,7 @@ Intelligent Terminal ships without an AI model of its own. Rather than reinvent 
 > Imagine a capable mechanic next to your car who, every time a warning appears, still needs you to read the dashboard aloud - they know exactly what to do, but can't see the warning light or reach the controls. That's roughly how an AI coding agent and your terminal normally relate: the agent runs in its own session but can't see the failed command in your other pane, pick up its output or open a tab in your window. You carry the context between the two.
 {: .prompt-info}
 
-Microsoft's new **Intelligent Terminal** sets out to remove that gap - an experimental fork of Windows Terminal that gives the mechanic an intercom and a controlled set of switches. What pulled me in wasn't the feature list, though. It was one line in the README: Intelligent Terminal is "a local transport layer" that "does not call any cloud APIs itself". That is an odd thing for an AI product to say out loud, and it turns out to be the single decision the rest of the architecture hangs off.
+Microsoft's new **Intelligent Terminal** sets out to remove that gap - giving the mechanic an intercom and a controlled set of switches. What pulled me in was one line in the README: it's "a local transport layer" that "does not call any cloud APIs itself" - an odd thing for an AI product to say out loud, and the single decision the rest of the architecture hangs off.
 
 > Intelligent Terminal is an experimental, separate app that installs next to your existing Windows Terminal and can run side by side - it does not replace it. Source and announcement: <https://github.com/microsoft/intelligent-terminal> and <https://devblogs.microsoft.com/commandline/announcing-intelligent-terminal-version-0-1/>
 {: .prompt-info}
@@ -32,7 +32,7 @@ The first launch is deliberately uneventful. Intelligent Terminal detects suppor
 | `Ctrl+Alt+.` | Ask agent to handle autofix |
 | `Ctrl+Shift+P` | Report a bug (collect logs) |
 
-> The agent pane is only one entry point. Prefix a prompt with `?` in the Command Palette and Intelligent Terminal injects context from the active pane, then starts the work in a background tab so the shell in front of you stays usable. Agent access stays visible throughout: Intelligent Terminal asks before an agent runs a command in your shell, and error detection and automatic suggestions can be controlled separately - a better boundary than treating every detected failure as permission to start changing things.
+> The agent pane is only one entry point. Prefix a prompt with `?` in the Command Palette and Intelligent Terminal injects context from the active pane, then works in a background tab so your shell stays usable. It asks before an agent runs a command in your shell, and error detection and automatic suggestions are separate toggles - a better boundary than treating every failure as permission to start changing things.
 {: .prompt-tip}
 
 The current preview installs next to Windows Terminal and requires Windows 10 2004 or later. The shortest path is WinGet:
@@ -55,17 +55,14 @@ For a local agent, the client launches it as a subprocess and exchanges JSON-RPC
 | `session/update` | Stream text, plans and tool activity back to the client |
 | `session/request_permission` | Ask the client to approve an action |
 
-ACP also defines client-side capabilities an agent can call back into - terminal creation, file operations - reusing MCP's JSON shapes where it helps. But the two solve different problems. **MCP connects a model to tools and data; ACP connects an agent to the app hosting its UI** (and an ACP agent can still use MCP servers behind the scenes). This is why ACP fits: Microsoft embeds no Copilot-specific logic into Windows Terminal, and another agent needs no custom terminal plugin. WTA is the ACP client, the selected CLI the ACP agent, and both evolve independently.
+ACP also defines client-side capabilities an agent can call back into - terminal creation, file operations - reusing MCP's JSON shapes where it helps. But the two solve different problems. **MCP connects a model to tools and data; ACP connects an agent to the app hosting its UI** (and an ACP agent can still use MCP servers behind the scenes). This is why ACP fits: Microsoft embeds no Copilot-specific logic into Windows Terminal, and another agent needs no custom terminal plugin. WTA is the ACP **client** (the app hosting the UI), the selected CLI is the ACP **agent** (the brain being driven), and both evolve independently.
 
-- client = the app hosting the UI → that's WTA
-- agent = the coding agent being driven → that's the selected CLI
-
-> Zed launched ACP with Gemini CLI in August 2025, and JetBrains joined its development in October 2025. The protocol and schema are open source under Apache 2.0: <https://zed.dev/blog/bring-your-own-agent-to-zed> and <https://agentclientprotocol.com/get-started/introduction>
+> JetBrains joined ACP's development in October 2025; the protocol and schema are open source under Apache 2.0: <https://zed.dev/blog/bring-your-own-agent-to-zed> and <https://agentclientprotocol.com/get-started/introduction>
 {: .prompt-info}
 
 ## 🧭 The one idea that shapes everything: it is a transport, not a brain
 
-The temptation is to assume Microsoft built an AI model or dedicated agent into the terminal. They did not. Intelligent Terminal ships **no model, no cloud endpoint and no inference of its own** - it speaks to whatever agent CLI you have installed (Copilot by default, or Claude, Gemini, Codex, or any custom command) over the [Agent Client Protocol](https://agentclientprotocol.com/), a JSON-RPC dialect these CLIs already understand. Because the terminal is just a transport, it needs exactly two things:
+It's tempting to assume Microsoft built an AI model into the terminal. They did not. Intelligent Terminal ships **no model, no cloud endpoint and no inference of its own** - it speaks to whatever agent CLI you have installed over ACP. Because the terminal is just a transport, it needs exactly two things:
 
 1. A way to **talk to the agent** - send your prompt and shell context, stream the answer back. This is ACP.
 2. A way to **let the agent drive the terminal** - open tabs, split panes, run commands, read scrollback. This is a private COM interface.
@@ -82,13 +79,6 @@ Almost every design choice in the repo follows from keeping those two channels c
 ```
 
 The agent is a separate process the terminal launches and pipes to. Your prompt and recent shell output pass through the terminal in memory, but where that content actually *goes* depends on which CLI you picked - Copilot to GitHub, Claude to Anthropic, a custom agent wherever its vendor decides. Intelligent Terminal itself doesn't call the model's cloud API or keep the conversation as its own history (diagnostic logs and telemetry are separate matters).
-
-| Component | What it owns | What it does not own |
-|---|---|---|
-| Intelligent Terminal | ✅ Windows, tabs, panes, scrollback and terminal events | ⛔ Model inference |
-| WTA | ✅ Agent sessions, routing and the chat UI | ⛔ The agent model or shell itself |
-| Agent CLI | ✅ Reasoning, responses and tool decisions | ⛔ Windows Terminal's UI |
-| `wtcli` | ✅ Commands for reading and controlling terminal panes | ⛔ The conversation with the agent |
 
 ## 🧩 WTA: the Rust bridge doing the real work
 
@@ -110,12 +100,12 @@ The C++ Windows Terminal codebase barely knows what an agent is. Nearly all the 
   gemini / codex)                      (drive tabs, panes, input)
 ```
 
-- **`wta-master`** is a singleton, spawned once per terminal process. It is headless. Its only job is to own the single connection to the agent CLI subprocess and multiplex it, so the agent CLI is spawned exactly once no matter how many panes you open.
-- **`wta-helper`** is spawned once per agent pane. It renders the chat interface (a `ratatui` TUI running inside the pane) and connects back to master over a named pipe. From the helper's point of view, master *is* the agent.
+- **`wta-master`** is a headless singleton, spawned once per terminal process. It owns the single connection to the agent CLI and multiplexes it, so the CLI is spawned exactly once no matter how many panes you open.
+- **`wta-helper`** is spawned once per agent pane. It renders the chat UI (a `ratatui` TUI inside the pane) and connects back to master over a named pipe. From the helper's point of view, master *is* the agent.
 
 So ACP is actually spoken over **two hops**: helper to master over a named pipe, then master to the agent CLI over stdio. Master plays "client" to the real CLI and "agent" to each helper, forwarding requests down and fanning notifications back up to whichever helper owns each session - the reason one Copilot process can serve five panes at once. The expensive part is shared; the TUI bound to each tab is not. You can trace a single prompt across both hops in `wta-main_master.log`, and the docs put the debugging rule plainly - "if any step is missing, the failure is at the previous step" - so a hung prompt has a ladder you climb down rather than a black box you restart.
 
-> There is no standalone mode and, notably, **no MCP server**. Earlier iterations had a single-process TUI and a `wta mcp` mode; both were removed. The agent reaches the terminal by shelling out to `wtcli`, not through MCP. Bare `wta` with neither `--master` nor `--connect-master` just exits with an error.
+> Notably, there is **no MCP server**: the terminal is reached through `wtcli`, not through MCP. (An earlier `wta mcp` mode and single-process TUI were both removed.)
 {: .prompt-tip}
 
 ## 🪟 Why COM is used for terminal control
@@ -126,22 +116,13 @@ Think of a bank teller. You never walk into the vault and count the cash yoursel
 
 The design point is ownership: scrollback, pane layout, focus and shell metadata already live inside Windows Terminal, so exposing operations from that process beats having WTA scrape pixels or keep a second copy of the same state.
 
-> Microsoft's current COM documentation describes the same client/server, cross-process component model used here: <https://learn.microsoft.com/en-us/windows/win32/com/the-component-object-model>
-{: .prompt-info}
-
-**Terminal side - classic local COM.** When the agent wants to *do* something, it goes through a small interface (`IProtocolServer`) that `WindowsTerminal.exe` implements itself: a compact set of queries (list windows, tabs and panes, read a pane's output, check a process), mutations (create a tab, split or close a pane, send input, focus a pane) and push-based events you subscribe to. You'll meet the friendlier `wtcli` spelling of these same operations shortly.
+When the agent wants to *do* something, it goes through a small interface (`IProtocolServer`) that `WindowsTerminal.exe` implements itself: a compact set of queries (list windows, tabs and panes, read a pane's output), mutations (create a tab, split or close a pane, send input, focus a pane) and push-based events you subscribe to. You'll meet the friendlier `wtcli` spelling of these same operations shortly.
 
 What comes back is rich. Each pane is addressed by an opaque `SessionId` GUID and carries its working directory (harvested from OSC 9;9) and shell identity - `pwsh`, `bash`, `wsl:Ubuntu`. Hold onto that shell field: it's why the WSL story works out cleanly later.
 
 How a caller *finds* the running terminal is neat: there's no hardcoded CLSID. At startup Windows Terminal registers its COM server and drops the class ID into an environment variable, `WT_COM_CLSID`. Every process launched inside a pane inherits that environment, so any child - shell, script, agent CLI, `wta`, `wtcli` - just reads it and calls `CoCreateInstance` to reach the terminal that launched it. The env var *is* the discovery mechanism.
 
 WTA could call COM itself, but wrapping it in `wtcli` keeps the Rust agent layer independent from the Windows COM ABI, and leaves a command-line control surface for other agents and scripts. WTA's Rust code launches `wtcli.exe`, and `wtcli` is the actual COM client. So **WTA uses COM indirectly through `wtcli`**, not directly.
-
-## 🔀 Could this have used something other than COM?
-
-Sure - a named pipe, a Unix socket, JSON-RPC over stdio, HTTP/gRPC or shared memory could each carry local IPC. But none is a drop-in: each would need its own request schema, versioning, discovery, access control and event contract.
-
-A named pipe is the most obvious local alternative - and Intelligent Terminal already uses one between each `wta-helper` and `wta-master`. But the Terminal boundary is different: WTA must discover and call into an independently running packaged Windows app that already owns the windows, panes, scrollback and UI thread. The team could have built another JSON protocol over another pipe - with its own access control, activation, versioning, callbacks and object identifiers - but COM already provides all of that plus an explicit IDL contract. It isn't automatically better than a pipe; it just avoids rebuilding the local Windows integration from scratch. Each transport sits at the boundary it fits: COM would be a poor fit for the cross-platform agent protocol, and ACP would add needless machinery to every low-level Terminal call.
 
 ## 🕹️ wtcli: a tmux-style control surface for agents
 
@@ -150,7 +131,7 @@ One distinction worth fixing in your head before the commands: `wta` and `wtcli`
 - **`wta`** - the brain-facing side (ACP, the agent, the chat UI)
 - **`wtcli`** - the terminal-facing side (COM, driving panes)
 
-`wta` is the long-lived bridge; `wtcli` is the short-lived command you can actually type. The agent doesn't call COM directly - it shells out to **`wtcli`** (source: [`src/tools/wtcli/main.cpp`](https://github.com/microsoft/intelligent-terminal/blob/main/src/tools/wtcli/main.cpp), full reference in [`doc/wtcli-commands.md`](https://github.com/microsoft/intelligent-terminal/blob/main/doc/wtcli-commands.md)), which wraps `IProtocolServer` in a command surface that looks a lot like `tmux`:
+`wta` is the long-lived bridge; `wtcli` is the short-lived command you can actually type. It wraps `IProtocolServer` in a command surface that looks a lot like `tmux`:
 
 ```bash
 wtcli --json list-panes                      # what panes exist
@@ -213,14 +194,7 @@ For Linux shells inside WSL, the same pair lives inside the distro:
 ~/.intelligent-terminal/shell-integration_v1.sh  # emits the marks
 ```
 
-Those scripts emit OSC 133 prompt/command/completion marks plus working-directory metadata; they do not upload the profile or copy history into the prompt. The other local files WTA reads belong to the **agent CLIs**, not the shell - populating the session view and resuming conversations:
-
-```text
-~/.copilot/session-state/...
-~/.claude/projects/...
-~/.codex/sessions/...
-~/.gemini/tmp/.../chats/...
-```
+Those scripts emit OSC 133 prompt/command/completion marks plus working-directory metadata; they do not upload the profile or copy history into the prompt. The only other local files WTA reads belong to the **agent CLIs** themselves (each keeps its own session state under `~/.copilot/`, `~/.claude/`, `~/.codex/`, `~/.gemini/`) - read to populate the session view and resume conversations, not for prompt context.
 
 ## 🔧 Autofix: how a failed command reaches the agent by itself
 
@@ -253,8 +227,6 @@ When you need to see *why* something misbehaved - a hung prompt, a dropped autof
 | `wta-acp-debug.log` | Low-level ACP JSON-RPC traffic |
 | `wta-cli.log` | `capture-pane`, `list-panes` and other terminal-control commands |
 | `wta-ensure-host.log` | WTA lifecycle, autofix events and package-identity failures |
-| `terminal-agent-pane.log` | The C++ Terminal side of the agent pane |
-| `hook-trace.log` | Events emitted by the agent hooks |
 
 The cleanest collection path is `Ctrl+Shift+P` → **Report a bug (collect logs)**, which builds a ZIP and opens its location. For a detailed repro, `WTA_LOG=debug` or `WTA_LOG=trace` raises Rust-side logging after a full restart.
 
@@ -267,7 +239,6 @@ Step back and the shape is clear. Intelligent Terminal is not trying to be an AI
 
 - **The agent stays swappable.** Because the contract is ACP, not a Microsoft-specific SDK, any conforming CLI plugs in - including local or custom ones via `custom:<cmd>`. That's a deliberately open door, the opposite of a walled garden.
 - **`wtcli` is a public surface, not just an internal one.** Several of its commands (`send-event`, `set-env`, `wait-for`) aren't called anywhere inside the repo - they exist as a documented control surface for external agents and scripts. The terminal is being positioned as something *other* tools automate, not just something Copilot talks to.
-- **Data routing follows the selected agent.** Intelligent Terminal does not call the model API itself or keep its own conversation history; the selected CLI receives the prompt and shell context under that vendor's terms, while diagnostic logs and product telemetry remain separate considerations.
 
 > The load-bearing sources behind this walkthrough are the overviews in [`AGENTS.md`](https://github.com/microsoft/intelligent-terminal/blob/main/AGENTS.md) and [`tools/wta/OVERVIEW.md`](https://github.com/microsoft/intelligent-terminal/blob/main/tools/wta/OVERVIEW.md), the helper+master [design specification](https://github.com/microsoft/intelligent-terminal/blob/main/doc/specs/Multi-window-agent-pane.md), the [`wtcli` command reference](https://github.com/microsoft/intelligent-terminal/blob/main/doc/wtcli-commands.md), and the [official announcement](https://devblogs.microsoft.com/commandline/announcing-intelligent-terminal-version-0-1/).
 {: .prompt-info}
