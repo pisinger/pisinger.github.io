@@ -122,7 +122,10 @@ What comes back is rich. Each pane is addressed by an opaque `SessionId` GUID an
 
 How a caller *finds* the running terminal is neat: there's no hardcoded CLSID. At startup Windows Terminal registers its COM server and drops the class ID into an environment variable, `WT_COM_CLSID`. Every process launched inside a pane inherits that environment, so any child - shell, script, agent CLI, `wta`, `wtcli` - just reads it and calls `CoCreateInstance` to reach the terminal that launched it. The env var *is* the discovery mechanism.
 
-WTA could call COM itself, but wrapping it in `wtcli` keeps the Rust agent layer independent from the Windows COM ABI, and leaves a command-line control surface for other agents and scripts. WTA's Rust code launches `wtcli.exe`, and `wtcli` is the actual COM client. So **WTA uses COM indirectly through `wtcli`**, not directly.
+WTA could call COM itself, but wrapping it in `wtcli` keeps the Rust agent layer independent from the Windows COM ABI, and leaves a command-line control surface for other agents and scripts. WTA's Rust code launches `wtcli.exe`, and `wtcli` is the actual COM client. 
+
+> So **WTA uses COM indirectly through `wtcli`**, not directly.
+{: .prompt-info}
 
 ## 🕹️ wtcli: a tmux-style control surface for agents
 
