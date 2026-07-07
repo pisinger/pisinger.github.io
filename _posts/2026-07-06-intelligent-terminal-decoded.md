@@ -167,6 +167,17 @@ There's a second confirmation sitting on disk. WTA's prompt templates live under
 
 That folder also settles why autofix and the agent pane feel so different: they are **two separate prompts**. `auto-fix.md` is tightly constrained - it must return one JSON object, either a `fix` (a single-line command you apply with a keystroke) or an `explain` - so an autofix arrives as a terse card, never a conversation. `terminal-agent.md` is a full mode-router that lets the pane agent chat, recommend a command, run its own tools, or delegate to a new tab. Same injected context, two very different jobs.
 
+```shell
+Directory: C:\Users\pit\AppData\Local\Packages\Microsoft.IntelligentTerminal_8wekyb3d8bbwe\LocalState\IntelligentTerminal\prompts
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---          21/06/2026    11:00           2880 auto-fix.default.md
+-a---          07/07/2026    13:53           2880 auto-fix.md
+-a---          21/06/2026    10:55          11541 terminal-agent.default.md
+-a---          07/07/2026    14:25          11541 terminal-agent.md
+```
+
 ## 📚 When shell history and other local files are used
 
 Terminal scrollback and shell history sound similar but are separate sources. Scrollback is the in-memory text Windows Terminal owns; PSReadLine history, `~/.bash_history` and `~/.zsh_history` are files the shell maintains for cross-session recall. I checked the WTA source: Intelligent Terminal does **not** automatically read those history files when it builds context for a normal prompt. The runtime context is the active pane, current directory, shell identity and a bounded `buffer`. That distinction matters - a history file holds previous command *lines*, not the output needed to explain why the latest `apt upgrade` failed.
