@@ -23,7 +23,7 @@ What you can expect from this blog post:
 
 - I will guide you through the nessessary steps to set up and to deploy this at scale when dealing with multi data sources. The script is designed to be reusable and scalable, allowing you to easily add new data sources as needed.
 
-> The full script can be found in my [GitHub repo](https://github.com/pisinger/scripts-lib/blob/main/powershell/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1)
+> The full script can be found in my [GitHub repo](https://github.com/pisinger/scripts-lib/blob/main/defender/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1)
 {: .prompt-tip}
 
 At the end we will have an architecture like this - quite simple, huh? 😊

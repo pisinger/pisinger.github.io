@@ -11,7 +11,7 @@ In my previous post, [Ingestion into Sentinel via Event Hub made simple](/posts/
 
 Since then I have improved the deployment script quite a bit. The original version was intentionally simple and showed the moving parts one by one. The updated version is more reusable, easier to extend across multiple sources, and better suited for running repeatedly without breaking on resources that already exist.
 
-> The updated script is available here: <https://github.com/pisinger/scripts-lib/blob/main/powershell/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1>
+> The updated script is available here: <https://github.com/pisinger/scripts-lib/blob/main/defender/ingestion-into-sentinel-via-event-hub-and-dcr/ingestion-into-sentinel-via-event-hub-and-dcr.ps1>
 {: .prompt-tip}
 
 
