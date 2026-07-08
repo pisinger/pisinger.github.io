@@ -136,6 +136,8 @@ Below a list of scanned ports in my enviornment
 9090, 9100, 9293, 17990, 22443, 32111, 49443, 62078
 ```
 
+![img-description](/assets/img/posts/defender-network-discovery-under-the-hood/defender-kql-sample.png)
+
 > Keep in mind that `DeviceNetworkEvents` is not a full packet capture. From my own testing it aligned well with what a dedicated network monitoring solution captured when looking to active probing through device discovery feature.
 {: .prompt-info}
 
