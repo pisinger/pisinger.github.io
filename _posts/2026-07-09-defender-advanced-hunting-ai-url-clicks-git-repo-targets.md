@@ -77,6 +77,8 @@ DeviceProcessEvents
     Urls
 ```
 
+![img-description](/assets/img/posts/defender-advanced-hunting-ai-url-clicks-git-repo-targets/url-click-events-browser.png)
+
 The result is not just "a user opened something in Chrome". You get the full URL, the domain, the browser process, the user, the device, and the parent process that caused the handoff.
 
 That last column is where this becomes more than another URL list. If `InitiatingProcessParentFileName` points back to `claude.exe`, `Code.exe`, `cmd.exe`, or another known assistant/editor process, you have a workable attribution trail for links surfaced through AI-assisted workflows.
@@ -119,6 +121,8 @@ DeviceNetworkEvents
 //| where GitRepoUrl startswith "https://dev.azure.com/org"
 //| where GitRepoUrl contains "git.internal.example"
 ```
+
+![img-description](/assets/img/posts/defender-advanced-hunting-ai-url-clicks-git-repo-targets/hunt-for-git-repos.png)
 
 This version is nice because it answers two questions at once: which repo URL was present in the `git` command line, and which remote network endpoint was involved at the time. The `GitRepoUrl` value is still extracted from `InitiatingProcessCommandLine`, but the surrounding event is network telemetry.
 
