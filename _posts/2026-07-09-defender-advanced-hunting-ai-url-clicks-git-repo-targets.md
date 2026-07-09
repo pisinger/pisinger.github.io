@@ -16,7 +16,7 @@ That makes `DeviceProcessEvents` surprisingly useful for visibility into links t
 > Queries can be found here: <https://github.com/pisinger/hunting>
 {: .prompt-tip}
 
-## Why UrlClickEvents Is Not Enough
+## 🔍 Why UrlClickEvents Is Not Enough
 
 `UrlClickEvents` answers a very specific question: what links were clicked through Microsoft Defender for Office 365 Safe Links handling?
 
@@ -38,7 +38,7 @@ That gives you click attribution for AI-assisted workflows, and actually for man
 > ⚠️ Scope note: this catches browser handoffs where the URL is present on the command line. It does not replace `UrlClickEvents`. Use both, because they cover different surfaces.
 {: .prompt-warning}
 
-## Hunting Browser Handoffs
+## 🧭 Hunting Browser Handoffs
 
 The base idea is simple: look for browser process creation where the initiating process command line contains a URL, extract the full URL, parse the domain, then keep the parent process around for attribution.
 
@@ -84,7 +84,7 @@ That last column is where this becomes more than another URL list. If `Initiatin
 > This is also a useful enrichment point. Once the URLs are extracted, join the domains or full URLs against your own threat intelligence tables, watchlists, or Defender TI data. IoC matching on links surfaced by AI assistants is the interesting part here, because those links may never appear in Safe Links telemetry.
 {: .prompt-tip}
 
-## The Git Repo Angle
+## 🧩 The Git Repo Angle
 
 There is another small but useful variation: `git`.
 
@@ -171,7 +171,7 @@ DeviceProcessEvents
 > Be careful with privacy and credential handling here. Full URLs can occasionally contain sensitive query strings, tokens, or internal repository names. Treat the extracted URL field as investigation data, not as something to casually export everywhere.
 {: .prompt-warning}
 
-## Where This Fits
+## 🛡️ Where This Fits
 
 I would use this as an additional hunting pattern, not as a single source of truth.
 
@@ -183,7 +183,7 @@ I would use this as an additional hunting pattern, not as a single source of tru
 
 This is also one of those cases where the telemetry is not magic. It works because a URL had to be handed from one process to another, and Defender for Endpoint records that process creation context.
 
-## Conclusion
+## 📝 Conclusion
 
 `UrlClickEvents` still has its place, but it is not the whole URL-click story anymore. As users open more links from AI assistants, editors, terminals, and local tools, `DeviceProcessEvents` gives you a practical way to recover both the full URL and the local application context that caused the handoff.
 
