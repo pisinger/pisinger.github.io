@@ -5,7 +5,7 @@ order: 5
 title: Wiz Release Radar
 ---
 
-Weekly digest covering Wiz platform updates, cloud security capabilities, and notable releases I'm tracking.
+Weekly digest covering Wiz platform updates, cloud security capabilities, and notable releases I'm tracking.  Want to filter and dig in? Try the [wiz-release-radar-app](https://pisinger.tngx-voice.com/wiz-release-radar/).
 {% if site.wiz_release_radar.size > 0 %}
 <a href="/feed/wiz_release_radar.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
