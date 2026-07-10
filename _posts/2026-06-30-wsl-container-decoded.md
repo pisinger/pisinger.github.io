@@ -183,6 +183,13 @@ The difference is mostly around the product boundary:
 
 So I would not call it a feature-for-feature Docker Desktop replacement yet. If your workflow depends on Compose, a bundled Kubernetes cluster, the Docker Desktop UI, restart policies or its extension ecosystem, check those requirements carefully. Those capabilities are not represented in the current `wslc` command surface. For running and building individual Linux containers from Windows, however, WSL Container covers a useful amount of ground without another desktop product or a manually maintained Linux container host.
 
+One small but useful registry-side clue: if you want to know which Docker Engine version WSL Container is using behind `wslc`, check the user agent in your registry events. In my test, an image pull showed up like this:
+
+> docker/25.0.3 go/go1.26.3 git-commit/f417435 kernel/6.18.35.2-microsoft-standard-WSL2 os/linux arch/amd64
+{: .prompt-info}
+
+That lines up with the implementation detail above: `wslc` is the Windows entry point, but the image pull is still performed through the Docker Engine running inside the managed WSL Container session. The `docker/25.0.3` part gives away the Docker Engine version, while the rest of the string shows the Go runtime, commit, WSL2 kernel and architecture used for that pull.
+
 ## 🛡️ Defender visibility for WSL containers
 
 The enterprise angle is also worth watching. Microsoft Defender for Endpoint already has a plugin for monitoring activity inside WSL distributions. Microsoft is extending that plugin so it also understands Linux container events generated through WSL Container.
