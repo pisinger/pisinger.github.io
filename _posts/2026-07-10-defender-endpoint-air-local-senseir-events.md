@@ -193,7 +193,7 @@ Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
 
 To quickly extract the action names from event `11`:
 
-```powershell
+```shell
 Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
     ForEach-Object {
         [pscustomobject]@{
