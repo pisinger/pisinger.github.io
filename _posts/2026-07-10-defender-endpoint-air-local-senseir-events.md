@@ -3,7 +3,7 @@ title: Defender Endpoint AIR Under the Hood - What SenseIR Events Reveal
 author: pit
 date: 2026-07-10
 categories: [blogging]
-tags: [windows, defender, mde, air, automated-investigation, senseir, powershell, eventlog, incident-response]
+tags: [windows, defender, mde, automated-investigation, senseir, powershell, eventlog]
 render_with_liquid: false
 ---
 
@@ -124,7 +124,7 @@ That list is not the full internal playbook, and it may change over time. Still,
 Below is the combined helper I use for this. The first function reads `Microsoft-Windows-SenseIR` and keeps only a few practical filters. The second function wraps it for the AIR and Live Response action events I usually care about.
 
 ```powershell
-function Get-SxDefenderEventsSenseIR {
+function Get-DefenderEventsSenseIR {
     param (
         [string]$Pattern,
         [switch]$Filtered
@@ -147,13 +147,13 @@ function Get-SxDefenderEventsSenseIR {
     return $events
 }
 
-function Get-SxDefenderEventsSenseAutomatedInvestigation {
+function Get-DefenderEventsSenseAutomatedInvestigation {
     param (
         [switch]$ActionReportOnly
     )
 
     $ids = 7, 11
-    $events = Get-SxDefenderEventsSenseIR | Where-Object Id -in $ids
+    $events = Get-DefenderEventsSenseIR | Where-Object Id -in $ids
 
     if ($ActionReportOnly) {
         $events = $events | Where-Object Id -eq 11
@@ -163,7 +163,7 @@ function Get-SxDefenderEventsSenseAutomatedInvestigation {
 }
 ```
 
-The `Get-SxDefenderEventsSenseAutomatedInvestigation` wrapper focuses on two event IDs:
+The `Get-DefenderEventsSenseAutomatedInvestigation` wrapper focuses on two event IDs:
 
 | Event ID | Why I look at it |
 |---:|---|
@@ -180,21 +180,21 @@ For Live Response, I keep `1`, `3`, `11`, and `14` in the wrapper. Event `11` is
 To list AIR-related local events:
 
 ```powershell
-Get-SxDefenderEventsSenseAutomatedInvestigation |
+Get-DefenderEventsSenseAutomatedInvestigation |
     Select-Object TimeCreated, Id, LevelDisplayName, Message
 ```
 
 To only show action upload reports:
 
 ```powershell
-Get-SxDefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
+Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
     Select-Object TimeCreated, Id, Message
 ```
 
 To quickly extract the action names from event `11`:
 
 ```powershell
-Get-SxDefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
+Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
     ForEach-Object {
         [pscustomobject]@{
             TimeCreated = $_.TimeCreated
