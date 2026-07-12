@@ -1,15 +1,15 @@
 ---
-title: Defender Endpoint AIR Under the Hood - What SenseIR Events Reveal
+title: Defender Endpoint SenseIR Events - AIR and Live Response Under the Hood
 author: pit
 date: 2026-07-10
 categories: [blogging]
-tags: [windows, defender, mde, automated-investigation, senseir, powershell, eventlog]
+tags: [windows, defender, mde, automated-investigation, live-response, senseir, powershell, eventlog]
 render_with_liquid: false
 ---
 
 Sometimes the interesting part of Defender for Endpoint is not only what you see in the Defender portal, but what the endpoint quietly records while the cloud service is doing its work.
 
-I came across this again while looking at Automated Investigation and Response, usually shortened to **AIR**. The portal gives you the investigation story, verdicts, evidence, and remediation state. The local machine, however, also leaves a small but useful trail in the Windows event log. If you want to understand what AIR actually asked the endpoint to collect, `Microsoft-Windows-SenseIR` is worth a look.
+I came across this again while looking at Automated Investigation and Response, usually shortened to **AIR**. The portal gives you the investigation story, verdicts, evidence, and remediation state. Locally, the interesting part is that AIR and operator-driven Live Response both use the same Defender incident-response module: `SenseIR.exe`. Its actions leave a small but useful trail in the `Microsoft-Windows-SenseIR` event provider.
 
 > This is not a replacement for the Defender portal investigation view. Treat it as endpoint-side visibility: useful for learning, troubleshooting, and correlating what happened locally while AIR was running.
 {: .prompt-info}
@@ -32,15 +32,21 @@ One detail is worth calling out, because it affects how long this exact workflow
 
 So why look at it now? Because the local event trail is still a good way to understand the type of collection and inspection actions Defender performs on an endpoint.
 
-## 📡 The Local Provider
+## 📡 The Local SenseIR Module
 
-The provider I am using here is:
+The local Defender module/binary behind these actions is:
+
+```text
+C:\Program Files\Windows Defender Advanced Threat Protection\SenseIR.exe
+```
+
+Its corresponding Windows event provider is:
 
 ```text
 Microsoft-Windows-SenseIR
 ```
 
-The name already hints at the purpose: Sense incident response. On a device where AIR activity has happened, it records entries such as client registration and finished uploads for individual actions.
+The name already hints at the purpose: Sense incident response. The important point is not merely that AIR and Live Response write to the same local event provider. Both use `SenseIR.exe` as the local Defender module to perform their requested incident-response actions. `Microsoft-Windows-SenseIR` then exposes the execution and result-upload trail from that module.
 
 The beginning of an investigation may show a registration event:
 
@@ -100,17 +106,58 @@ This gives you a compact, local view of the collection sequence. In my sample, A
 > The event tells you that the endpoint finished and uploaded the result for an action. It does not show the full uploaded payload in the local event message, and it should not be treated as proof that a malicious verdict was reached.
 {: .prompt-warning}
 
+## 🖥️ Live Response Uses the Same Local Module
+
+I later compared this with a Live Response session. The actions were initiated interactively from Live Response, but the endpoint-side completion and upload events still appeared under `Microsoft-Windows-SenseIR` as event `11`:
+
+```text
+TimeCreated          Id LevelDisplayName Message
+-----------          -- ---------------- -------
+23/06/2026 18:26:18  11 Information      Finished uploading results of action PersistenceCheckAction. Action ID: c829585f-f72f-40ce-9f9f-e8422210bb19, upload result code: 0x0
+23/06/2026 18:25:43  11 Information      Finished uploading results of action ReadFileAction. Action ID: 7a74b6d8-3ced-4f9f-be29-4d68e801f7a5, upload result code: 0x0
+23/06/2026 18:25:40  11 Information      Finished uploading results of action GetFileInformationAction. Action ID: be0fce3d-7913-4a88-b8b4-926912c6d22a, upload result code: 0x0
+23/06/2026 18:24:53  11 Information      Finished uploading results of action EnumerateFilesAndFoldersAction. Action ID: 9af2d12d-55ea-440d-aef5-41ee079c0570, upload result code: 0x0
+23/06/2026 18:24:43  11 Information      Finished uploading results of action FileExistsAction. Action ID: b8be0fef-a3d3-4020-87fc-fd56ac61c893, upload result code: 0x0
+23/06/2026 18:24:10  11 Information      Finished uploading results of action GetTcpConnectionListAction. Action ID: f58a771a-441b-4a4d-8f2e-60a05966d162, upload result code: 0x0
+23/06/2026 18:23:31  11 Information      Finished uploading results of action GetFileInformationAction. Action ID: c8fcc68e-c341-4af1-bdd1-bd0f37922a9b, upload result code: 0x0
+23/06/2026 18:22:38  11 Information      Finished uploading results of action PersistenceCheckAction. Action ID: 7b22cbaf-d10b-4b24-aeca-d8d746300373, upload result code: 0x0
+23/06/2026 18:21:56  11 Information      Finished uploading results of action EnumerateFilesAndFoldersAction. Action ID: 06a6e948-460f-4ec8-ae20-6aa65f2a0a9b, upload result code: 0x0
+23/06/2026 18:21:14  11 Information      Finished uploading results of action GetFileInformationAction. Action ID: 4667d2e3-dae4-4ba1-a4e8-4d2513fcfa68, upload result code: 0x0
+23/06/2026 18:21:07  11 Information      Finished uploading results of action GetFileInformationAction. Action ID: fce4e7f7-162e-47cf-a8e2-7d869515b8c6, upload result code: 0x0
+23/06/2026 18:20:50  11 Information      Finished uploading results of action GetFileInformationAction. Action ID: 3f65f8de-68ab-4a4b-8ff3-c92515e5547b, upload result code: 0x0
+23/06/2026 18:20:32  11 Information      Finished uploading results of action FindFilesAction. Action ID: a00c10c1-58b8-4fcd-a272-e5233097a8ed, upload result code: 0x0
+23/06/2026 18:14:23  11 Information      Finished uploading results of action PersistenceCheckAction. Action ID: b8482811-9316-403a-8a02-58dfad6a7292, upload result code: 0x0
+23/06/2026 18:14:02  11 Information      Finished uploading results of action GetTcpConnectionListAction. Action ID: 3028901e-6fd5-4df9-9bef-9443b5012db0, upload result code: 0x0
+23/06/2026 18:13:07  11 Information      Finished uploading results of action EnumerateFilesAndFoldersAction. Action ID: 0d4d495a-0cc8-4c31-a3b9-8caa1c62fed3, upload result code: 0x0
+23/06/2026 18:12:51  11 Information      Finished uploading results of action PersistenceCheckAction. Action ID: b8a7af0b-842e-4412-823e-24cd10c2b732, upload result code: 0x0
+23/06/2026 18:12:39  11 Information      Finished uploading results of action GetServiceListAction. Action ID: 18e29434-68af-45f9-8dd1-5e56f644d3d7, upload result code: 0x0
+23/06/2026 18:12:25  11 Information      Finished uploading results of action GetProcessListAction. Action ID: 6350af59-d86a-452d-b8ff-ace03831ddd8, upload result code: 0x0
+23/06/2026 18:11:59  11 Information      Finished uploading results of action GetDriverListAction. Action ID: 936dd2bf-3f5c-4844-9790-bc60b27dfb9c, upload result code: 0x0
+```
+
+This is the useful finding. Although the work was requested through a remote Live Response session, the same local `SenseIR.exe` module used for AIR performed the individual actions. `Microsoft-Windows-SenseIR` is the event trail showing their result uploads; the shared provider is a consequence of the shared local module, not the main point by itself.
+
+> This observation confirms that AIR and Live Response both rely on the `SenseIR.exe` module.
+{: .prompt-info}
+
+> Live Response examples: <https://learn.microsoft.com/en-us/defender-endpoint/live-response-command-examples>
+{: .prompt-tip}
+
 ## 🔍 Reading the Action Names
 
 The action names are the useful part. They map nicely to the type of triage an analyst would normally perform manually:
 
-| Action | What it suggests AIR collected |
+| Action | What it suggests `SenseIR.exe` collected |
 |---|---|
 | `GetTcpConnectionListAction` | Active or recent TCP connection state |
 | `GetDriverListAction` | Loaded driver inventory |
 | `GetServiceListAction` | Service inventory |
 | `GetProcessListAction` | Running process inventory |
 | `GetFileInformationAction` | Metadata for files of interest |
+| `ReadFileAction` | Content read from a selected file |
+| `FileExistsAction` | Check whether a specified file or path exists |
+| `FindFilesAction` | Search for files matching supplied criteria |
+| `EnumerateFilesAndFoldersAction` | Directory and file enumeration for a selected path |
 | `ReadProcessMemoryAction` | Memory content from selected processes |
 | `PersistenceCheckAction` | Autoruns and other persistence locations |
 | `GetRecentlyExecutedFilesAction` | Recently executed file evidence |
@@ -171,9 +218,6 @@ The `Get-DefenderEventsSenseAutomatedInvestigation` wrapper focuses on two event
 | `11` | Finished upload for an investigation action |
 
 For Live Response, I keep `1`, `3`, `11`, and `14` in the wrapper. Event `11` is still the most useful report-style signal because it records that results for an action were uploaded.
-
-> Live Response can also trigger activity that later shows up in related Defender event streams. When I am trying to separate operator-driven activity from automated investigation activity, I usually start with `Microsoft-Windows-SenseIR` and then correlate with the Defender portal timeline.
-{: .prompt-tip}
 
 ## ⚡ Quick Usage
 
@@ -240,6 +284,6 @@ That last point matters. Local logs are a supporting signal, not the source of t
 
 ## ✅ Conclusion
 
-`Microsoft-Windows-SenseIR` is a neat local window into Defender for Endpoint AIR activity. It shows when the endpoint registered as an incident response client and, more importantly, which investigation actions finished and uploaded their results.
+`SenseIR.exe` is the common local Defender incident-response module behind both AIR and Live Response in these observations. `Microsoft-Windows-SenseIR` is the useful window into that module: it shows when the endpoint registered as an incident response client and, more importantly, which locally executed actions finished and uploaded their results.
 
-For anyone interested in how AIR works under the hood, this is a simple place to start. You will not get the cloud-side verdict logic from the local event log, but you can see the evidence collection rhythm - processes, services, drivers, connections, autoruns, memory reads, file metadata, and recent execution history. That alone makes AIR a bit less of a black box.
+For anyone interested in how Defender investigation and response works under the hood, this is a simple place to start. You will not get the cloud-side verdict logic or an unambiguous source label from the local event log, but you can see the evidence collection rhythm - processes, services, drivers, connections, autoruns, memory reads, file metadata, and recent execution history. That makes both AIR and operator-driven Live Response a bit less of a black box.
