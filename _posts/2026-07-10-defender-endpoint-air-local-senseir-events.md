@@ -3,7 +3,7 @@ title: Defender Endpoint SenseIR Events - AIR and Live Response Under the Hood
 author: pit
 date: 2026-07-10
 categories: [blogging]
-tags: [windows, defender, mde, automated-investigation, live-response, senseir, powershell, eventlog]
+tags: [windows, defender, mde, automated-investigation, live-response, senseir, network-discovery, powershell, eventlog]
 render_with_liquid: false
 ---
 
@@ -143,6 +143,25 @@ This is the useful finding. Although the work was requested through a remote Liv
 > Live Response examples: <https://learn.microsoft.com/en-us/defender-endpoint/live-response-command-examples>
 {: .prompt-tip}
 
+### Distinguishing the Source in Event 11
+
+Although the workflows use the same event provider and event ID, the `Action ID` gives us a practical local clue about where the action came from. In my samples, AIR action IDs use an `iaid_` prefix followed by an internal sequence and action name, while actions started through Live Response use a plain GUID. I also found action IDs starting with `eeaid_`, which appear to be related to Defender for Endpoint Device Discovery or Network Discovery activity:
+
+| Possible source | Observed `Action ID` format | Example |
+|---|---|---|
+| AIR | Starts with `iaid_` | `iaid_3299_read_memory_content__107_1783625052` |
+| Live Response | GUID without the `iaid_` prefix | `6350af59-d86a-452d-b8ff-ace03831ddd8` |
+| Device/Network Discovery | Starts with `eeaid_` | `eeaid_...` |
+
+That means event `11` can be classified locally with a simple check: an `iaid_` prefix is consistent with AIR, an `eeaid_` prefix may indicate Device/Network Discovery, and a GUID-shaped ID is consistent with Live Response.
+
+```powershell
+$source = Get-DefenderSenseIRActionSource -ActionId $actionId
+```
+
+> ⚠️ This distinction is based entirely on locally observed `Action ID` formats. Microsoft does not document these prefixes as a supported way to identify the source. In particular, my association of `eeaid_` with Device/Network Discovery is only my current interpretation of the surrounding activity - it is not proven or confirmed by official documentation. Treat all three patterns as correlation clues, not a permanent contract.
+{: .prompt-warning}
+
 ## 🔍 Reading the Action Names
 
 The action names are the useful part. They map nicely to the type of triage an analyst would normally perform manually:
@@ -168,7 +187,7 @@ That list is not the full internal playbook, and it may change over time. Still,
 
 ## 🛠️ PowerShell Helper
 
-Below is the combined helper I use for this. The first function reads `Microsoft-Windows-SenseIR` and keeps only a few practical filters. The second function wraps it for the AIR and Live Response action events I usually care about.
+Below is the combined helper I use for this. The first function reads `Microsoft-Windows-SenseIR` and keeps only a few practical filters. `Get-DefenderSenseIRActionSource` classifies the observed `Action ID` formats, while the final function wraps the event reader for the AIR and Live Response action events I usually care about.
 
 ```powershell
 function Get-DefenderEventsSenseIR {
@@ -192,6 +211,27 @@ function Get-DefenderEventsSenseIR {
     }
 
     return $events
+}
+
+function Get-DefenderSenseIRActionSource {
+    param (
+        [Parameter(Mandatory)]
+        [string]$ActionId
+    )
+
+    if ($ActionId -like "iaid_*") {
+        return "AIR"
+    }
+
+    if ($ActionId -like "eeaid_*") {
+        return "Network Discovery"
+    }
+
+    if ($ActionId -match "^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$") {
+        return "Live Response"
+    }
+
+    return "Unknown"
 }
 
 function Get-DefenderEventsSenseAutomatedInvestigation {
@@ -240,10 +280,13 @@ To quickly extract the action names from event `11`:
 ```shell
 Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
     ForEach-Object {
+        $actionId = [regex]::Match($_.Message, "Action ID: (?<id>[^,]+)").Groups["id"].Value
+
         [pscustomobject]@{
             TimeCreated = $_.TimeCreated
             Action      = [regex]::Match($_.Message, "action (?<action>[^.]+)\.").Groups["action"].Value
-            ActionId    = [regex]::Match($_.Message, "Action ID: (?<id>[^,]+)").Groups["id"].Value
+            ActionId    = $actionId
+            Source      = Get-DefenderSenseIRActionSource -ActionId $actionId
             ResultCode  = [regex]::Match($_.Message, "upload result code: (?<code>\S+)").Groups["code"].Value
         }
     } |
@@ -253,16 +296,16 @@ Get-DefenderEventsSenseAutomatedInvestigation -ActionReportOnly |
 That produces a much cleaner sequence:
 
 ```text
-TimeCreated          Action                                             ResultCode
------------          ------                                             ----------
-21/06/2026 21:22:55  GetTcpConnectionListAction                         0x0
-21/06/2026 21:22:56  GetDriverListAction                                0x0
-21/06/2026 21:22:58  GetServiceListAction                               0x0
-21/06/2026 21:23:43  GetProcessListAction                               0x0
-21/06/2026 21:24:12  ReadProcessMemoryAction                            0x0
-21/06/2026 21:33:56  PersistenceCheckAction                             0x0
-21/06/2026 21:33:57  GetRecentlyExecutedFilesAction                     0x0
-21/06/2026 21:34:04  GetRecentlyCreatedOrModifiedExecutableFileListAction 0x0
+TimeCreated          Action                                               Source  ResultCode
+-----------          ------                                               ------  ----------
+21/06/2026 21:22:55  GetTcpConnectionListAction                           AIR     0x0
+21/06/2026 21:22:56  GetDriverListAction                                  AIR     0x0
+21/06/2026 21:22:58  GetServiceListAction                                 AIR     0x0
+21/06/2026 21:23:43  GetProcessListAction                                 AIR     0x0
+21/06/2026 21:24:12  ReadProcessMemoryAction                              AIR     0x0
+21/06/2026 21:33:56  PersistenceCheckAction                               AIR     0x0
+21/06/2026 21:33:57  GetRecentlyExecutedFilesAction                       AIR     0x0
+21/06/2026 21:34:04  GetRecentlyCreatedOrModifiedExecutableFileListAction AIR     0x0
 ```
 
 ## 💡 Why This Is Useful
@@ -284,6 +327,6 @@ That last point matters. Local logs are a supporting signal, not the source of t
 
 ## ✅ Conclusion
 
-`SenseIR.exe` is the common local Defender incident-response module behind both AIR and Live Response in these observations. `Microsoft-Windows-SenseIR` is the useful window into that module: it shows when the endpoint registered as an incident response client and, more importantly, which locally executed actions finished and uploaded their results.
+`SenseIR.exe` is the common local Defender incident-response module behind both AIR and Live Response in these observations. `Microsoft-Windows-SenseIR` is the useful window into that module: it shows when the endpoint registered as an incident response client and, more importantly, which locally executed actions finished and uploaded their results. In event `11`, the observed `Action ID` format also provides a practical source clue: `iaid_` for AIR, a plain GUID for Live Response, and possibly `eeaid_` for Device/Network Discovery.
 
-For anyone interested in how Defender investigation and response works under the hood, this is a simple place to start. You will not get the cloud-side verdict logic or an unambiguous source label from the local event log, but you can see the evidence collection rhythm - processes, services, drivers, connections, autoruns, memory reads, file metadata, and recent execution history. That makes both AIR and operator-driven Live Response a bit less of a black box.
+For anyone interested in how Defender investigation and response works under the hood, this is a simple place to start. You will not get the cloud-side verdict logic or an explicit source field from the local event log, but you can correlate the `Action ID` pattern and see the evidence collection rhythm - processes, services, drivers, connections, autoruns, memory reads, file metadata, and recent execution history. That makes both AIR and operator-driven Live Response a bit less of a black box.
