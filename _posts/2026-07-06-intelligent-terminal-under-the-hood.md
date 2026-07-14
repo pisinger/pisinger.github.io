@@ -1,26 +1,26 @@
 ---
 title: "Two Protocols and a Rust Bridge: How Windows Intelligent Terminal Works"
 author: pit
-date: 2026-07-06
+date: 2026-07-14
 categories: [blogging]
 tags: [intelligent-terminal, windows-terminal, ai-agents, acp, github-copilot, com]
 render_with_liquid: false
 ---
 
-> The point most people will miss: Intelligent Terminal isn't about putting AI everywhere. It's about making the terminal itself the context source. That is why the same model works for local shells, WSL and even remote servers over `ssh` - the important object is the pane output, not where the process producing it happens to run.
+> The most interesting part: Intelligent Terminal isn't about putting AI everywhere. It makes the terminal itself the context source, so the same agent can work with local shells, WSL and even remote servers over `ssh`. The important object is the pane output, not where the process producing it happens to run.
 {: .prompt-tip}
 
-Intelligent Terminal ships without an AI model of its own. Rather than reinvent the wheel, it leans on the agent CLI you already run: it is an experimental Windows Terminal fork that acts as a local transport, speaking ACP to whatever agent you have installed (Copilot, Claude, Codex or Gemini) and driving the terminal over a private COM interface. That single "be a transport, not a brain" decision shapes the entire architecture below.
+That works because Intelligent Terminal ships without an AI model of its own. It is a Windows Terminal fork that acts as a local transport, speaking ACP to whatever agent CLI you already use - Copilot, Claude, Codex or Gemini - and driving the terminal over a private COM interface. The rest of the architecture follows from that decision: be a transport, not a brain.
+
+This is also how I use it in practice. I rely on it heavily from SSH sessions, where the machines I am troubleshooting do not have any AI capability installed locally. The agent runs on my Windows side and works from the output already visible in the terminal, which makes it useful for investigation on locked-down servers and other systems where installing an AI CLI would be impractical. I use the same pattern in WSL, even though Copilot CLI is available natively there: keeping the agent in Intelligent Terminal means it can see and work with the terminal pane directly.
 
 > Imagine a capable mechanic next to your car who, every time a warning appears, still needs you to read the dashboard aloud - they know exactly what to do, but can't see the warning light or reach the controls. That's roughly how an AI coding agent and your terminal normally relate: the agent runs in its own session but can't see the failed command in your other pane, pick up its output or open a tab in your window. You carry the context between the two.
 {: .prompt-info}
 
-Microsoft's new **Intelligent Terminal** sets out to remove that gap - giving the mechanic an intercom and a controlled set of switches. What pulled me in was one line in the README: it's "a local transport layer" that "does not call any cloud APIs itself" - an odd thing for an AI product to say out loud, and the single decision the rest of the architecture hangs off.
+Microsoft's **Intelligent Terminal** sets out to remove that gap - giving the mechanic an intercom and a controlled set of switches. What pulled me in was one line in the README: it is "a local transport layer" that "does not call any cloud APIs itself". That is an unusual thing for an AI product to say out loud, and a useful clue to how the whole system works.
 
 > Intelligent Terminal is an experimental, separate app that installs next to your existing Windows Terminal and can run side by side - it does not replace it. Source and announcement: <https://github.com/microsoft/intelligent-terminal> and <https://devblogs.microsoft.com/commandline/announcing-intelligent-terminal-version-0-1/>
-{: .prompt-info}
-
-A caveat up front: most of the architectural detail comes from reading the source, backed by the app's own diagnostic logs. Where I infer rather than follow an explicit code path, I say so. (Source links are collected at the end.)
+{: .prompt-warning}
 
 ## 🖥️ What using Intelligent Terminal actually looks like
 
@@ -162,15 +162,19 @@ The path is short. Windows Terminal is already rendering that text and keeping i
 
 The WSL twist: `apt` runs inside Linux, but its output already flows through the conpty hosted by Windows Terminal - so WTA never enters the distro or asks `apt` to repeat itself, it reads the same buffer I'm looking at. With OSC 133 marks present, that capture is the latest completed command as one clean unit, keeping an older `git status` from joining the question; without them it falls back to a bounded slice of scrollback. Either way the terminal does the capture, and the agent vendor controls the next hop.
 
-> Nice side-effect: this is not limited to local shells. If you are connected to a server over `ssh`, the remote command output is still rendered in your local Windows Terminal pane. That means the agent can explain a failed command from a remote machine that has no AI tooling installed at all - because the only thing it needs is the terminal buffer you are already looking at.
-{: .prompt-tip}
-
 Rather than take that on trust from the source, I asked the running agent to check my homework - *"explain this and tell me how you fetched the terminal output"* - after leaving an `ipconfig` result on screen. It was blunt about the direction of travel: it hadn't fetched anything.
 
 > I **didn't fetch it.** The Windows Terminal Agent runtime **injected it** directly into my context as part of the Terminal Context JSON. [...] WTA pushes this JSON to me at startup, not the other way around. I read it from my runtime context, never by running commands myself.
 {: .prompt-warning}
 
 It even enumerated the shape of that context object - `activeTarget` (the active pane's ID), `cwd`, `shell`, `buffer` (the last N lines of pane output), plus `window_title` and `locale`. That maps cleanly onto the path above and settles a subtlety worth stating plainly: the *terminal* does the capturing through COM, then hands the agent a finished JSON blob. The agent is a passive recipient - it never re-runs `ipconfig` or scrapes the screen to reconstruct what I saw; the `buffer` is already sitting in its prompt the moment the conversation opens. It is a tidy confirmation of the "transport, not a brain" split seen from the inside: the model does the reasoning, the terminal does the seeing.
+
+> Nice side-effect: this is not limited to local shells. If you are connected to a server over `ssh`, the remote command output is still rendered in your local Windows Terminal pane. That means the agent can explain a failed command from a remote machine that has no AI tooling installed at all - because the only thing it needs is the terminal buffer you are already looking at.
+{: .prompt-tip}
+
+Below an example for a SSH session to troubleshoot a remote machine where the defender agent has stopped for some reason.
+
+![img-description](/assets/img/posts/intelligent-terminal-under-the-hood/ssh-session-mde-troubleshooting-example.png)
 
 I later came across the same shape from a different angle, when Defender AV blocked one of the commands and exposed the process command line behind the scenes. The interesting part was not the block itself, but the command that had been launched: `wtcli.exe` emitting a local terminal event with a JSON payload.
 
@@ -237,9 +241,9 @@ The clever part: **autofix works on a pane you have never opened**. Every time y
 
 ## 🐧 Why this all works for WSL and SSH too
 
-If you live in WSL like I do, the obvious question is whether any of this cares that half your work happens inside a Linux distro. Mostly it doesn't. Every pane is addressed by an opaque `SessionId` GUID, so nothing in the control path knows what shell runs inside - `capture-pane`, `send-keys` and `split-pane` behave identically whether it's `pwsh` or `wsl:Ubuntu` (the `PaneInfo.Shell` field just lets the agent *see* which). It works in reverse too: the CLI runs on the Windows host but its working directory can point into the distro over `\\wsl$\...`, and the code tolerates those UNC paths - so "open Copilot against my WSL project" needs only the host CLI and a Linux `cwd`, no agent install inside the distro.
+If you live in WSL like I do, the obvious question is whether any of this cares that half your work happens inside a Linux distro. Mostly it doesn't. Every pane is addressed by an opaque `SessionId` GUID, so nothing in the control path knows what shell runs inside - `capture-pane`, `send-keys` and `split-pane` behave identically whether it's `pwsh` or `wsl:Ubuntu` (the `PaneInfo.Shell` field just lets the agent *see* which). It works in reverse too: the CLI runs on the Windows host but its working directory can point into the distro over `\\wsl$\...`, and the code tolerates those UNC paths - so "open Copilot against my WSL project" needs only the host CLI and a Linux `cwd`, no agent install inside the distro. That is the arrangement I use even when Copilot CLI is available natively inside WSL: the terminal-hosted agent gets the pane context without needing to be installed in the distro.
 
-The same mental model makes SSH a genuinely useful scenario. Suppose you are on a plain Linux VM, network appliance or locked-down jump box over `ssh`, and a command fails with some package manager, systemd or permission error. Intelligent Terminal does not need an agent on that remote host. It does not need Python, Node, Copilot, Codex or any other AI capability installed there. The remote process writes text to the SSH session, SSH carries it back to your Windows Terminal pane, and WTA captures that pane output locally.
+The same mental model makes SSH a genuinely useful scenario. Suppose you are on a plain Linux VM, network appliance or locked-down jump box over `ssh`, and a command fails with some package manager, systemd or permission error. This is one of my main uses for Intelligent Terminal: the remote machines do not need an agent, Python, Node, Copilot, Codex or any other AI capability installed locally. The remote process writes text to the SSH session, SSH carries it back to your Windows Terminal pane, and WTA captures that pane output locally.
 
 That is a pretty strong operational use case: bring the AI helper to the terminal, not to every server. You can ask "what does this error mean?" against a remote failure and the agent reasons over the exact output you saw, while the remote machine remains just a normal SSH endpoint. For locked-down environments, old appliances, short-lived troubleshooting sessions and customer machines where you cannot install extra tooling, that boundary matters.
 
