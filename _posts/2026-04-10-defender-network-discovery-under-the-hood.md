@@ -12,6 +12,9 @@ Microsoft Defender Endpoint's standard (active) discovery probes hosts on the lo
 > ⚠️ One important clarification upfront: MDE does **not** perform a full subnet sweep. Active probing is **targeted** - it only scans hosts that have already been observed passively (e.g. via broadcast/multicast traffic, ARP, etc.). So don't expect to see probes against every IP in the /24. It's also worth noting that active probing is scoped exclusively to unmanaged and unknown devices - anything already onboarded to Defender is excluded from scanning.
 {: .prompt-warning}
 
+> Also worth checking: the Windows Event Log for SenseIR events, which can surface discovery activity on the device. More details here: <https://pisinger.github.io/posts/defender-endpoint-air-local-senseir-events/>
+{: .prompt-tip}
+
 ## 🔍 Extracting the Scan Activity from the Device Timeline
 
 When a probe runs, MDE downloads a short-lived `PSScript_` file into `C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\Downloads\` and executes it under `NT AUTHORITY\LOCAL SERVICE`. Each individual scan function appears as a `PowerShellCommand` event in the device timeline. Exporting the timeline as CSV and filtering for scan-related rows gives you already a good overview. That said, if you prefer to stay in the UI, searching directly within the Timeline works as well.
