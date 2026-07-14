@@ -162,6 +162,9 @@ $source = Get-DefenderSenseIRActionSource -ActionId $actionId
 > ⚠️ This distinction is based entirely on locally observed `Action ID` formats. Microsoft does not document these prefixes as a supported way to identify the source. In particular, my association of `eeaid_` with Device/Network Discovery is only my current interpretation of the surrounding activity - it is not proven or confirmed by official documentation. Treat all three patterns as correlation clues, not a permanent contract.
 {: .prompt-warning}
 
+> More detailed information around Defender device/network discovery can be found here: <https://pisinger.github.io/posts/defender-network-discovery-under-the-hood/>
+{: .prompt-tip}
+
 ## 🔍 Reading the Action Names
 
 The action names are the useful part. They map nicely to the type of triage an analyst would normally perform manually:
