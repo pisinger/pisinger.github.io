@@ -103,6 +103,8 @@ The C++ Windows Terminal codebase barely knows what an agent is. Nearly all the 
   gemini / codex)                      (drive tabs, panes, input)
 ```
 
+Source: <https://github.com/microsoft/intelligent-terminal>
+
 - **`wta-master`** is a headless singleton, spawned once per terminal process. It owns the single connection to the agent CLI and multiplexes it, so the CLI is spawned exactly once no matter how many panes you open.
 - **`wta-helper`** is spawned once per agent pane. It renders the chat UI (a `ratatui` TUI inside the pane) and connects back to master over a named pipe. From the helper's point of view, master *is* the agent.
 
