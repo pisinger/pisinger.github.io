@@ -11,6 +11,7 @@ order: 7
 {: .prompt-info }
 
 > DISCLAIMER: The views and opinions expressed on this blog are solely my own and do not reflect the views of my employer or any other organization I may be affiliated with. The content provided here is for informational purposes only and is not intended as official documentation or professional advice. Use the information at your own risk. I make no representations as to the accuracy, completeness, or suitability of any information on this site and will not be liable for any errors or omissions. Any scripts, queries, or configurations shared here are provided as-is - always validate and test in a non-production environment before use. External links do not imply endorsement.
->
-> If you have any concerns, questions, or want to provide feedback, feel free to get in touch with me via [LinkedIn](https://de.linkedin.com/in/pit-singert).
+{: .prompt-warning }
+
+> 🤔❓ If you have any concerns, questions, or want to provide feedback, feel free to get in touch with me via [LinkedIn](https://de.linkedin.com/in/pit-singert).
 {: .prompt-warning }
