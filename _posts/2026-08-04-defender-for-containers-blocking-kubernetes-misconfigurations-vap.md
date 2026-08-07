@@ -277,7 +277,7 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
 
 ## 📝 Summary of the admission control flow
 
-## Policy distribution (once, at onboarding / policy change)
+### Policy distribution (once, at onboarding / policy change)
 
   - Defender for Containers holds the security misconfiguration policies in the backend and writes them to the cluster via the Kubernetes API.
   - The in-cluster Defender sensor component reconciles those policies into native `ValidatingAdmissionPolicy` and `ValidatingAdmissionPolicyBinding` objects.
@@ -310,7 +310,7 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
                  └──► resident in the cluster, evaluated by kube-apiserver
 ```
 
-## Deploy-time enforcement (every request)
+### Deploy-time enforcement (every request)
 
   - A Kubernetes object is submitted to the API server.
   - The API server evaluates the `ValidatingAdmissionPolicy` objects and their bindings.

@@ -46,7 +46,7 @@ Defender admission controller evaluates image artifacts and policy
           └── Deny  ──► request is rejected before pod admission
 ```
 
-### ✅ Enable Image gating
+## ✅ Enable Image gating
 
 The current support matrix lists gated deployment as generally available for AKS, EKS and GKE on Kubernetes `1.31` and later, with ACR, ECR and Google Artifact Registry respectively. Azure Arc-enabled Kubernetes clusters are also covered. The required components are Defender sensor, Security Gating, Security Findings and Registry Access. See the [current support matrix](https://learn.microsoft.com/en-us/azure/defender-for-cloud/support-matrix-defender-for-containers) for changes.
 
