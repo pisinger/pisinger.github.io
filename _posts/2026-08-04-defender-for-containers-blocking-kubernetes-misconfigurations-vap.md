@@ -21,7 +21,7 @@ VAP removes the choice. The evaluation runs inside the API server, so there is n
 > The trade-off is scope. Azure Policy also feeds compliance and posture assessment, so it reports on workloads that are already running. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster (yet). Deployment-time enforcement and retrospective posture visibility remain two separate mechanisms even while the Azure Policy Addon can also be used to block.
 {: .prompt-info}
 
-> FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-04-defender-containers-gated-deployment-blocking-vulnerable-images.md).
+> FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-07-defender-for-containers-gated-deployment-blocking-vulnerable-images.md).
 {: .prompt-tip}
 
 ## 🧭 What the feature evaluates
@@ -228,7 +228,7 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
 Error from server (Forbidden): pods "ps-http-echo" is forbidden: ValidatingAdmissionPolicy 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.vap' with binding 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.binding' denied request: Service account token mounted at default path in "ps-http-echo". Set spec.automountServiceAccountToken to false
 ```
 
-The default bindings reported violations in `Audit` mode, while the custom binding changed the final result to `Forbidden`. The pod never became an admitted workload. You can check the violations also in the portal as shown in the screenshot below:
+The default bindings reported violations in `Audit` mode, while the custom binding changed the final result to `Forbidden`. The pod never became an admitted workload. You can check the violations also in the Defender portal under `Environment → Security Rules → Admission Monitoring` as shown in the screenshot below:
 
 ![img-description](/assets/img/posts/defender-containers-blocking-kubernetes-misconfigurations-vap/policy-misconfig-in-action.png)
 
@@ -262,6 +262,18 @@ pod/ps-http-echo created
 
 > An audit warning shows evaluation, a rejected request demonstrates blocking, and the presence of a `ValidatingAdmissionPolicy` alone does not prove that its binding is active or that the request matched its scope.
 {: .prompt-tip}
+
+Also keep in mind how admission policies and webhooks are processed in Kubernetes. See below for a simplified order of evaluation. The image gate is a validating webhook, which is called after the in-process mutating and validating admission policies. If a mutating policy changes the image reference, the webhook will see the updated value.
+
+1. MutatingAdmissionPolicy (CEL) — in-process, beta 1.34, gate off by default, v1 in 1.36
+2. MutatingAdmissionWebhook — callout, serial, last mutator
+3. Validating admission plugins (PodSecurity, NodeRestriction) — in-process, before VAP
+4. ValidatingAdmissionPolicy (CEL) — in-process, GA 1.30
+5. ValidatingAdmissionWebhook — callout, parallel
+6. Persist — etcd
+
+> This also means if there are any misconfigurations that prevent the pod from being admitted, the image gate will not be called at all as the request will be rejected before it reaches the webhook. The image gate is not a replacement for misconfiguration policies, it is an additional control point.
+{: .prompt-warning}
 
 ## 📝 Summary of the admission control flow
 
@@ -341,7 +353,7 @@ This distinction matters because a cluster can show audit events from Defender's
 
 ## 📊 Monitoring the result
 
-Defender exposes admission activity in the portal, while cluster audit data gives another troubleshooting perspective. For admission failures, `CloudAuditEvents` within Defender Advanced Hunting can connect the Kubernetes request to the response and annotations:
+Defender surfaces admission activity in the portal under `Environment → Security Rules → Admission Monitoring`, while cluster audit data offers a second troubleshooting angle. That data lives in the `CloudAuditEvents` table in Defender Advanced Hunting, where you can correlate the Kubernetes request with its response and annotations:
 
 ```shell
 CloudAuditEvents
