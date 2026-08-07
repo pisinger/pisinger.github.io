@@ -1,5 +1,5 @@
 ---
-title: Defender for Containers Gated Deployment - Blocking Vulnerable Container Images
+title: Defender for Containers - Gated Deployment - Blocking Vulnerable Container Images
 author: pit
 date: 2026-08-07
 categories: [blogging, tutorial]
@@ -96,7 +96,9 @@ az tag update \
 > Apply the tag before automatic provisioning deploys the sensor. It prevents future automatic deployment; it does not remove a sensor that is already installed. See the [Microsoft Learn exclusion guidance](https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-exclude-cluster?tabs=aks) for supported cluster types and limitations.
 {: .prompt-warning}
 
-Before running Helm, confirm that Helm is installed, the cluster version and cloud-provider combination are supported, and the Defender components have the required permissions and outbound connectivity. The exact values below are environment-specific (AKS, EKS, GKE, Arc) and should be adapted to the current installation documentation. To also enable misconfiguration policies, add the following flag:
+Before running Helm, confirm that Helm is installed, the cluster version and cloud-provider combination are supported, and the Defender components have the required permissions and outbound connectivity. The exact values below are environment-specific (AKS, EKS, GKE, Arc) and should be adapted to the current installation documentation. 
+
+To also enable [misconfiguration policies](https://pisinger.github.io/posts/defender-for-containers-blocking-kubernetes-misconfigurations-vap/), add the following flag:
 
 > --set defender-admission-controller.enableMisconfigurationPolicies=true
 {: .prompt-info}
@@ -146,14 +148,14 @@ kubectl get securityartifactpolicies.defender.microsoft.com -o json
 
 ## 🧩 Ratify and the admission webhook
 
-In the admission-controller activity as part of the webhook path, the registry verification call will show a user agent similar to:
+Within the admission-controller activity on the webhook path, the registry verification call surfaces a user agent similar to the one below:
 
 > ratify+unknown (linux/amd64)
 {: .prompt-info}
 
-That points to Ratify, a supply-chain verifier used to resolve OCI referrers and validate attached information such as vulnerability attestations and signatures. In this flow, it connects the image digest in the deployment request with the findings artifact stored alongside it.
+That points to Ratify, a supply-chain verifier used to resolve OCI referrers and validate attached information such as vulnerability attestations and signatures. In this flow, it connects the image digest in the deployment request with the findings artifact stored alongside it. You can trace it back in the registry by looking for pull requests carrying the same user agent and `application/vnd.oci.image.manifest.v1+json` media type:
 
-The image path uses a validating webhook rather than the native `ValidatingAdmissionPolicy` path used by the misconfiguration feature as described here <https://pisinger.github.io/posts/defender-for-containers-blocking-kubernetes-misconfigurations-vap/>. The webhook configuration can be inspected with:
+The gated deployment path uses a validating webhook rather than the native `ValidatingAdmissionPolicy` path used by the misconfiguration feature as described here <https://pisinger.github.io/posts/defender-for-containers-blocking-kubernetes-misconfigurations-vap/>. The webhook configuration can be inspected with:
 
 ```bash
 kubectl get validatingwebhookconfigurations -o json \
@@ -232,7 +234,7 @@ You will get something like this:
 }
 ```
 
-There is also a resource-side setting worth checking when troubleshooting missing artifacts. `ContainerIntegrityContribution` corresponds to the `Security Findings` capability in the portal and is enabled by default for Defender for Containers:
+There is also a resource-side setting worth checking when troubleshooting missing artifacts. `ContainerIntegrityContribution` corresponds to the `Security Findings` capability in the portal and is enabled by default when going for Defender for Containers:
 
 ```json
 {
@@ -257,13 +259,14 @@ Defender for Containers scans images in supported registries and associates vuln
 
 The decision is based on the configured rule. For example, a rule could audit or deny images with high or critical vulnerabilities, apply only to a particular cluster or namespace, exempt a specific CVE, or block images when no valid findings artifact exists.
 
-The basic deployment-time path is:
+The simplified flow is:
 
-1. Defender scans the image in a supported registry.
-2. Vulnerability findings are published and associated with the image as artifacts.
-3. A deployment request reaches the Kubernetes API server.
-4. The Defender admission component retrieves and validates the findings artifact for the image digest, then evaluates it against the gated deployment rule.
-5. The request is allowed, audited, or denied.
+> 1. Defender scans the image in a supported registry.
+> 2. Vulnerability findings are published and associated with the image as artifacts.
+> 3. A deployment request reaches the Kubernetes API server.
+> 4. The Defender admission component retrieves and validates the findings artifact for the image digest, then evaluates it against the gated deployment rule.
+> 5. The request is allowed, audited, or denied.
+{: .prompt-info}
 
 ```txt
   ┌────────────────────────────────────┐
@@ -317,9 +320,9 @@ This is why gated deployment supports both resource scoping and exemptions. A ru
 
 ![img-description](/assets/img/posts/defender-for-containers-gated-deployment-blocking-vulnerable-images/policy-gated-deploy-2.png)
 
-To be fair, the same trade-off exists in CI/CD image gates. Pipeline enforcement happens earlier, which is excellent for preventing vulnerable images from progressing, but teams sometimes need enough flexibility to push an image while a remediation is in progress. Runtime gating adds another control point close to the cluster. It does not remove the need for judgement; it gives you a second opportunity to apply the decision using the actual deployment scope and business context.
+The same trade-off exists in CI/CD image gates. Pipeline enforcement happens earliest and is the right place for the bulk of the work, but it only covers images that go through the pipeline. Admission control adds a second, independent enforcement point at the cluster boundary — and its distinct value is catching what the pipeline never saw: manual applies, upstream Helm images, operator-injected sidecars. It does not cover already-running workloads, and it can only decide on images that already carry a vulnerability assessment, so the fail-open vs fail-closed choice for unscanned images is itself a security decision.
 
-> A useful rollout is usually more precise than "block high and above everywhere": start with audit, scope the rule to the workloads where the risk reduction is highest, define a documented exemption process, and use expiry dates for temporary exceptions.
+> A useful rollout is more precise than "block high and above everywhere": start in audit, scope to the workloads where risk reduction is highest, exclude system namespaces deliberately rather than by accident, define a documented exemption process, and use expiry dates for temporary exceptions.
 {: .prompt-tip}
 
 The last option deserves a closer look. A missing scan result is not automatically the same as a clean image. It may mean the image has not been scanned yet, the registry is unsupported, or the Defender findings artifact was not published. You need to choose whether that should be allowed, audited, or blocked in your environment.
@@ -356,7 +359,7 @@ Defender surfaces admission activity in the portal under `Environment → Securi
 
 ![img-description](/assets/img/posts/defender-for-containers-gated-deployment-blocking-vulnerable-images/policy-gate-monitoring.png)
 
-Additionally you can also query it directly via Defender Advanced Hunting and `CloudPolicyEnforcementEvents` and `CloudAuditEvents` tables. 
+Additionally you can also query it directly via Defender Advanced Hunting and the `CloudPolicyEnforcementEvents` and `CloudAuditEvents` tables. 
 
 ```shell
 CloudPolicyEnforcementEvents
@@ -373,7 +376,7 @@ CloudPolicyEnforcementEvents
 
 ```shell
 CloudAuditEvents
-| where Timestamp > ago(6d)
+| where Timestamp > ago(1d)
 | extend 
     ClusterName = tostring(split(AzureResourceId, "/")[-1]),
     ResponseStatus = (RawEventData.ResponseStatus),

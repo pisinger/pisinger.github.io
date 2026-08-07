@@ -21,7 +21,7 @@ VAP removes the choice. The evaluation runs inside the API server, so there is n
 > The trade-off is scope. Azure Policy also feeds compliance and posture assessment, so it reports on workloads that are already running. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster (yet). Deployment-time enforcement and retrospective posture visibility remain two separate mechanisms even while the Azure Policy Addon can also be used to block.
 {: .prompt-info}
 
-> FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-07-defender-for-containers-gated-deployment-blocking-vulnerable-images.md).
+> FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers - Gated Deployment - Blocking Vulnerable Container Images](https://pisinger.github.io/posts/defender-for-containers-gated-deployment-blocking-vulnerable-images).
 {: .prompt-tip}
 
 ## 🧭 What the feature evaluates
@@ -277,7 +277,7 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
 
 ## 📝 Summary of the admission control flow
 
-1. Policy distribution (once, at onboarding / policy change)
+## Policy distribution (once, at onboarding / policy change)
 
   - Defender for Containers holds the security misconfiguration policies in the backend and writes them to the cluster via the Kubernetes API.
   - The in-cluster Defender sensor component reconciles those policies into native `ValidatingAdmissionPolicy` and `ValidatingAdmissionPolicyBinding` objects.
@@ -310,7 +310,7 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
                  └──► resident in the cluster, evaluated by kube-apiserver
 ```
 
-2. Deploy-time enforcement (every request)
+## Deploy-time enforcement (every request)
 
   - A Kubernetes object is submitted to the API server.
   - The API server evaluates the `ValidatingAdmissionPolicy` objects and their bindings.
@@ -376,8 +376,6 @@ The `ResponseMessage` field contains the admission controller's explanation of t
 
 > pods "ps-http-echo" is forbidden: ValidatingAdmissionPolicy 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.vap' with binding 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.binding' denied request: Service account token mounted at default path in "ps-http-echo". Set spec.automountServiceAccountToken to false
 {: .prompt-warning}
-
-```
 
 The `Annotations` field can identify the policy owner, rule, resource and action. An observed event looked like this:
 
