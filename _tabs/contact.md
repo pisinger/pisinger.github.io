@@ -54,7 +54,7 @@ I’m available for selected consulting projects and professional collaborations
 I have **limited availability**, but I’m happy to hear about relevant projects and collaboration opportunities. Please send me an email with a short description of your organization, the challenge you are facing, and the kind of help you are looking for.
 
 <div class="text-center my-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-outline-primary">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
     kontakt.psingert@outlook.de
   </a>
 </div>
@@ -64,7 +64,7 @@ I have **limited availability**, but I’m happy to hear about relevant projects
 > Praktische Cloud-Architektur, Security und Automatisierung für Microsoft-orientierte kleine Unternehmen.
 {: .prompt-tip }
 
-Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen mit Unternehmen mit **10–100 Mitarbeitenden**. Wenn Sie Microsoft-Technologien einsetzen und erfahrene Unterstützung bei Cloud- oder Security-Herausforderungen suchen, freue ich mich auf Ihre Nachricht.
+Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für kleine und mittelständische Unternehmen mit **10–100 Mitarbeitenden**. Wenn Sie Microsoft-Technologien einsetzen und Unterstützung bei Fragen rund um Cloud-Architektur oder Security suchen, freue ich mich über Ihre Nachricht.
 
 ## Meine Schwerpunkte
 
@@ -108,7 +108,7 @@ Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen mit 
 Meine zeitliche Verfügbarkeit ist begrenzt. Wenn Sie ein passendes Projekt oder eine Kooperationsmöglichkeit besprechen möchten, schreiben Sie mir gerne eine E-Mail. Beschreiben Sie bitte kurz Ihr Unternehmen, die aktuelle Herausforderung und wobei Sie Unterstützung suchen.
 
 <div class="text-center my-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-outline-primary">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
     kontakt.psingert@outlook.de
   </a>
 </div>
