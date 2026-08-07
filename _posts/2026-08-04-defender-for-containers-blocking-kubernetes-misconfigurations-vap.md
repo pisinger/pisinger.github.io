@@ -1,5 +1,5 @@
 ---
-title: Defender Containers - Blocking Kubernetes Misconfigurations with ValidatingAdmissionPolicy
+title: Defender for Containers - Blocking Kubernetes Misconfigurations with VAP
 author: pit
 date: 2026-08-05
 categories: [blogging, tutorial]
@@ -46,7 +46,7 @@ The built-in rule set covers familiar controls you may know already from the Azu
 
 Defender creates `Default K8s misconfiguration rule` in `Audit` mode. Custom policies can select rules, configure supported parameters and narrow scope to subscriptions, clusters, namespaces or labels. Changing the action to `Block` rejects a non-compliant object before it becomes an admitted Kubernetes resource.
 
-## Enable the Defender Plan and configure the misconfiguration policy
+## ✅ Enable the Defender Plan and configure the misconfiguration policy
 
 The following permissions are required to manage and view the misconfiguration policies:
 
@@ -296,16 +296,18 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
   └──────┬───────┘
          │
          ▼
-╔══════════════ kube-apiserver ═══════════════╗
-║                                             ║
-║   VAP evaluated in-process (CEL)            ║
-║   ── no webhook, no network hop ──          ║
-║                                             ║
-║        violates?                            ║
-║        ├── yes ──► BLOCKED  403             ║
-║        │                                    ║
-║        └── no  ──► persisted to etcd        ║
-╚═════════════════════════════════════════════╝
+╔══════ kube-apiserver ════════════════════════╗
+║                                              ║
+║   VAP evaluated in-process (CEL)             ║
+║   no webhook, no network hop                 ║
+║                                              ║
+║        violates?                             ║
+║        │                                     ║
+║        ├── yes ──► BLOCKED (403 Forbidden)   ║
+║        │                                     ║
+║        └── no  ──► persisted to etcd         ║
+║                                              ║
+╚══════════════════════════════════════════════╝
                         │
                         ▼
                   scheduled & running
