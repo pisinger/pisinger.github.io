@@ -15,8 +15,8 @@ The feature has been rolling out since late 2025. The following table shows the 
 
 | Date | Status | Feature |
 | --- | --- | --- |
-| November 26, 2025 | GA | Kubernetes gated deployment (GA) |
-| March 12, 2026 | GA | Kubernetes gated deployment support for AKS Automatic (GA) |
+| Nov 26, 2025 | GA | Kubernetes gated deployment (GA) |
+| Mar 12, 2026 | GA | Kubernetes gated deployment support for AKS Automatic (GA) |
 | May 31, 2026 | Preview | Private clusters protection for gated deployment, binary drift detection, and malware detection |
 
 The separate Kubernetes misconfiguration feature as part of `Gated Deployment` evaluates the workload object itself; I cover that in [Defender for Containers - Blocking Kubernetes Misconfigurations with VAP](https://pisinger.github.io/posts/defender-for-containers-blocking-kubernetes-misconfigurations-vap/).
