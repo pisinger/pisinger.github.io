@@ -7,16 +7,21 @@ tags: [defender-containers, kubernetes, misconfiguration, validatingadmissionpol
 render_with_liquid: false
 ---
 
-An image can be clean and a deployment can still be dangerous. The workload might run as root, mount a service-account token, use a privileged container, share a host namespace or omit resource limits.
+A clean image does not make a safe deployment. The workload can still run as root, request a privileged container, share a host namespace, mount the service-account token it never needs, or ship without resource limits.
 
-Microsoft Defender for Containers now has a deployment-time misconfiguration feature that can audit or block those Kubernetes objects before they are admitted by the API server. The implementation is Kubernetes-native and API-driven: Defender translates its policy into `ValidatingAdmissionPolicy` objects and matching bindings, where each rule is expressed as a CEL expression evaluated in-process by the API server during the admission request. No external webhook, no policy controller pod in the request path - the check runs inside the same admission chain that already validates the object, and the binding decides whether a violation is audited or denied.
+Defender for Containers now evaluates those misconfigurations at deployment time and can audit or block the object before the API server admits it. The implementation is Kubernetes-native: Defender translates its policy into `ValidatingAdmissionPolicy` objects and matching bindings. Each rule is a CEL expression evaluated in-process by the API server during the admission request; the binding decides whether a violation is audited or denied. No webhook, no policy controller in the request path.
 
-You might reasonably ask why this is needed when Azure Policy Addon with Gatekeeper already cover admission control. The difference is where the decision is made. Gatekeeper is an external policy controller: the API server calls out to a webhook, waits for the verdict, and depends on that pod, its certificates and its network path being healthy. The Defender deployment-time misconfiguration feature keeps the evaluation inside the admission chain — CEL expressions executed by the API server itself, no external hop, no controller in the request path. Fewer moving parts, one less failure domain, and enforcement that does not degrade when the admission pod is unavailable.
+> The obvious question is why this matters when the Azure Policy add-on and Gatekeeper already do admission control.
+{: .prompt-warning}
+
+The difference is where the decision is made. Gatekeeper is an external policy controller: the API server calls out over the network, waits for a verdict, and depends on that pod, its certificates and its network path staying healthy. When the webhook is unreachable, `failurePolicy` decides which way you fail — `Fail` blocks writes cluster-wide, `Ignore` admits everything silently. Neither is a good day.
+
+VAP removes the choice. The evaluation runs inside the API server, so there is no hop, no certificate rotation, and no availability domain to lose. If the Defender component that manages the policies goes down, the policies already in the cluster keep enforcing.
 
 > The trade-off is scope. Azure Policy also feeds compliance and posture assessment, so it reports on workloads that are already running. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster (yet). Deployment-time enforcement and retrospective posture visibility remain two separate mechanisms even while the Azure Policy Addon can also be used to block.
 {: .prompt-info}
 
-> The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-04-defender-containers-gated-deployment-blocking-vulnerable-images.md).
+> FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-04-defender-containers-gated-deployment-blocking-vulnerable-images.md).
 {: .prompt-tip}
 
 ## 🧭 What the feature evaluates
@@ -24,6 +29,7 @@ You might reasonably ask why this is needed when Azure Policy Addon with Gatekee
 The misconfiguration gate asks:
 
 > Does this Kubernetes object violate one of the enabled security rules?
+{: .prompt-info}
 
 The built-in rule set covers familiar controls you may know already from the Azure Policy Addon such as:
 
@@ -38,7 +44,7 @@ The built-in rule set covers familiar controls you may know already from the Azu
 - Block privilege escalation and fully privileged containers.
 - Require containers to use a read-only root filesystem.
 
-Defender creates **Default K8s misconfiguration rule** in `Audit` mode. Custom policies can select rules, configure supported parameters and narrow scope to subscriptions, clusters, namespaces or labels. Changing the action to `Block` rejects a non-compliant object before it becomes an admitted Kubernetes resource.
+Defender creates `Default K8s misconfiguration rule` in `Audit` mode. Custom policies can select rules, configure supported parameters and narrow scope to subscriptions, clusters, namespaces or labels. Changing the action to `Block` rejects a non-compliant object before it becomes an admitted Kubernetes resource.
 
 ## Enable the Defender Plan and configure the misconfiguration policy
 
@@ -63,7 +69,8 @@ Microsoft supports automatic provisioning as well as a public Helm-based install
 
 I usually prefer Helm even for standard, non-AKS-Automatic clusters. It makes the deployment method explicit, keeps the chart values next to the rest of the platform configuration, and gives me a deliberate upgrade point. The price is that sensor upgrades become my responsibility — including the ones I would rather Microsoft had shipped for me.
 
-For standard AKS, EKS and GKE clusters the public instructions use the `mdc` namespace. AKS Automatic is the exception: gated deployment requires the sensor to be installed with Helm in `kube-system`, and neither the add-on nor an `mdc` installation is supported there.
+> For standard AKS, EKS and GKE clusters the public instructions use the `mdc` namespace. AKS Automatic is the exception: gated deployment requires the sensor to be installed with Helm in `kube-system`, and neither the add-on nor an `mdc` installation is supported there.
+{: .prompt-info}
 
 The two paths must not overlap. Before starting the Helm installation, exclude the cluster from automatic sensor provisioning, and do not remediate the automatic-installation recommendations afterwards. Without that exclusion, Defender can deploy its own sensor while you are managing a second one with Helm — two sensor deployments, conflicting resources, and no clear owner of the lifecycle. Pick Helm and make it the single source of truth for that cluster.
 
@@ -135,11 +142,11 @@ kubectl get validatingadmissionpolicybindings
 kubectl describe validatingadmissionpolicy <policy-name>
 ```
 
-When I inspected my cluster, the Defender CRDs made this relationship visible. The parameter CRDs had names such as `containercpuandmemorylimitsshouldbeparams.defender.microsoft.com`, `privilegedcontainersshouldbeavoidedparams.defender.microsoft.com` and `runningcontainersasrootusershouldbeparams.defender.microsoft.com`. The policy templates then showed both the built-in default rules and the custom `ps-block-misconfig` rules.
+When I inspected my cluster, the Defender CRDs made this relationship visible. The parameter CRDs had names such as `containercpuandmemorylimitsshouldbeparams`, `privilegedcontainersshouldbeavoidedparams` and `runningcontainersasrootusershouldbeparams`. The policy templates then showed both the built-in default rules and the custom `ps-block-misconfig` rules.
 
 The policy-template list was especially useful because it showed the split between the default audit policy and the custom policies I had enabled for blocking. The generated names are not pretty, but they are useful evidence of what this cluster was actually running. Treat them as inspection output rather than stable names to build automation around.
 
-The generated names can be long and can change, but their relationship is useful. A test cluster showed default audit bindings beside custom blocking bindings:
+The generated names can be long and can change, but their relationship is useful. You may see something like below:
 
 
 ```shell
@@ -255,6 +262,7 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
   - The in-cluster Defender sensor component reconciles those policies into native `ValidatingAdmissionPolicy` and `ValidatingAdmissionPolicyBinding` objects.
   - From that point the kube-apiserver enforces them natively. No in-cluster component sits in the admission request path.
 
+```text
   ┌──────────────────────────────┐
   │  Defender for Containers     │   security misconfiguration policies
   │  (defender backend)          │
@@ -273,6 +281,7 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
   └──────────────────────────────┘
                  │
                  └──► now resident in the cluster, evaluated by kube-apiserver
+```
 
 2. Deploy-time enforcement (every request)
 
@@ -280,7 +289,8 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
   - The API server evaluates the `ValidatingAdmissionPolicy` objects and their bindings.
   - No webhook in the request path, no network hop, no external controller pod.
   - If a violation is found, the request is either audited or denied based on the binding's action.
-  
+
+```text
   ┌──────────────┐
   │ kubectl apply│  Pod: privileged: true
   └──────┬───────┘
@@ -299,6 +309,7 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
                         │
                         ▼
                   scheduled & running
+```
 
 ## ☁️ The Azure Policy and Gatekeeper boundary
 
@@ -346,7 +357,7 @@ The `Annotations` field can identify the policy owner, rule, resource and action
 ## ⚠️ Limitations and open questions
 
 - The feature evaluates admission requests. Existing workloads are not automatically re-evaluated when a policy changes.
-- `Audit` mode is **not** posture management and does not populate Defender for Cloud recommendations -> still azure policy based
+- `Audit` mode is NOT posture management and does not populate Defender for Cloud recommendations. This is still based on azure policy as of writing this post.
 - Native `ValidatingAdmissionPolicy` support, provider versions, cloud onboarding and the selected Defender chart must line up.
 
 The questions I would like to see answered are how audit results could feed posture recommendations, whether one policy definition could serve both admission and posture views, and how policy drift could be surfaced across clusters. A unified model would show not only that a workload was blocked, but also which existing workloads would fail if redeployed today.
@@ -357,7 +368,7 @@ I would roll this out in layers:
 
 1. Confirm the Kubernetes version and supported cluster configuration.
 2. Confirm Defender sensor and admission controller health.
-3. Enable misconfiguration policies in `Audit` mode or leverage the ones you had already covered via Azure Policy
+3. Enable misconfiguration policies in `Audit` mode or leverage those in `Deny` mode for the ones you had already covered via Azure Policy
 4. Test representative workloads from the real deployment pipelines.
 5. Review scope and policies.
 6. Block one or two high-confidence controls first.
