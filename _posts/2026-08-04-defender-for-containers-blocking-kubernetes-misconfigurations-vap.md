@@ -44,7 +44,7 @@ The built-in rule set covers familiar controls you may know already from the Azu
 - Block privilege escalation and fully privileged containers.
 - Require containers to use a read-only root filesystem.
 
-Defender creates `Default K8s misconfiguration rule` in `Audit` mode. Custom policies can select rules, configure supported parameters and narrow scope to subscriptions, clusters, namespaces or labels. Changing the action to `Block` rejects a non-compliant object before it becomes an admitted Kubernetes resource.
+Defender creates `Default K8s misconfiguration rule` in `Audit` mode. Custom policies can select rules, configure supported parameters and narrow scope to subscriptions, clusters, namespaces or labels. Changing the action to `Deny` rejects a non-compliant object before it becomes an admitted Kubernetes resource.
 
 ## ✅ Enable the Defender Plan and configure the misconfiguration policy
 
@@ -52,6 +52,14 @@ The following permissions are required to manage and view the misconfiguration p
 
 - Enable and manage deployment-time enforcement policies: Subscription `Owner` or `Security Admin`.
 - View policies and monitoring data: `Security Reader` or equivalent.
+
+Before enabling the feature, confirm the following:
+
+- ValidatingAdmissionPolicy is available on the cluster. The API is GA and enabled by default from Kubernetes 1.30 onward.
+- Kubernetes API access is enabled for Defender for Containers. Without it, Defender cannot reconcile the misconfiguration policies into native `ValidatingAdmissionPolicy` and binding objects.
+
+> Microsoft documents the plan settings below in the context of Gated Deployment. I enabled them here as well, on the assumption that both features run through the same admission path.
+{: .prompt-info}
 
 ![img-description](/assets/img/posts/defender-containers-blocking-kubernetes-misconfigurations-vap/mdc-gated-deployment-plan-enablement.png)
 
@@ -247,8 +255,9 @@ The full response still showed audit warnings - if we would have an image gate a
 
 ```shell
 Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-container-cpu-and-memory-limits-should-be.vap' with binding 'default-k8s-misconfiguration-policy-container-cpu-and-memory-limits-should-be.binding': Resource limits missing in "ps-http-echo". Failing container(s): ps-http-echo. Set resources.limits.cpu and resources.limits.memory
+Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.vap' with binding 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.binding': Container must run as non-root in "ps-http-echo". Failing container(s): ps-http-echo. Set runAsUser to non-zero or runAsNonRoot to true
 Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-least-privileged-linux-capabilities-shoul.vap' with binding 'default-k8s-misconfiguration-policy-least-privileged-linux-capabilities-shoul.binding': Required capability drops missing in "ps-http-echo". Failing container(s): ps-http-echo. Must drop: ALL or ALL
-Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.vap' with binding 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.binding': Container must run as non-root in "ps-http-echo". Set runAsUser to non-zero or runAsNonRoot to true
+pod/ps-http-echo created
 ```
 
 > An audit warning shows evaluation, a rejected request demonstrates blocking, and the presence of a `ValidatingAdmissionPolicy` alone does not prove that its binding is active or that the request matched its scope.
@@ -258,29 +267,35 @@ Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfigu
 
 1. Policy distribution (once, at onboarding / policy change)
 
-  - Defender for Containers holds the security misconfiguration policies in the backend
+  - Defender for Containers holds the security misconfiguration policies in the backend and writes them to the cluster via the Kubernetes API.
   - The in-cluster Defender sensor component reconciles those policies into native `ValidatingAdmissionPolicy` and `ValidatingAdmissionPolicyBinding` objects.
   - From that point the kube-apiserver enforces them natively. No in-cluster component sits in the admission request path.
 
 ```text
   ┌──────────────────────────────┐
   │  Defender for Containers     │   security misconfiguration policies
-  │  (defender backend)          │
+  │  (Defender backend)          │
   └──────────────┬───────────────┘
-                 │ push
+                 │ writes via kube-apiserver (needs Kubernetes API access)
                  ▼
   ┌──────────────────────────────┐
-  │  Defender sensor +           │   translates policies into
-  │  admission controller pod    │   native Kubernetes objects
+  │  PolicyTemplate CR           │   policytemplates.defender.microsoft.com
+  │  (Defender-owned CRD)        │   the intent, in Defender's own schema
   └──────────────┬───────────────┘
-                 │ apply
+                 │ watched and translated
+                 ▼
+  ┌───────────────────────────────┐
+  │ Defender admission controller │   in-cluster, reconcile loop only
+  │  (in-cluster pod)             │   NOT in the admission request path
+  └──────────────┬────────────────┘
+                 │ creates
                  ▼
   ┌──────────────────────────────┐
   │  ValidatingAdmissionPolicy   │   the CEL rule (what is checked)
-  │  + Binding                   │   scope + action (where, Deny/Audit)
-  └──────────────────────────────┘
+  │  + Binding                   │   scope + action (Deny / Audit)
+  └──────────────┬───────────────┘
                  │
-                 └──► now resident in the cluster, evaluated by kube-apiserver
+                 └──► resident in the cluster, evaluated by kube-apiserver
 ```
 
 2. Deploy-time enforcement (every request)
