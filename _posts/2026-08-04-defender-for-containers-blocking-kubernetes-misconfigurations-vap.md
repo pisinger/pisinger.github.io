@@ -99,7 +99,7 @@ Before running Helm, confirm that Helm is installed, the cluster version and clo
 {: .prompt-info}
 
 ```bash
-helm upgrade --install defender-k8s \
+helm install defender-k8s \
   oci://mcr.microsoft.com/azuredefender/microsoft-defender-for-containers \
   --create-namespace \
   --namespace mdc \
@@ -362,8 +362,9 @@ CloudAuditEvents
 
 The `ResponseMessage` field contains the admission controller's explanation of the violation:
 
-```txt
-pods "ps-http-echo" is forbidden: ValidatingAdmissionPolicy 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.vap' with binding 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.binding' denied request: Service account token mounted at default path in "ps-http-echo". Set spec.automountServiceAccountToken to false
+> pods "ps-http-echo" is forbidden: ValidatingAdmissionPolicy 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.vap' with binding 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.binding' denied request: Service account token mounted at default path in "ps-http-echo". Set spec.automountServiceAccountToken to false
+{: .prompt-warning}
+
 ```
 
 The `Annotations` field can identify the policy owner, rule, resource and action. An observed event looked like this:
