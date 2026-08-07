@@ -346,7 +346,10 @@ Defender exposes admission activity in the portal, while cluster audit data give
 ```shell
 CloudAuditEvents
 | where Timestamp > ago(2d)
-| extend ResponseCode = toint(RawEventData.ResponseStatus.code),
+| extend ResponseStatus = (RawEventData.ResponseStatus)
+| extend 
+    ResponseMessage = tostring(ResponseStatus.message),
+    ResponseCode = toint(RawEventData.ResponseStatus.code),
     ResourceName = tostring(RawEventData.ObjectRef.name),
     Namespace = tostring(RawEventData.ObjectRef.namespace),
     Annotations = tostring(RawEventData.Annotations)
@@ -354,7 +357,13 @@ CloudAuditEvents
 | where ResponseCode == 403
 | where Annotations has "validation.policy.admission.k8s.io/validation_failure"
 | where tostring(RawEventData.ResponseStatus.message) !contains "validation.gatekeeper.sh"
-| project Timestamp, AzureResourceId, ResourceName, Namespace, ResponseCode, RawEventData, Annotations
+| project Timestamp, AzureResourceId, ResourceName, Namespace, UserAgent, ResponseCode, ResponseMessage, Annotations
+```
+
+The `ResponseMessage` field contains the admission controller's explanation of the violation:
+
+```txt
+pods "ps-http-echo" is forbidden: ValidatingAdmissionPolicy 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.vap' with binding 'ps-block-misconfig-kubernetes-clusters-should-disable-automo.binding' denied request: Service account token mounted at default path in "ps-http-echo". Set spec.automountServiceAccountToken to false
 ```
 
 The `Annotations` field can identify the policy owner, rule, resource and action. An observed event looked like this:
