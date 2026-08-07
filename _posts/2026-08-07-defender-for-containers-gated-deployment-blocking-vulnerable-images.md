@@ -311,6 +311,8 @@ The simplified flow is:
         back to kube-apiserver → etcd
 ```
 
+### When Blocking Is the Riskier Choice
+
 There is an uncomfortable reality here: a static rule such as `block every high or critical CVE` is not always a proper strategy. A business-critical service may legitimately depend on an image that currently contains a high-severity vulnerability. Blocking its next deployment could prevent an urgent configuration change, interrupt a recovery action, or stop the business from shipping a required fix.
 
 > Severity is an important signal, but it is not the whole decision. The practical risk depends on factors such as exploitability, whether the vulnerable code path is reachable, internet exposure, the workload's blast radius, the service's business criticality, the availability of a fix and the compensating controls around it. The right question is often not simply “does this image have a high CVE?” but “what risk do we accept by allowing this image to run here, for how long, and under which conditions?”
@@ -327,6 +329,8 @@ The same trade-off exists in CI/CD image gates. Pipeline enforcement happens ear
 
 The last option deserves a closer look. A missing scan result is not automatically the same as a clean image. It may mean the image has not been scanned yet, the registry is unsupported, or the Defender findings artifact was not published. You need to choose whether that should be allowed, audited, or blocked in your environment.
 
+### Where the Image Gate Sits in the Admission Chain
+
 Also keep in mind how admission policies and webhooks are processed in Kubernetes. See below for a simplified order of evaluation. The image gate is a validating webhook, which is called after the in-process mutating and validating admission policies. If a mutating policy changes the image reference, the webhook will see the updated value.
 
 1. MutatingAdmissionPolicy (CEL) — in-process, beta 1.34, gate off by default, v1 in 1.36
@@ -339,7 +343,7 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
 > This also means if there are any misconfigurations that prevent the pod from being admitted, the image gate will not be called at all as the request will be rejected before it reaches the webhook. The image gate is not a replacement for misconfiguration policies, it is an additional control point.
 {: .prompt-warning}
 
-Below is an example of a deployment that was blocked by the image gate due to missing image scan results. The important part are the last 3 lines, which show the admission controller's explanation of the violation and the rule that was evaluated. Also note the mentioned `ratify` user agent, which is the component that resolves the image digest and retrieves the findings artifact.
+Below is an example of a deployment blocked by the image gate because no scan results were available for the image. The output also shows the `ValidatingAdmissionPolicy` coming from my defined [misconfiguration policies](https://pisinger.github.io/posts/defender-for-containers-blocking-kubernetes-misconfigurations-vap/), but the relevant part here is the last 3 lines: the webhook-based admission decision on the image, the violation reason, and the rule that produced it. Note also the `ratify` user agent — the component that resolves the image digest and retrieves the findings artifact.
 
 ```shell
 kubectl run ps-http-echo --image "<myregistry>.azurecr.io/ps-http-echo-py:v2" -n 1other
@@ -347,7 +351,6 @@ kubectl run ps-http-echo --image "<myregistry>.azurecr.io/ps-http-echo-py:v2" -n
 Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.vap' with binding 'default-k8s-misconfiguration-policy-running-containers-as-root-user-should-be.binding': Container must run as non-root in "ps-http-echo". Failing container(s): ps-http-echo. Set runAsUser to non-zero or runAsNonRoot to true
 Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-container-cpu-and-memory-limits-should-be.vap' with binding 'default-k8s-misconfiguration-policy-container-cpu-and-memory-limits-should-be.binding': Resource limits missing in "ps-http-echo". Failing container(s): ps-http-echo. Set resources.limits.cpu and resources.limits.memory
 Warning: Validation failed for ValidatingAdmissionPolicy 'default-k8s-misconfiguration-policy-least-privileged-linux-capabilities-shoul.vap' with binding 'default-k8s-misconfiguration-policy-least-privileged-linux-capabilities-shoul.binding': Required capability drops missing in "ps-http-echo". Failing container(s): ps-http-echo. Must drop: ALL or ALL
-Warning: [azurepolicy-k8sazurev3containerlimits-e80e1f6c4105c26da696] container <ps-http-echo> has no resource limits
 Error from server: admission webhook "defender-admission-controller.mdc.svc" denied the request: No valid reports found on ratify response
 Unscanned images are not allowed by policy
 Verifier rule name: ps-block-medium-to-critical-images-in-specific-ns
