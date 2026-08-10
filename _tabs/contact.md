@@ -3,16 +3,32 @@ icon: fas fa-envelope
 order: 8
 ---
 
+<style>
+  .hover-invert {
+    --_accent: var(--link-color);
+    background-color: var(--_accent);
+    border: 1px solid var(--_accent);
+    color: #fff;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  .hover-invert:hover,
+  .hover-invert:focus-visible {
+    background-color: transparent;
+    color: var(--_accent);
+    border-color: var(--_accent);
+  }
+</style>
+
 > Practical cloud architecture, security, and automation for Microsoft-focused small businesses.
 {: .prompt-tip }
 
 I’m available for selected consulting projects and professional collaborations with businesses of **10–100 employees**. If you are building on Microsoft technologies and need experienced help turning cloud and security challenges into practical next steps, let’s talk.
 
-<div class="d-flex flex-wrap gap-2 mb-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
+<div class="d-flex flex-wrap gap-3 mb-4">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
     <i class="fas fa-envelope" aria-hidden="true"></i> Start a conversation
   </a>
-  <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-outline-primary">
+  <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-primary hover-invert">
     <i class="fab fa-linkedin" aria-hidden="true"></i> Connect on LinkedIn
   </a>
 </div>
@@ -70,46 +86,10 @@ I’m available for selected consulting projects and professional collaborations
   </div>
 </div>
 
-## Technologies I work with
-
-<p class="text-muted mb-2"><strong>Detection &amp; SecOps</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Sentinel</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender XDR</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Endpoint</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Cloud</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Containers</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Identity</span>
-  <span class="badge rounded-pill text-bg-secondary">Security Copilot</span>
-  <span class="badge rounded-pill text-bg-secondary">KQL</span>
-</div>
-
-<p class="text-muted mb-2"><strong>Cloud &amp; platform</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Azure</span>
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Entra ID</span>
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Purview</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Policy</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Monitor / Log Analytics</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Arc</span>
-  <span class="badge rounded-pill text-bg-secondary">AKS</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Container Apps</span>
-</div>
-
-<p class="text-muted mb-2"><strong>Automation &amp; delivery</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-4">
-  <span class="badge rounded-pill text-bg-secondary">GitHub Actions</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure DevOps</span>
-  <span class="badge rounded-pill text-bg-secondary">Bicep</span>
-  <span class="badge rounded-pill text-bg-secondary">Terraform</span>
-  <span class="badge rounded-pill text-bg-secondary">PowerShell</span>
-  <span class="badge rounded-pill text-bg-secondary">Containers</span>
-</div>
-
 I have **limited availability**, but I’m happy to hear about relevant projects and collaboration opportunities. Please send me an email with a short description of your organization, the challenge you are facing, and the kind of help you are looking for.
 
 <div class="text-center my-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
     kontakt.psingert@outlook.de
   </a>
 </div>
@@ -121,11 +101,11 @@ I have **limited availability**, but I’m happy to hear about relevant projects
 
 Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für kleine und mittelständische Unternehmen mit **10–100 Mitarbeitenden**. Wenn Sie Microsoft-Technologien einsetzen und Unterstützung bei Fragen rund um Cloud-Architektur oder Security suchen, freue ich mich über Ihre Nachricht.
 
-<div class="d-flex flex-wrap gap-2 mb-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
+<div class="d-flex flex-wrap gap-3 mb-4">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
     <i class="fas fa-envelope" aria-hidden="true"></i> Gespräch starten
   </a>
-  <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-outline-primary">
+  <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-primary hover-invert">
     <i class="fab fa-linkedin" aria-hidden="true"></i> Auf LinkedIn vernetzen
   </a>
 </div>
@@ -183,46 +163,10 @@ Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für
   </div>
 </div>
 
-## Technologien, mit denen ich arbeite
-
-<p class="text-muted mb-2"><strong>Detection &amp; SecOps</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Sentinel</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender XDR</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Endpoint</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Cloud</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Containers</span>
-  <span class="badge rounded-pill text-bg-secondary">Defender for Identity</span>
-  <span class="badge rounded-pill text-bg-secondary">Security Copilot</span>
-  <span class="badge rounded-pill text-bg-secondary">KQL</span>
-</div>
-
-<p class="text-muted mb-2"><strong>Cloud &amp; Plattform</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Azure</span>
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Entra ID</span>
-  <span class="badge rounded-pill text-bg-secondary">Microsoft Purview</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Policy</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Monitor / Log Analytics</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Arc</span>
-  <span class="badge rounded-pill text-bg-secondary">AKS</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure Container Apps</span>
-</div>
-
-<p class="text-muted mb-2"><strong>Automatisierung &amp; Delivery</strong></p>
-<div class="d-flex flex-wrap gap-2 mb-4">
-  <span class="badge rounded-pill text-bg-secondary">GitHub Actions</span>
-  <span class="badge rounded-pill text-bg-secondary">Azure DevOps</span>
-  <span class="badge rounded-pill text-bg-secondary">Bicep</span>
-  <span class="badge rounded-pill text-bg-secondary">Terraform</span>
-  <span class="badge rounded-pill text-bg-secondary">PowerShell</span>
-  <span class="badge rounded-pill text-bg-secondary">Container</span>
-</div>
-
 Meine zeitliche Verfügbarkeit ist begrenzt. Wenn Sie ein passendes Projekt oder eine Kooperationsmöglichkeit besprechen möchten, schreiben Sie mir gerne eine E-Mail. Beschreiben Sie bitte kurz Ihr Unternehmen, die aktuelle Herausforderung und wobei Sie Unterstützung suchen.
 
 <div class="text-center my-4">
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">
+  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
     kontakt.psingert@outlook.de
   </a>
 </div>
