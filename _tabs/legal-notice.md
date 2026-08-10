@@ -1,7 +1,7 @@
 ---
 title: Legal Notice
 icon: fas fa-scale-balanced
-order: 9
+order: 10
 ---
 
 ## Information pursuant to § 5 DDG
