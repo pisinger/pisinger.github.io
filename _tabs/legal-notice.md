@@ -44,6 +44,19 @@ Any scripts, queries, or configurations shared here are provided as-is — alway
 
 GoatCounter does not use cookies, does not track visitors across sites, and does not store personal data such as persistent IP addresses. It collects only aggregated, anonymous statistics (e.g. page paths, referrers, and browser type) to help me understand which content is useful. No data is sold or shared with third parties for advertising.
 
+## Hosting
+
+This site is hosted on **GitHub Pages**, a service provided by GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA.
+
+When you access this site, GitHub's servers automatically process connection data in server log files — including your IP address, the page requested, the referring page, your browser type and operating system, and the date and time of the request. This processing is technically necessary to deliver the website and to maintain its security and integrity. I have no influence over the scope of this data collection and do not receive access to these server logs.
+
+As GitHub is based in the United States, data may be transferred to and processed in the USA. GitHub relies on the EU Standard Contractual Clauses and the EU–U.S. Data Privacy Framework as the legal basis for such transfers.
+
+References:
+
+- [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement)
+- [GitHub Pages data collection](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
+
 If you have any questions about how your data is handled, feel free to [get in touch](mailto:kontakt.psingert@outlook.de).
 
 ---
@@ -84,5 +97,18 @@ Sämtliche geteilten Skripte, Abfragen oder Konfigurationen werden ohne Gewähr 
 {: .prompt-info }
 
 GoatCounter verwendet keine Cookies, verfolgt Besucher nicht seitenübergreifend und speichert keine personenbezogenen Daten wie dauerhafte IP-Adressen. Es werden ausschließlich aggregierte, anonyme Statistiken erhoben (z. B. Seitenpfade, Verweisquellen und Browsertyp), um nachvollziehen zu können, welche Inhalte nützlich sind. Es werden keine Daten verkauft oder zu Werbezwecken an Dritte weitergegeben.
+
+## Hosting
+
+Diese Website wird über **GitHub Pages** gehostet, einen Dienst der GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA.
+
+Beim Aufruf dieser Website verarbeiten die Server von GitHub automatisch Verbindungsdaten in Server-Logdateien — darunter Ihre IP-Adresse, die aufgerufene Seite, die verweisende Seite, Ihren Browsertyp und Ihr Betriebssystem sowie Datum und Uhrzeit des Zugriffs. Diese Verarbeitung ist technisch erforderlich, um die Website auszuliefern und ihre Sicherheit und Integrität zu gewährleisten. Auf den Umfang dieser Datenerhebung habe ich keinen Einfluss und erhalte keinen Zugriff auf diese Server-Logdateien.
+
+Da GitHub seinen Sitz in den USA hat, können Daten in die USA übermittelt und dort verarbeitet werden. GitHub stützt sich hierfür auf die EU-Standardvertragsklauseln sowie das EU-U.S. Data Privacy Framework als Rechtsgrundlage.
+
+Referenzen:
+
+- [GitHub-Datenschutzerklärung](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement)
+- [Datenerhebung bei GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 
 Bei Fragen zur Verarbeitung Ihrer Daten können Sie mich gerne [kontaktieren](mailto:kontakt.psingert@outlook.de).
