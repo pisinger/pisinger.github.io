@@ -40,7 +40,7 @@ order: 8
     box-shadow: 0 0 0 3px var(--main-bg, #fff);
   }
   .career-timeline .tl-years {
-    font-size: .8rem;
+    font-size: .95rem;
     font-weight: 600;
     color: #0056b2;
     letter-spacing: .02em;
