@@ -4,7 +4,7 @@ icon: fas fa-info-circle
 order: 7
 ---
 
-> Hey there and welcome to my blog. I'm Pit Singert, a Security Professional from Germany with 15+ years in the IT industry. I currently work as a Security Architect and Consultant at [Water IT Security GmbH](https://www.water-security.de/), specializing in XDR, SIEM, SOAR, Agentic SOC, Detection & Hunting, and Container Security across the Microsoft Stack. Before that, almost 10 years at Microsoft — the last of them in the same space I work in today. So expect to read something about KQL, Defender, Sentinel, Azure and Agents 🫡😅
+> Hey there and welcome to my blog. I'm [Pit Singert](https://de.linkedin.com/in/pit-singert), a Security Professional from Germany with 15+ years in the IT industry. I currently work as a Security Architect and Consultant at [Water IT Security GmbH](https://www.water-security.de/), specializing in XDR, SIEM, SOAR, Agentic SOC, Detection & Hunting, and Container Security across the Microsoft Stack. Before that, almost 10 years at Microsoft — the last of them in the same space I work in today. So expect to read something about KQL, Defender, Sentinel, Azure and Agents 🫡😅
 {: .prompt-tip }
 
 > **DE · EN** — I'm a native German speaker and work fluently in English, so feel free to reach out in either language.
