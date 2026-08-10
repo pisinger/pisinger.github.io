@@ -24,7 +24,7 @@ order: 8
 
 I’m available for selected consulting projects and professional collaborations with businesses of **10–100 employees**. If you are building on Microsoft technologies and need experienced help turning cloud and security challenges into practical next steps, let’s talk.
 
-<p class="text-muted mb-3">🇩🇪 native · 🇬🇧 fluent — reach out in either language.</p>
+<p class="text-muted mb-3"><strong>DE</strong> native · <strong>EN</strong> fluent — reach out in either language.</p>
 
 <div class="d-flex flex-wrap gap-3 mb-4">
   <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
@@ -103,7 +103,7 @@ I have **limited availability**, but I’m happy to hear about relevant projects
 
 Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für kleine und mittelständische Unternehmen mit **10–100 Mitarbeitenden**. Wenn Sie Microsoft-Technologien einsetzen und Unterstützung bei Fragen rund um Cloud-Architektur oder Security suchen, freue ich mich über Ihre Nachricht.
 
-<p class="text-muted mb-3">🇩🇪 Muttersprache · 🇬🇧 fließend — schreiben Sie mir gerne in beiden Sprachen.</p>
+<p class="text-muted mb-3"><strong>DE</strong> Muttersprache · <strong>EN</strong> fließend — schreiben Sie mir gerne in beiden Sprachen.</p>
 
 <div class="d-flex flex-wrap gap-3 mb-4">
   <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary hover-invert">
