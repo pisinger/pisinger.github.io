@@ -65,9 +65,11 @@ Under the GDPR you have the right to:
 
 To exercise any of these rights, please contact me at the email address above.
 
+Some processing is carried out on my behalf by service providers (GitHub, GoatCounter). Requests concerning such data may be forwarded to the respective provider.
+
 ## Right to lodge a complaint
 
-You have the right to lodge a complaint with a data protection supervisory authority, in particular in the EU member state of your residence, place of work, or the place of the alleged infringement. For the controller's location this is the *Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW)* — [ldi.nrw.de](https://www.ldi.nrw.de/).
+You have the right to lodge a complaint with a data protection supervisory authority, in particular in the EU member state of your residence, place of work, or the place of the alleged infringement.
 
 ---
 
@@ -132,6 +134,8 @@ Nach der DSGVO haben Sie das Recht auf:
 
 Zur Ausübung dieser Rechte kontaktieren Sie mich bitte unter der oben genannten E-Mail-Adresse.
 
+Ein Teil der Verarbeitung erfolgt in meinem Auftrag durch Dienstleister (GitHub, GoatCounter). Anfragen, die solche Daten betreffen, können an den jeweiligen Anbieter weitergeleitet werden.
+
 ## Beschwerderecht
 
-Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, insbesondere in dem EU-Mitgliedstaat Ihres Aufenthaltsorts, Ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für den Sitz des Verantwortlichen ist dies die *Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW)* — [ldi.nrw.de](https://www.ldi.nrw.de/).
+Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, insbesondere in dem EU-Mitgliedstaat Ihres Aufenthaltsorts, Ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes.
