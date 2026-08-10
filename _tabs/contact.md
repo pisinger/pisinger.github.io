@@ -17,6 +17,14 @@ order: 9
     color: var(--_accent);
     border-color: var(--_accent);
   }
+  .card-lift .card {
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .card-lift .card:hover {
+    transform: translateY(-2px);
+    border-color: #0056b2;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .10);
+  }
 </style>
 
 > Practical cloud architecture, security, and automation for Microsoft-focused small businesses.
@@ -37,7 +45,7 @@ I’m available for selected consulting projects and professional collaborations
 
 ## Areas I can help with
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4 card-lift">
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
       <div class="card-body">
@@ -140,7 +148,7 @@ Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für
 
 ## Meine Schwerpunkte
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4 card-lift">
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
       <div class="card-body">
