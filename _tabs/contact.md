@@ -41,8 +41,8 @@ I’m available for selected consulting projects and professional collaborations
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
       <div class="card-body">
-        <h3 class="card-title h5"><i class="fas fa-cloud" aria-hidden="true"></i> Cloud architecture</h3>
-        <p class="card-text">Azure architecture, cloud security reviews, serverless design, and practical improvement plans.</p>
+        <h3 class="card-title h5"><i class="fas fa-cloud" aria-hidden="true"></i> Cloud &amp; cloud-native architecture</h3>
+        <p class="card-text">Azure architecture, containers, Kubernetes, serverless, and microservices — with cloud security reviews and practical improvement plans.</p>
       </div>
     </div>
   </div>
@@ -86,6 +86,30 @@ I’m available for selected consulting projects and professional collaborations
       </div>
     </div>
   </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-lightbulb" aria-hidden="true"></i> MVPs &amp; prototypes</h3>
+        <p class="card-text">Rapid MVPs and prototypes to validate ideas and de-risk investments before you scale.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-desktop" aria-hidden="true"></i> Demos &amp; PoCs</h3>
+        <p class="card-text">Live demonstrations and proof-of-concepts for Defender, Sentinel, and Azure to accelerate decisions.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-chalkboard-user" aria-hidden="true"></i> Knowledge transfer</h3>
+        <p class="card-text">Hands-on enablement, workshops, and upskilling for your security and cloud teams.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 I have **limited availability**, but I’m happy to hear about relevant projects and collaboration opportunities. Please send me an email with a short description of your organization, the challenge you are facing, and the kind of help you are looking for.
@@ -120,8 +144,8 @@ Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
       <div class="card-body">
-        <h3 class="card-title h5"><i class="fas fa-cloud" aria-hidden="true"></i> Cloud-Architektur</h3>
-        <p class="card-text">Azure-Architektur, Cloud-Sicherheitsanalysen, Serverless-Design und praxisnahe Verbesserungspläne.</p>
+        <h3 class="card-title h5"><i class="fas fa-cloud" aria-hidden="true"></i> Cloud- &amp; Cloud-native-Architektur</h3>
+        <p class="card-text">Azure-Architektur, Container, Kubernetes, Serverless und Microservices – mit Cloud-Sicherheitsanalysen und praxisnahen Verbesserungsplänen.</p>
       </div>
     </div>
   </div>
@@ -162,6 +186,30 @@ Ich unterstütze ausgewählte Beratungsprojekte und fachliche Kooperationen für
       <div class="card-body">
         <h3 class="card-title h5"><i class="fas fa-robot" aria-hidden="true"></i> Moderne Workloads</h3>
         <p class="card-text">Agentic-SOC-Konzepte, AI Security und sichere KI-basierte Systeme.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-lightbulb" aria-hidden="true"></i> MVPs &amp; Prototypen</h3>
+        <p class="card-text">Schnelle MVPs und Prototypen, um Ideen zu validieren und Investitionen vor der Skalierung abzusichern.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-desktop" aria-hidden="true"></i> Demos &amp; PoCs</h3>
+        <p class="card-text">Live-Demos und Proof-of-Concepts für Defender, Sentinel und Azure zur schnelleren Entscheidungsfindung.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title h5"><i class="fas fa-chalkboard-user" aria-hidden="true"></i> Wissenstransfer</h3>
+        <p class="card-text">Praxisnahe Enablement-Workshops und Weiterbildung für Ihre Security- und Cloud-Teams.</p>
       </div>
     </div>
   </div>
