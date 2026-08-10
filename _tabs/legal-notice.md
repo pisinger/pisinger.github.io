@@ -4,15 +4,12 @@ icon: fas fa-scale-balanced
 order: 9
 ---
 
-> 🚧 This page is under construction. The full address details will be added soon.
-{: .prompt-warning }
-
 ## Information pursuant to § 5 DDG
 
-**Pit Singert**
-
-<!-- TODO: add ladungsfähige Anschrift (Straße, Hausnummer, PLZ, Ort) -->
-Address: _under construction_
+**Pit Singert**  
+c/o POSTFLEX PFX-361-749  
+Emsdettener Straße 10  
+48268 Greven, Germany
 
 ## Contact
 
@@ -63,10 +60,10 @@ If you have any questions about how your data is handled, feel free to [get in t
 
 ## Angaben gemäß § 5 DDG
 
-**Pit Singert**
-
-<!-- TODO: ladungsfähige Anschrift ergänzen (Straße, Hausnummer, PLZ, Ort) -->
-Anschrift: _in Bearbeitung_
+**Pit Singert**  
+c/o POSTFLEX PFX-361-749  
+Emsdettener Straße 10  
+48268 Greven
 
 ## Kontakt
 
