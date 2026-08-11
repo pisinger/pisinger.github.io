@@ -18,8 +18,11 @@ The difference is where the decision is made. Gatekeeper is an external policy c
 
 VAP removes the webhook availability trade-off. The evaluation runs inside the API server, so there is no network hop, no webhook certificate rotation, and no webhook availability domain to lose. VAP still has a `failurePolicy` for CEL or policy-configuration errors, but a healthy policy does not depend on a separate webhook pod. If the Defender component that manages the policies goes down, the policies already in the cluster keep enforcing.
 
-> The trade-off is scope. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster. To me, the Azure Policy add-on dependency for posture also looks like it is phasing out: Defender for Cloud is moving towards agentless, container-level KSPM recommendations backed by Kubernetes API access, replacing the older cluster-level findings. As of writing this blog, the agentless KSPM capability is still in public preview. Deployment-time enforcement and retrospective posture visibility remain separate mechanisms for now, but the direction appears to be VAP for admission and agentless assessment for existing workloads.
+> The trade-off is scope. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster. This is where in the past the Azure Policy Addon was required to provide this.
 {: .prompt-info}
+
+ > To me, the Azure Policy add-on dependency for posture also looks like it is phasing out: Defender for Cloud is moving towards agentless, container-level KSPM recommendations backed by Kubernetes API access, replacing the older cluster-level findings. As of writing this blog, the agentless KSPM capability is still in public preview. Deployment-time enforcement and retrospective posture visibility remain separate mechanisms, but the direction appears to be VAP for admission and agentless assessment for existing workloads.
+{: .prompt-tip}
 
 Microsoft describes the feature I am referring to as follows:
 
@@ -31,7 +34,6 @@ Microsoft describes the feature I am referring to as follows:
 {: .prompt-info}
 
 ![img-description](/assets/img/posts/defender-containers-blocking-kubernetes-misconfigurations-vap/new-agentless-kspm-for-containers.png)
-
 
 > FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers - Gated Deployment - Blocking Vulnerable Container Images](https://pisinger.github.io/posts/defender-for-containers-gated-deployment-blocking-vulnerable-images).
 {: .prompt-tip}
