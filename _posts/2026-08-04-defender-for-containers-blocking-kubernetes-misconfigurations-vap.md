@@ -16,10 +16,22 @@ Defender for Containers now evaluates those misconfigurations at deployment time
 
 The difference is where the decision is made. Gatekeeper is an external policy controller: the API server calls out over the network, waits for a verdict, and depends on that pod, its certificates and its network path staying healthy. When the webhook is unreachable, `failurePolicy` decides which way you fail — `Fail` blocks writes cluster-wide, `Ignore` admits everything silently. Neither is a good day.
 
-VAP removes the choice. The evaluation runs inside the API server, so there is no hop, no certificate rotation, and no availability domain to lose. If the Defender component that manages the policies goes down, the policies already in the cluster keep enforcing.
+VAP removes the webhook availability trade-off. The evaluation runs inside the API server, so there is no network hop, no webhook certificate rotation, and no webhook availability domain to lose. VAP still has a `failurePolicy` for CEL or policy-configuration errors, but a healthy policy does not depend on a separate webhook pod. If the Defender component that manages the policies goes down, the policies already in the cluster keep enforcing.
 
-> The trade-off is scope. Azure Policy also feeds compliance and posture assessment, so it reports on workloads that are already running. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster (yet). Deployment-time enforcement and retrospective posture visibility remain two separate mechanisms even while the Azure Policy Addon can also be used to block.
+> The trade-off is scope. The VAP-based gate only decides on objects at admission time — it tells you nothing about what is already deployed in the cluster. To me, the Azure Policy add-on dependency for posture also looks like it is phasing out: Defender for Cloud is moving towards agentless, container-level KSPM recommendations backed by Kubernetes API access, replacing the older cluster-level findings. As of writing this blog, the agentless KSPM capability is still in public preview. Deployment-time enforcement and retrospective posture visibility remain separate mechanisms for now, but the direction appears to be VAP for admission and agentless assessment for existing workloads.
 {: .prompt-info}
+
+Microsoft describes the feature I am referring to as follows:
+
+> **Container-level misconfiguration recommendations for Kubernetes**
+>
+> Agentless, container-level KSPM misconfiguration recommendations replace previous cluster-level findings with more granular insights. Cluster-level recommendations will be deprecated at GA.
+>
+> Source: [What's new in Defender for Cloud](https://learn.microsoft.com/en-us/azure/defender-for-cloud/release-notes#container-level-misconfiguration-recommendations-for-kubernetes-preview)
+{: .prompt-info}
+
+![img-description](/assets/img/posts/defender-containers-blocking-kubernetes-misconfigurations-vap/new-agentless-kspm-for-containers.png)
+
 
 > FYI - The image gate is another mechanism, part of the gated deployment feature in Defender for Containers. It evaluates vulnerability findings associated with a container image, which requires a lookup against Defender's scan results — external state that CEL cannot reach from inside the API server. That gate therefore still runs as a validating admission webhook. I cover it in more detail in [Defender Containers - Gated Deployment - Blocking Vulnerable Container Images](https://pisinger.github.io/posts/defender-for-containers-gated-deployment-blocking-vulnerable-images).
 {: .prompt-tip}
@@ -58,7 +70,7 @@ Before enabling the feature, confirm the following:
 - ValidatingAdmissionPolicy is available on the cluster. The API is GA and enabled by default from Kubernetes 1.30 onward.
 - Kubernetes API access is enabled for Defender for Containers. Without it, Defender cannot reconcile the misconfiguration policies into native `ValidatingAdmissionPolicy` and binding objects.
 
-> Microsoft documents the plan settings below in the context of Gated Deployment. I enabled them here as well, on the assumption that both features run through the same admission path.
+> Microsoft documents Kubernetes API access as a prerequisite for automatic provisioning, and the Helm installation requires `defender-admission-controller.enableMisconfigurationPolicies=true`. These settings allow Defender to reconcile the misconfiguration policies into the cluster's native admission resources.
 {: .prompt-info}
 
 ![img-description](/assets/img/posts/defender-containers-blocking-kubernetes-misconfigurations-vap/mdc-gated-deployment-plan-enablement.png)
@@ -116,7 +128,7 @@ Keep the admission-policy switch explicit. The current public documentation stil
 
 Once the feature is enabled, the portal policy is translated into Defender policy templates, parameter resources and native `ValidatingAdmissionPolicy` (VAP) objects with their bindings. All of it lands in the cluster as ordinary Kubernetes objects, so the normal toolchain is enough to inspect the result.
 
-Start cluster-wide and confirm the Defender pods are running. The admission controller publishes policy updates and runs the image gate (see [Defender for Containers Gated Deployment - Blocking Vulnerable Container Images](2026-08-04-defender-for-containers-gated-deployment-blocking-vulnerable-images.md)); the collectors and publisher handle the common defender telemetry collection and publishing:
+Start cluster-wide and confirm the Defender pods are running. The admission controller publishes policy updates and runs the image gate (see [Defender for Containers Gated Deployment - Blocking Vulnerable Container Images](https://pisinger.github.io/posts/2026-08-07-defender-for-containers-gated-deployment-blocking-vulnerable-images.md)); the collectors and publisher handle the common defender telemetry collection and publishing:
 
 ```bash
 kubectl get pods -A | grep defender
@@ -344,11 +356,11 @@ Also keep in mind how admission policies and webhooks are processed in Kubernete
 
 This feature and Defender for Cloud posture management are separate capabilities. The gated-deployment misconfiguration feature can evaluate requests in `Audit` mode without Azure Policy for that admission-time evaluation.
 
-That does **not** replace Azure Policy-based Defender for Cloud recommendations. If you want workload-hardening visibility and recommendations such as identifying privileged containers, you still need the Azure Policy Kubernetes add-on and its Gatekeeper-based evaluation.
+The posture story is changing, though. Microsoft is introducing agentless, container-level Kubernetes security posture recommendations through Defender CSPM, using Kubernetes API-based assessment and replacing the older cluster-level findings over time. The current Azure documentation still describes Azure Policy for Kubernetes as the workload-hardening path, so I would not treat the transition as complete yet.
 
-This distinction matters because a cluster can show audit events from Defender's native admission policies while Defender for Cloud recommendations still depend on the Azure Policy path.
+This distinction matters because a cluster can show audit events from Defender's native admission policies while posture recommendations may come from a separate assessment pipeline. The direction makes sense: VAP handles admission-time enforcement, while agentless Kubernetes API assessment can inspect the state of workloads that are already running.
 
-> My personal view: this is a meaningful addition to layered security. Defender now enforces more easily at deployment time, and it does so without an Azure Policy dependency in the admission path. What I would still like to see is the same shift applied to container posture management — Defender for Cloud recommendations built on this Kubernetes-native mechanism rather than on Azure Policy definitions. That would remove the last piece of friction.
+> My personal view: this is a meaningful addition to layered security. Defender now enforces more easily at deployment time, and it does so without an Azure Policy dependency in the admission path. The newer agentless, container-level posture direction also looks like the right complement: use the VAP path to block new violations and the Kubernetes API to assess existing workloads. The remaining question is how cleanly the two views will converge.
 {: .prompt-info}
 
 ## 📊 Monitoring the result
@@ -394,10 +406,10 @@ The `Annotations` field can identify the policy owner, rule, resource and action
 ## ⚠️ Limitations and open questions
 
 - The feature evaluates admission requests. Existing workloads are not automatically re-evaluated when a policy changes.
-- `Audit` mode is NOT posture management and does not populate Defender for Cloud recommendations. This is still based on azure policy as of writing this post.
+- `Audit` mode is not automatically the same thing as posture management. Defender is introducing agentless, container-level KSPM recommendations, but the current Azure Policy-based workload-hardening path and the newer assessment path are still in transition from what I see.
 - Native `ValidatingAdmissionPolicy` support, provider versions, cloud onboarding and the selected Defender chart must line up.
 
-The questions I would like to see answered are how audit results could feed posture recommendations, whether one policy definition could serve both admission and posture views, and how policy drift could be surfaced across clusters. A unified model would show not only that a workload was blocked, but also which existing workloads would fail if redeployed today.
+The questions I would like to see answered are how closely the VAP rules will align with the agentless posture rules, whether one policy definition could serve both admission and posture views, and how policy drift could be surfaced across clusters. A unified model would show not only that a workload was blocked, but also which existing workloads would fail if redeployed today.
 
 ## 🚀 A sensible rollout sequence
 
@@ -415,7 +427,7 @@ I would roll this out in layers:
 
 Defender for Containers misconfiguration enforcement adds a Kubernetes-native admission control for workload security settings. `ValidatingAdmissionPolicy` makes the policy state visible in the cluster and gives teams an audit-to-block path for controls that were previously easy to discover only after deployment.
 
-The important operational boundary is that this does not (yet 🤔) remove Azure Policy from Defender for Cloud posture management. Today, the admission gate and the recommendation system remain separate control paths where the admission gate is directly shipped with the Defender sensor.
+The operational boundary that matters: the admission gate and the recommendation surface are separate control paths. VAP enforces at deployment time; Defender's posture side is moving toward agentless, container-level assessment against the Kubernetes API. Azure Policy remains the documented path for workload hardening today, but the older cluster-level recommendation model is being retired as the new posture experience rolls out - which raises the question of whether the Azure Policy add-on follows it out the door.
 
 ### Further reading
 
