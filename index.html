@@ -1,4 +1,111 @@
 ---
-layout: home
-# Index page
+layout: default
+panel_includes: []
+tail_includes:
+  - about-contact-links
 ---
+
+<style>
+  .home-hero {
+    padding: clamp(1.75rem, 5vw, 4rem);
+    border: 1px solid #cfe0f6;
+    border-radius: 1.25rem;
+    background: var(--card-bg, #fff);
+    box-shadow: 0 1rem 2.8rem rgba(32, 58, 95, .1);
+  }
+  .home-tip {
+    margin-bottom: 1.5rem;
+    padding: .7rem 1rem;
+    border-left: 4px solid #0969da;
+    border-radius: .45rem;
+    color: var(--home-tip-text, #29476d);
+    background: var(--home-tip-bg, #e8f1ff);
+  }
+  .home-hero h1 { max-width: 48rem; margin: .75rem 0 1.25rem; font-size: clamp(2rem, 4.5vw, 3.5rem); letter-spacing: -.025em; }
+  .home-hero-copy { max-width: 44rem; }
+  .home-hero-copy > p { font-size: 1.1rem; }
+  .home-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+  .home-actions .btn { transition: transform .15s ease, box-shadow .15s ease; }
+  .home-actions .btn:hover, .home-actions .btn:focus-visible { transform: translateY(-1px); box-shadow: 0 .4rem 1rem rgba(9, 105, 218, .2); }
+  .home-section { padding-top: 3.5rem; }
+  .home-section-intro { max-width: 40rem; }
+  .home-topic, .home-post, .home-about-copy, .home-about-fact { height: 100%; border: 1px solid var(--border-color, #dfe5ee); border-radius: 1rem; background: var(--card-bg, #fff); }
+  .home-topic, .home-post { display: block; padding: 1.5rem; text-decoration: none; transition: border-color .15s ease, transform .15s ease; }
+  .home-topic:hover, .home-post:hover { border-color: #a9c8ef; transform: translateY(-2px); }
+  .home-topic-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; margin-bottom: 1.1rem; border-radius: .7rem; color: #0756b4; background: #e8f1ff; font-size: 1.2rem; }
+  .home-topic p, .home-post p, .home-about-copy p { color: var(--text-muted-color, #687386); font-size: .94rem; }
+  .home-post-meta { margin-bottom: .6rem; color: #0756b4; font-size: .78rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+  .home-post h3 { font-size: 1.08rem; }
+  .home-post h3 a { text-decoration: none; }
+  .home-read-more { color: #0756b4; font-size: .88rem; font-weight: 750; }
+  .home-more { margin-top: 1.25rem; text-align: right; }
+  .home-more a { color: var(--link-color, #0756b4); font-weight: 750; }
+  .home-about-fact { padding: 1.75rem; color: #fff; background: #182b49; border-color: #182b49; }
+  .home-about-fact strong { display: block; margin-bottom: .5rem; color: #b9d8ff; font-size: 2.8rem; line-height: 1; }
+  .home-cta { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-top: 3.5rem; padding: 1.75rem 2rem; border-radius: 1rem; color: #fff; background: #182b49; }
+  .home-cta h2 { margin-bottom: .35rem; font-size: 1.55rem; }
+  .home-cta p { margin-bottom: 0; color: #cbd7e8; }
+  @media (max-width: 576px) { .home-cta { align-items: flex-start; flex-direction: column; padding: 1.5rem; } }
+  @media (prefers-color-scheme: dark) {
+    .home-tip { --home-tip-text: #c6def8; --home-tip-bg: #203d5d; }
+    .home-hero { border-color: #38577a; background: var(--card-bg, #202c3d); box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, .28); }
+    .home-topic, .home-post, .home-about-copy { background: var(--card-bg, #202c3d); border-color: #34445b; }
+    .home-topic-icon { color: #a8d2ff; background: #203d5d; }
+    .home-post-meta, .home-read-more { color: #a8d2ff; }
+    .home-topic p, .home-post p, .home-about-copy p { color: var(--text-muted-color, #aeb9c9); }
+    .home-about-fact, .home-cta { background: #0d1726; }
+  }
+  html[data-mode="dark"] .home-tip { --home-tip-text: #c6def8; --home-tip-bg: #203d5d; }
+  html[data-mode="dark"] .home-hero { border-color: #38577a; background: var(--card-bg, #202c3d); box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, .28); }
+  html[data-mode="dark"] .home-topic, html[data-mode="dark"] .home-post, html[data-mode="dark"] .home-about-copy { background: var(--card-bg, #202c3d); border-color: #34445b; }
+  html[data-mode="dark"] .home-topic-icon { color: #a8d2ff; background: #203d5d; }
+  html[data-mode="dark"] .home-post-meta, html[data-mode="dark"] .home-read-more { color: #a8d2ff; }
+  html[data-mode="dark"] .home-topic p, html[data-mode="dark"] .home-post p, html[data-mode="dark"] .home-about-copy p { color: var(--text-muted-color, #aeb9c9); }
+  html[data-mode="dark"] .home-about-fact, html[data-mode="dark"] .home-cta { background: #0d1726; }
+</style>
+
+<main>
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="home-tip">Practical cloud architecture, security, and automation for Microsoft-focused small businesses.</div>
+    <div class="home-hero-copy">
+      <p class="text-uppercase small fw-bold text-primary mb-2">PS, here’s what I learned</p>
+      <h1 id="home-title">Practical security lessons from the Microsoft cloud.</h1>
+      <p>I’m Pit Singert, a Security Architect and Consultant writing about Azure, Defender, Sentinel, KQL, containers, and the emerging world of AI-powered security.</p>
+      <div class="home-actions"><a class="btn btn-primary" href="#featured">Explore selected articles</a><a class="btn btn-outline-primary" href="{{ '/about/' | relative_url }}">About me</a></div>
+    </div>
+  </section>
+
+  <section class="home-section" aria-labelledby="topics-title">
+    <div class="home-section-intro"><p class="text-uppercase small fw-bold text-primary mb-2">Explore by topic</p><h2 id="topics-title">Find the area you are working on</h2><p class="text-muted">Deep dives, practical walkthroughs, and lessons learned from real cloud and security work.</p></div>
+    <div class="row g-3 mt-2">
+      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></div><h3>Defender &amp; Sentinel</h3><p>Architecture, operations, posture management, and investigation across the Microsoft security stack.</p></a></div>
+      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cloud" aria-hidden="true"></i></div><h3>Azure &amp; cloud security</h3><p>Secure architecture, platform services, identity, networking, and resilient cloud systems.</p></a></div>
+      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cubes" aria-hidden="true"></i></div><h3>Containers &amp; Kubernetes</h3><p>AKS, container security, admission control, vulnerabilities, and code-to-runtime visibility.</p></a></div>
+    </div>
+  </section>
+
+  <section class="home-section" id="featured" aria-labelledby="featured-title">
+    <div class="home-section-intro"><p class="text-uppercase small fw-bold text-primary mb-2">Curated reading</p><h2 id="featured-title">Start with these articles</h2><p class="text-muted">A few practical guides for understanding the themes I write about most.</p></div>
+    {% assign recent_posts = site.posts | slice: 0, 3 %}
+    <div class="row g-3 mt-2">
+      {% for post in recent_posts %}
+        {% assign post_category = post.categories | first | default: 'Article' %}
+        <div class="col-md-4">
+          <article class="home-post">
+            <div class="home-post-meta">{{ post_category }} · {{ post.date | date: '%-d %b %Y' }}</div>
+            <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+            <p>{{ post.excerpt | strip_html | strip_newlines | truncate: 150 }}</p>
+            <a class="home-read-more" href="{{ post.url | relative_url }}">Read article →</a>
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="home-more"><a href="{{ '/archives/' | relative_url }}">Browse all articles in the archives →</a></div>
+  </section>
+
+  <section class="home-section" aria-labelledby="about-home-title">
+    <div class="row g-3"><div class="col-md-8"><div class="home-about-copy p-4"><p class="text-uppercase small fw-bold text-primary mb-2">A little context</p><h2 id="about-home-title">Written from the field, not just the documentation.</h2><p>I’m a Security Architect and Consultant from Germany with more than 15 years in IT, including almost 10 years at Microsoft. This blog is where I document the details, patterns, and lessons that are useful beyond a single project.</p><a class="home-read-more" href="{{ '/about/' | relative_url }}">More about me →</a></div></div><div class="col-md-4"><div class="home-about-fact"><strong>DE · EN</strong>Native German speaker, fluent in English. You can reach out in either language.</div></div></div>
+  </section>
+
+  <section class="home-cta" aria-labelledby="cta-title"><div><h2 id="cta-title">Have a cloud or security challenge?</h2><p>Selected consulting projects and professional collaborations are welcome.</p></div><a class="btn btn-light text-nowrap" href="{{ '/contact/' | relative_url }}">Get in touch →</a></section>
+</main>
