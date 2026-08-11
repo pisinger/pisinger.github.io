@@ -76,5 +76,5 @@ order: 8
 > 🤔❓ If you have any concerns, questions, or want to provide feedback, feel free to get in touch with me via [LinkedIn](https://de.linkedin.com/in/pit-singert) or drop me an [Email](mailto:kontakt.psingert@outlook.de).
 {: .prompt-tip }
 
-> Legal details: [Legal Notice](/legal-notice/) · [Privacy Policy](/privacy/).
+> Legal details: [Imprint](/legal-notice/) · [Privacy Policy](/privacy/).
 {: .prompt-info }

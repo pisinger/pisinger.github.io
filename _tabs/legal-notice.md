@@ -1,5 +1,5 @@
 ---
-title: Legal Notice
+title: Imprint
 icon: fas fa-scale-balanced
 order: 10
 ---
