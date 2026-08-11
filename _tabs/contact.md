@@ -9,20 +9,20 @@ order: 9
     padding: .7rem 1rem;
     border-left: 4px solid #0969da;
     border-radius: .45rem;
-    color: #29476d;
-    background: #e8f1ff;
+    color: var(--contact-tip-text, #29476d);
+    background: var(--contact-tip-bg, #e8f1ff);
   }
   .contact-hero {
     padding: clamp(1.75rem, 5vw, 4rem);
     border: 1px solid #cfe0f6;
     border-radius: 1.25rem;
-    background: var(--card-bg);
+    background: var(--card-bg, #fff);
     box-shadow: 0 1rem 2.8rem rgba(32, 58, 95, .1);
   }
   .contact-hero h2 {
     max-width: 45rem;
     margin-top: .75rem;
-    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-size: clamp(1.85rem, 4vw, 3rem);
     letter-spacing: -.025em;
   }
   .contact-hero > p { max-width: 41rem; font-size: 1.1rem; }
@@ -64,6 +64,26 @@ order: 9
   @media (max-width: 576px) {
     .contact-cta { align-items: flex-start; flex-direction: column; padding: 1.5rem; }
   }
+  @media (prefers-color-scheme: dark) {
+    .contact-tip { --contact-tip-text: #c6def8; --contact-tip-bg: #203d5d; }
+    .contact-hero { border-color: #38577a; background: var(--card-bg, #202c3d); box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, .28); }
+    .contact-icon { color: #a8d2ff; background: #203d5d; }
+    .contact-card { background: var(--card-bg, #202c3d); border-color: #34445b; }
+    .contact-card:hover { border-color: #557da8; }
+    .contact-tag { color: #a8d2ff; }
+    .contact-card .text-muted { color: var(--text-muted-color, #aeb9c9) !important; }
+    .contact-cta { background: #0d1726; }
+    .contact-cta .btn-light { color: #102033; background: #dcecff; border-color: #dcecff; }
+  }
+  html[data-mode="dark"] .contact-tip { --contact-tip-text: #c6def8; --contact-tip-bg: #203d5d; }
+  html[data-mode="dark"] .contact-hero { border-color: #38577a; background: var(--card-bg, #202c3d); box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, .28); }
+  html[data-mode="dark"] .contact-icon { color: #a8d2ff; background: #203d5d; }
+  html[data-mode="dark"] .contact-card { background: var(--card-bg, #202c3d); border-color: #34445b; }
+  html[data-mode="dark"] .contact-card:hover { border-color: #557da8; }
+  html[data-mode="dark"] .contact-tag { color: #a8d2ff; }
+  html[data-mode="dark"] .contact-cta { background: #0d1726; }
+  html[data-mode="dark"] .contact-cta .btn-light { color: #102033; background: #dcecff; border-color: #dcecff; }
+  html[data-mode="dark"] .contact-card .text-muted { color: var(--text-muted-color, #aeb9c9) !important; }
 </style>
 
 <section class="contact-hero" aria-labelledby="contact-title">
@@ -74,7 +94,7 @@ order: 9
   <p class="contact-availability">Limited availability for selected projects and collaborations</p>
   <div class="contact-actions">
     <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary"><i class="fas fa-envelope" aria-hidden="true"></i> Start a conversation</a>
-    <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-outline-primary"><i class="fab fa-linkedin" aria-hidden="true"></i> Connect on LinkedIn</a>
+    <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-primary"><i class="fab fa-linkedin" aria-hidden="true"></i> Connect on LinkedIn</a>
   </div>
   <p class="text-muted small mt-3 mb-0"><strong>DE</strong> native · <strong>EN</strong> fluent — write in whichever language is most comfortable.</p>
 </section>
@@ -108,7 +128,6 @@ order: 9
 
 <section class="contact-cta" aria-labelledby="cta-title">
   <div><h3 id="cta-title">Have a challenge worth discussing?</h3><p>Send a short summary. I’ll get back to you if it looks like a good fit.</p></div>
-  <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-light text-nowrap">kontakt.psingert@outlook.de</a>
 </section>
 
 <hr class="my-5">
@@ -121,7 +140,7 @@ order: 9
   <p class="text-muted"><strong>DE</strong> Muttersprache · <strong>EN</strong> fließend — schreiben Sie gerne in der Sprache, die für Sie am angenehmsten ist.</p>
   <div class="contact-actions mb-4">
     <a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary"><i class="fas fa-envelope" aria-hidden="true"></i> Gespräch starten</a>
-    <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-outline-primary"><i class="fab fa-linkedin" aria-hidden="true"></i> Auf LinkedIn vernetzen</a>
+    <a href="https://de.linkedin.com/in/pit-singert" class="btn btn-primary"><i class="fab fa-linkedin" aria-hidden="true"></i> Auf LinkedIn vernetzen</a>
   </div>
   <p class="text-muted">Meine zeitliche Verfügbarkeit ist begrenzt. Wenn Sie ein passendes Projekt oder eine Kooperationsmöglichkeit besprechen möchten, schreiben Sie mir gerne eine E-Mail mit einer kurzen Beschreibung Ihres Unternehmens, der aktuellen Herausforderung und der gewünschten Unterstützung.</p>
   <div class="text-center my-4"><a href="mailto:kontakt.psingert@outlook.de" class="btn btn-primary">kontakt.psingert@outlook.de</a></div>
