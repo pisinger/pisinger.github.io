@@ -21,7 +21,7 @@ tail_includes:
     color: var(--home-tip-text, #29476d);
     background: var(--home-tip-bg, #e8f1ff);
   }
-  .home-hero h1 { max-width: 48rem; margin: .75rem 0 1.25rem; font-size: clamp(2rem, 4.5vw, 3.5rem); letter-spacing: -.025em; }
+  .home-hero h1 { max-width: 48rem; margin: .75rem 0 1.25rem; font-size: clamp(1.8rem, 3.6vw, 2.8rem); letter-spacing: -.025em; }
   .home-hero-copy { max-width: 44rem; }
   .home-hero-copy > p { font-size: 1.1rem; }
   .home-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
@@ -41,11 +41,13 @@ tail_includes:
   .home-more { margin-top: 1.25rem; text-align: right; }
   .home-more a { color: var(--link-color, #0756b4); font-weight: 750; }
   .home-about-fact { padding: 1.75rem; color: #fff; background: #182b49; border-color: #182b49; }
+  .home-about-copy h2 { font-size: clamp(1.45rem, 2.5vw, 1.9rem); }
+  .home-about-copy p { max-width: 42rem; font-size: .92rem; }
   .home-about-fact strong { display: block; margin-bottom: .5rem; color: #b9d8ff; font-size: 2.8rem; line-height: 1; }
-  .home-cta { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-top: 3.5rem; padding: 1.75rem 2rem; border-radius: 1rem; color: #fff; background: #182b49; }
-  .home-cta h2 { margin-bottom: .35rem; font-size: 1.55rem; }
+  .home-cta { display: flex; align-items: flex-start; flex-direction: column; gap: .75rem; margin-top: 3.5rem; padding: 1.75rem 2rem; border-radius: 1rem; color: #fff; background: #182b49; }
+  .home-cta h2 { margin-bottom: .35rem; color: #fff; font-size: 1.55rem; }
   .home-cta p { margin-bottom: 0; color: #cbd7e8; }
-  @media (max-width: 576px) { .home-cta { align-items: flex-start; flex-direction: column; padding: 1.5rem; } }
+  @media (max-width: 576px) { .home-cta { padding: 1.5rem; } }
   @media (prefers-color-scheme: dark) {
     .home-tip { --home-tip-text: #c6def8; --home-tip-bg: #203d5d; }
     .home-hero { border-color: #38577a; background: var(--card-bg, #202c3d); box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, .28); }
@@ -78,9 +80,9 @@ tail_includes:
   <section class="home-section" aria-labelledby="topics-title">
     <div class="home-section-intro"><p class="text-uppercase small fw-bold text-primary mb-2">Explore by topic</p><h2 id="topics-title">Find the area you are working on</h2><p class="text-muted">Deep dives, practical walkthroughs, and lessons learned from real cloud and security work.</p></div>
     <div class="row g-3 mt-2">
-      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></div><h3>Defender &amp; Sentinel</h3><p>Architecture, operations, posture management, and investigation across the Microsoft security stack.</p></a></div>
-      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cloud" aria-hidden="true"></i></div><h3>Azure &amp; cloud security</h3><p>Secure architecture, platform services, identity, networking, and resilient cloud systems.</p></a></div>
-      <div class="col-md-4"><a class="home-topic" href="{{ '/categories/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cubes" aria-hidden="true"></i></div><h3>Containers &amp; Kubernetes</h3><p>AKS, container security, admission control, vulnerabilities, and code-to-runtime visibility.</p></a></div>
+      <div class="col-md-4"><a class="home-topic" href="{{ '/tags/defender/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></div><h3>Defender &amp; Sentinel</h3><p>Architecture, operations, posture management, and investigation across the Microsoft security stack.</p></a></div>
+      <div class="col-md-4"><a class="home-topic" href="{{ '/tags/azure/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cloud" aria-hidden="true"></i></div><h3>Azure &amp; cloud security</h3><p>Secure architecture, platform services, identity, networking, and resilient cloud systems.</p></a></div>
+      <div class="col-md-4"><a class="home-topic" href="{{ '/tags/kubernetes/' | relative_url }}"><div class="home-topic-icon"><i class="fas fa-cubes" aria-hidden="true"></i></div><h3>Containers &amp; Kubernetes</h3><p>AKS, container security, admission control, vulnerabilities, and code-to-runtime visibility.</p></a></div>
     </div>
   </section>
 
