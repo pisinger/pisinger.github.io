@@ -43,10 +43,13 @@ tail_includes:
   .home-about-fact { padding: 1.75rem; color: #fff; background: #182b49; border-color: #182b49; }
   .home-about-copy h2 { font-size: clamp(1.45rem, 2.5vw, 1.9rem); }
   .home-about-copy p { max-width: 42rem; font-size: .92rem; }
+  .home-about { max-width: 56rem; margin-right: auto; margin-left: auto; }
   .home-about-fact strong { display: block; margin-bottom: .5rem; color: #b9d8ff; font-size: 2.8rem; line-height: 1; }
   .home-cta { display: flex; align-items: flex-start; flex-direction: column; gap: .75rem; margin-top: 3.5rem; padding: 1.75rem 2rem; border-radius: 1rem; color: #fff; background: #182b49; }
   .home-cta h2 { margin-bottom: .35rem; color: #fff; font-size: 1.55rem; }
   .home-cta p { margin-bottom: 0; color: #cbd7e8; }
+  .home-cta .btn-light { color: #182b49; background: #fff; border-color: #fff; }
+  .home-cta .btn-light:hover, .home-cta .btn-light:focus-visible { color: #182b49; background: #e8f1ff; border-color: #e8f1ff; }
   @media (max-width: 576px) { .home-cta { padding: 1.5rem; } }
   @media (prefers-color-scheme: dark) {
     .home-tip { --home-tip-text: #c6def8; --home-tip-bg: #203d5d; }
@@ -106,7 +109,7 @@ tail_includes:
   </section>
 
   <section class="home-section" aria-labelledby="about-home-title">
-    <div class="row g-3"><div class="col-md-8"><div class="home-about-copy p-4"><p class="text-uppercase small fw-bold text-primary mb-2">A little context</p><h2 id="about-home-title">Written from the field, not just the documentation.</h2><p>I’m a Security Architect and Consultant from Germany with more than 15 years in IT, including almost 10 years at Microsoft. This blog is where I document the details, patterns, and lessons that are useful beyond a single project.</p><a class="home-read-more" href="{{ '/about/' | relative_url }}">More about me →</a></div></div><div class="col-md-4"><div class="home-about-fact"><strong>DE · EN</strong>Native German speaker, fluent in English. You can reach out in either language.</div></div></div>
+    <div class="row g-3 home-about"><div class="col-md-8"><div class="home-about-copy p-4"><p class="text-uppercase small fw-bold text-primary mb-2">A little context</p><h2 id="about-home-title">Written from the field, not just the documentation.</h2><p>I’m a Security Architect and Consultant from Germany with more than 15 years in IT, including almost 10 years at Microsoft. This blog is where I document the details, patterns, and lessons that are useful beyond a single project.</p><a class="home-read-more" href="{{ '/about/' | relative_url }}">More about me →</a></div></div><div class="col-md-4"><div class="home-about-fact"><strong>DE · EN</strong>Native German speaker, fluent in English. You can reach out in either language.</div></div></div>
   </section>
 
   <section class="home-cta" aria-labelledby="cta-title"><div><h2 id="cta-title">Have a cloud or security challenge?</h2><p>Selected consulting projects and professional collaborations are welcome.</p></div><a class="btn btn-light text-nowrap" href="{{ '/contact/' | relative_url }}">Get in touch →</a></section>
