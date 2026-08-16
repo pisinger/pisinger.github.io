@@ -7,3 +7,110 @@
 #sidebar .nav-item:has(> a[href$="/categories/"]) {
   display: none;
 }
+
+/* ---------- table expand ---------- */
+
+.table-expand-box {
+  position: relative;
+}
+
+.table-expand-btn {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted-color);
+  background: var(--main-bg);
+  border: 1px solid var(--btn-border-color, var(--main-border-color));
+  border-radius: var(--bs-border-radius, 0.25rem);
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, color 0.15s ease-in-out;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--link-color);
+    opacity: 1;
+  }
+}
+
+.table-expand-box:hover .table-expand-btn {
+  opacity: 0.85;
+}
+
+/* touch devices have no hover — keep the button visible */
+@media (hover: none) {
+  .table-expand-btn {
+    opacity: 0.85;
+  }
+}
+
+html.table-zoom-open {
+  overflow: hidden;
+}
+
+#table-zoom-modal {
+  display: none;
+  width: 96vw;
+  max-width: 96vw;
+  height: 92vh;
+  max-height: 92vh;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text-color);
+  background: var(--main-bg);
+  border: 1px solid var(--main-border-color);
+  border-radius: 0.5rem;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .table-zoom-head {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.5rem 0.4rem 1rem;
+    border-bottom: 1px solid var(--main-border-color);
+  }
+
+  .table-zoom-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+  }
+
+  .table-zoom-close {
+    padding: 0.15rem 0.5rem;
+    color: var(--text-muted-color);
+    background: none;
+    border: 0;
+
+    &:hover {
+      color: var(--link-color);
+    }
+  }
+
+  /* also carries Chirpy's `.table-wrapper` class, hence the overrides */
+  .table-zoom-body {
+    flex: 1 1 auto;
+    padding: 0 1rem 1rem;
+    margin-bottom: 0;
+    overflow: auto;
+
+    /* keep the header row visible while scrolling a long table */
+    > table > thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--main-bg);
+    }
+  }
+}
