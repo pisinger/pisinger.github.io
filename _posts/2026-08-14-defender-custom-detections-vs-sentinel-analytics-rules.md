@@ -1,5 +1,5 @@
 ---
-title: Defender Custom Detections vs Sentinel Analytics Rules - Why I Now Default to Custom Detections
+title: Custom Detections vs Analytics Rules - Why I Now Default to Custom Detections
 author: pit
 date: 2026-08-14
 categories: [blogging]
@@ -79,6 +79,9 @@ Most rows in Microsoft's [authoritative comparison](https://learn.microsoft.com/
 | Multiple MITRE tactics per rule | ✅ | ⏳ planned |
 | Content hub rule creation | ✅ | ⏳ planned |
 | All alert properties dynamic | ✅ | ⏳ planned |
+
+> The `Planned` incident-trigger row does **not** mean playbooks cannot run on incidents created from custom detections. Custom-detection alerts participate in Defender XDR incidents, and Sentinel automation rules can run incident-triggered playbooks when those incidents are created or updated. What is missing is first-class, rule-specific targeting equivalent to selecting an analytics rule by name. Account for two practical differences: an alert may update an existing correlated incident rather than create one, and synchronization into Sentinel can delay the automation rule. Use both incident-created and incident-updated logic where appropriate; use the Enhanced Alert Trigger when the workflow must act on the individual alert.
+{: .prompt-info}
 
 The MITRE row reads worse than it is. **MITRE mapping is supported** - the wizard has **Tactic**, **Techniques** and **Sub-techniques** fields, you can link a threat analytics report, and the Bicep schema carries the same nested structure. The difference is singular, literally: **one tactic per rule**. If your detection genuinely spans two tactics, pick the dominant one or split the rule. Behind that sit two smaller gaps: not every technique is selectable yet, and custom detections don't reflect on the MITRE ATT&CK coverage page - so your rules are tagged, your coverage reporting just doesn't count them.
 
@@ -371,9 +374,9 @@ The verdict is a default, not an absolute. New detection means custom detection,
 
 **Multi-workspace scope.** Cross-workspace with the `workspace()` operator, no workaround. Multi-*tenant* is a different problem and it's fine: the Detection rules list is manageable from the multitenant portal, and custom detections push through MTO content distribution profiles, so an MSSP shipping one rule to fifty tenants has a supported path.
 
-**An existing playbook has to fire.** Alert and incident triggers stay analytics-rule territory, so anything that tickets, notifies a channel or calls a third-party API belongs there.
+**Existing playbooks usually remain usable.** Custom-detection alerts are correlated into Defender XDR incidents, and Sentinel automation rules with incident-created or incident-updated triggers can run playbooks against those incidents. That covers the usual ticketing, notification, enrichment and third-party integration scenarios. The limitations are in rule-specific and alert-level targeting: you cannot bind an incident automation rule to a custom detection through the analytics-rule-name condition, an alert may update an existing incident instead of creating one, and incident synchronization introduces some delay. Use incident-created and incident-updated conditions.
 
-**Deterministic incident behaviour.** The big one for anyone migrating off Sentinel with downstream systems that assume one rule per incident. Along with suppression, alerts without incidents, and configurable grouping - though missing grouping bothered me until I looked at what replaced it. Whether automatic grouping on matching entities is a loss depends on whether your grouping logic was doing something clever or just papering over noisy entity mapping.
+**Deterministic incident boundaries.** Custom-detection alerts participate in Defender XDR correlation and may be merged with alerts from other rules and products. Custom detections cannot opt out of correlation, suppress alerts after a run, create alerts without incidents, or configure grouping. This does not prevent incident-triggered playbooks from running, but it matters when a downstream workflow assumes exactly one rule or alert per incident. Keep an analytics rule only when that deterministic boundary is a genuine requirement; otherwise, make the playbook correlation-aware and use custom detections.
 
 **Validation and observability.** The gap I'd weigh most heavily after multi-workspace, and the only one currently getting worse: simulation and historical rerun are `Planned`, health logs and workbooks are `Planned`, and the one API surface exposing per-rule failures is deprecated. Run-on-demand helps but runs against the current window rather than one you choose.
 
@@ -387,7 +390,7 @@ I'm also in no hurry to migrate anything, and neither is Microsoft - their FAQ s
 
 The direction was never in question. What I wanted to know was when choosing custom detections would stop costing me something important. For my own environments that point arrived somewhere between dynamic alert details in August 2025 and NRT on Sentinel data in January 2026, and repositories and Bicep in July 2026 removed the last structural objection: a detection built this way can finally be shipped alongside the rest of the estate.
 
-Defender XDR data without duplicating it into Sentinel purely for detection, native remediation scoped to device groups, a 30-day lookback ceiling, and streaming NRT matter more to me than suppression windows and configurable alert grouping. The remaining gaps are real, especially multi-workspace rules, automation triggers, historical reruns and health visibility. That's why custom detection is both my greenfield default and the default I recommend to customers, not a migration mandate: in a new environment I'd avoid duplicating XDR device data into Sentinel just to preserve old rule formats, and in a mature one I'd leave working detections alone until cost or capability gives me a real reason to touch them.
+Defender XDR data without duplicating it into Sentinel purely for detection, native remediation scoped to device groups, a 30-day lookback ceiling, and streaming NRT matter more to me than suppression windows and configurable alert grouping. The remaining gaps are real, especially multi-workspace rules, first-class rule-specific and individual-alert automation, historical reruns and health visibility. That's why custom detection is both my greenfield default and the default I recommend to customers, not a migration mandate: in a new environment I'd avoid duplicating XDR device data into Sentinel just to preserve old rule formats, and in a mature one I'd leave working detections alone until cost or capability gives me a real reason to touch them.
 
 ## 📚 Sources
 
