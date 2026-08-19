@@ -64,7 +64,7 @@ I use four evidence labels throughout the post:
 
 Be precise about the payload first, because it changes the answer. An Event Hubs message from the Streaming API carries a *list* of Advanced Hunting records, not a single row:
 
-```json
+```shell
 {
    "records": [
       {
@@ -87,7 +87,7 @@ Note that the batching is Defender's, not Event Hubs'. An event hub is an append
 
 Microsoft ships a query for this, under [Estimating initial Event Hub capacity](https://learn.microsoft.com/defender-xdr/streaming-api-event-hub#estimating-initial-event-hub-capacity) on the streaming setup page, and it's a reasonable starting point:
 
-```kusto
+```shell
 let bytes_ = 1000;
 union withsource=MDTables Device* // e.g. Device*, EmailEvents, ...
 | where Timestamp > startofday(ago(7d))
@@ -102,7 +102,7 @@ union withsource=MDTables Device* // e.g. Device*, EmailEvents, ...
 
 Read the first line again: `bytes_ = 1000`. Every table is assumed to average 1 KB per record - roughly right for `DeviceLogonEvents`, quite wrong for `DeviceProcessEvents` with long command lines. Measure it instead:
 
-```kusto
+```shell
 DeviceProcessEvents
 | where Timestamp > ago(14d)
 | summarize avgBytes = avg(estimate_data_size(*)), p95Bytes = percentile(estimate_data_size(*), 95)
@@ -170,7 +170,7 @@ A single-country tenant gets one brutal peak; a tenant spread across timezones g
 
 Measure the ratio rather than guessing it:
 
-```kusto
+```shell
 let bytes_ = 2000;   // blended average record size across the tables you union
 union Device*, Email*, Identity*, AlertInfo, AlertEvidence, CloudAppEvents, UrlClickEvents
 | where Timestamp > ago(14d)
@@ -186,7 +186,7 @@ union Device*, Email*, Identity*, AlertInfo, AlertEvidence, CloudAppEvents, UrlC
 
 For an initial estimate, keep the inputs and limits in the same units:
 
-```text
+```txt
 peak ingress MB/s = peak records/min × measured bytes/record ÷ 60,000,000
 
 Standard TUs = ceil(max(
@@ -541,7 +541,7 @@ This is the argument for Premium I'd put ahead of throughput. Everything telling
 | One-minute `IncomingBytes`, `Sum`, over 7+ days | Basic / Standard | Peak minute approaching `60 MB/min × TU` | Sized for the average, not the storm. Add TUs before the next one rather than after it |
 | `NamespaceCpuUsage`, cluster `CPU` (`Role` Max) | Premium / Dedicated | Sustained ~70% | Approaching the ceiling. Plan the next PU or CU |
 
-```kusto
+```shell
 AZMSApplicationMetricLogs
 | where TimeGenerated > ago(1h)
 | where Provider == "EVENTHUB"
@@ -586,19 +586,17 @@ This is a first pass at the model rather than a validated benchmark. The through
 
 Every figure in this post that isn't my own measurement traces to one of these. They move, so check them rather than this post.
 
-| Topic | Source |
-|---|---|
-| Streaming setup, event schema, the EPS estimation query | [Configure Microsoft Defender XDR to stream Advanced Hunting events to your Azure event hub](https://learn.microsoft.com/defender-xdr/streaming-api-event-hub) |
-| The `estimate_data_size()` caveat, `MachineGroup` decoration | [Configure Microsoft Defender for Endpoint to stream Advanced Hunting events](https://learn.microsoft.com/defender-endpoint/api/raw-data-export-event-hub) |
-| The 32 selectable tables | [Supported Microsoft Defender XDR event types in event streaming API](https://learn.microsoft.com/defender-xdr/supported-event-types) |
-| TU/PU definitions, per-partition rates, consumer parallelism, increase-and-retest | [Scaling with Event Hubs](https://learn.microsoft.com/azure/event-hubs/event-hubs-scalability) |
-| Per-tier limits - publication size, consumer groups, retention, partitions | [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas) |
-| Tier feature comparison | [Compare Azure Event Hubs tiers](https://learn.microsoft.com/azure/event-hubs/compare-tiers) |
-| `ThrottledRequests`, `QuotaExceededErrors`, `ServerErrors`, deprecated `SVRBSY`, resource logs | [Event Hubs monitoring data reference](https://learn.microsoft.com/azure/event-hubs/monitor-event-hubs-reference) |
-| Sum vs Max, one-minute granularity, why averages hide spikes | [Azure Monitor Metrics aggregation and display explained](https://learn.microsoft.com/azure/azure-monitor/metrics/metrics-aggregation-explained) |
-| `MessageSizeExceededException` and why retrying won't help | [Event Hubs messaging exceptions](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions) |
-| Scale-up-only behaviour and hourly maximum billing | [Automatically scale up throughput units](https://learn.microsoft.com/azure/event-hubs/event-hubs-auto-inflate) |
-| Adding partitions on Premium and Dedicated | [Dynamically add partitions to an event hub](https://learn.microsoft.com/azure/event-hubs/dynamically-add-partitions) |
-| Availability-zone support and tier minimums | [Premium overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-premium-overview) / [Dedicated overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-dedicated-overview) / [Reliability guide](https://learn.microsoft.com/azure/reliability/reliability-event-hubs) |
-| Retention storage allowance and blob-rate overage | [Event Hubs FAQ](https://learn.microsoft.com/azure/event-hubs/event-hubs-faq) |
-| List prices | [Event Hubs pricing](https://azure.microsoft.com/en-us/pricing/details/event-hubs/) |
+Streaming setup, event schema, the EPS estimation query: [Configure Microsoft Defender XDR to stream Advanced Hunting events to your Azure event hub](https://learn.microsoft.com/defender-xdr/streaming-api-event-hub) |
+The `estimate_data_size()` caveat, `MachineGroup` decoration: [Configure Microsoft Defender for Endpoint to stream Advanced Hunting events](https://learn.microsoft.com/defender-endpoint/api/raw-data-export-event-hub) |
+The 32 selectable tables: [Supported Microsoft Defender XDR event types in event streaming API](https://learn.microsoft.com/defender-xdr/supported-event-types) |
+TU/PU definitions, per-partition rates, consumer parallelism, increase-and-retest: [Scaling with Event Hubs](https://learn.microsoft.com/azure/event-hubs/event-hubs-scalability) |
+Per-tier limits - publication size, consumer groups, retention, partitions: [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas) |
+Tier feature comparison: [Compare Azure Event Hubs tiers](https://learn.microsoft.com/azure/event-hubs/compare-tiers) |
+`ThrottledRequests`, `QuotaExceededErrors`, `ServerErrors`, deprecated `SVRBSY`, resource logs: [Event Hubs monitoring data reference](https://learn.microsoft.com/azure/event-hubs/monitor-event-hubs-reference) |
+Sum vs Max, one-minute granularity, why averages hide spikes: [Azure Monitor Metrics aggregation and display explained](https://learn.microsoft.com/azure/azure-monitor/metrics/metrics-aggregation-explained) |
+`MessageSizeExceededException` and why retrying won't help: [Event Hubs messaging exceptions](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions) |
+Scale-up-only behaviour and hourly maximum billing: [Automatically scale up throughput units](https://learn.microsoft.com/azure/event-hubs/event-hubs-auto-inflate) |
+Adding partitions on Premium and Dedicated: [Dynamically add partitions to an event hub](https://learn.microsoft.com/azure/event-hubs/dynamically-add-partitions) |
+Availability-zone support and tier minimums: [Premium overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-premium-overview) / [Dedicated overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-dedicated-overview) / [Reliability guide](https://learn.microsoft.com/azure/reliability/reliability-event-hubs) |
+Retention storage allowance and blob-rate overage: [Event Hubs FAQ](https://learn.microsoft.com/azure/event-hubs/event-hubs-faq) |
+List prices: [Event Hubs pricing](https://azure.microsoft.com/en-us/pricing/details/event-hubs/) |
