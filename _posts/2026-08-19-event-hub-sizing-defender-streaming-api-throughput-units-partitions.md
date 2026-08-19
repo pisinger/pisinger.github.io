@@ -186,7 +186,7 @@ union Device*, Email*, Identity*, AlertInfo, AlertEvidence, CloudAppEvents, UrlC
 
 For an initial estimate, keep the inputs and limits in the same units:
 
-```txt
+```text
 peak ingress MB/s = peak records/min × measured bytes/record ÷ 60,000,000
 
 Standard TUs = ceil(max(
@@ -412,7 +412,8 @@ Microsoft does document a method, and it's a good starting point - it just sits 
 | Standard | ~1 MB/s | ~2 MB/s |
 | Premium / Dedicated | ~1-2 MB/s | ~2-5 MB/s |
 
-> "Estimate partitions by dividing your expected ingress and egress by the applicable per-partition rates and taking the larger result."
+> Estimate partitions by dividing your expected ingress and egress by the applicable per-partition rates and taking the larger result.
+{: .prompt-info}
 
 So on Standard:
 
