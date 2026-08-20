@@ -229,6 +229,7 @@ The quotas that change the design, trimmed to the ones a Defender export pipelin
 | Throughput per unit, approximate capacity | same as enforced | same as enforced | ~5-10 MB/s in, 10-20 MB/s out | ~100-200 MB/s ingress per CU* |
 | Event hubs per namespace | 10 | 10 | 100 per PU | 1,000 |
 | Partitions per hub | 32, immutable | 32, immutable | 100 (200 per PU namespace-wide) | 1,024 (2,000 per CU) |
+| Throughput per partition, approximate | ~1 MB/s in, ~2 MB/s out | ~1 MB/s in, ~2 MB/s out | ~1-2 MB/s in, ~2-5 MB/s out | ~1-2 MB/s in, ~2-5 MB/s out |
 | Dynamic partition scale-out | No | No | Yes | Yes |
 | Consumer groups per hub | 1 (`$Default`) | 20 | 100 | 1,000 |
 | Max retention | 1 day | 7 days | 90 days | 90 days |
@@ -242,11 +243,16 @@ The quotas that change the design, trimmed to the ones a Defender export pipelin
 
 **Basic is out**, and not on throughput. One consumer group means a second reader needs a second namespace; 24-hour retention gives you nothing to absorb consumer lag with. Either is disqualifying on its own.
 
+> **The 84 GB retention allowance is a retention-setting problem, not a tier problem.** A TU buys 1 MB/s ingress, roughly 86.4 GB/day, against an allowance of 84 GB per TU - so at 1-day retention you cannot meaningfully exceed what the TU already includes, on Basic *or* Standard. Basic is simply immune by force, because 1 day is its ceiling; Standard is equally immune until you raise retention past it. Storage overage only becomes a real cost lever above 1 day, which is a Standard-and-above setting rather than something the tier does to you.
+{: .prompt-info}
+
 The [256 KB publication cap](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas#basic-vs-standard-vs-premium-vs-dedicated-tiers) is the softer objection now that I've measured the batches - ~128 KB clears it by exactly half - but that margin is an undocumented producer behaviour, not a guarantee. And the failure mode is hard: the quotas page states that the publication limit "applies regardless of whether it's a single event or a batch" and that oversized publications "are rejected", with Event Hubs raising [`MessageSizeExceededException`](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions#exception-types) - against which Microsoft's own note is that retrying won't help. Nothing throttles, nothing queues, the publication is simply gone. Staking a telemetry pipeline on that to save half a throughput unit's price isn't a trade I'd take. Everything below assumes Standard or above.
 
 Two more rows decide most architectures before cost enters the conversation: **10 event hubs per namespace** on Standard, and **runtime audit logs are Premium and above**.
 
-The two throughput rows are the distinction worth holding onto. On Standard the quota is a **throttle** the service enforces, and you get `ServerBusy` when you cross it. On Premium and Dedicated there is no enforced per-unit rate at all - you're buying CPU and memory, and the capacity figures are Microsoft's approximations of what that yields, which is why they come with standing advice to load test rather than calculate.
+The two *per-unit* throughput rows are the distinction worth holding onto. On Standard the quota is a **throttle** the service enforces, and you get `ServerBusy` when you cross it. On Premium and Dedicated there is no enforced per-unit rate at all - you're buying CPU and memory, and the capacity figures are Microsoft's approximations of what that yields, which is why they come with standing advice to load test rather than calculate.
+
+The per-*partition* row is an approximation on every tier, Standard included - there is no partition quota anywhere. It still deserves a place in the tier table, because it's the second limit a Defender pipeline runs into and the one people don't budget for: a namespace can sit well inside its TU budget and still be partition-bound. [How many partitions, then](#how-many-partitions-then) works that number into the sizing.
 
 Read the fine print on the Premium one. The ~5-10 MB/s is quoted for *one PU with a single event hub at 100 partitions* - the per-hub maximum. Run that same PU against a hub with eight partitions and you don't automatically lose an order of magnitude, but partition parallelism becomes a candidate for the binding constraint, especially once you add PUs without adding partitions. Microsoft's headline number already assumes you got the next section right, which is the point: on Premium and Dedicated, **partition count is one of the things that determines your throughput**, not a separate dial beside it.
 
@@ -448,6 +454,25 @@ Note which floor won: with one consumer group, per-partition **ingress** sets th
 > Microsoft warns against simply maxing the count out, on two grounds: more partitions complicate the consumer side, and heavy partitioning defeats ordering. Only the first applies here - the Streaming API doesn't let you set a partition key, so you get round-robin distribution and no cross-partition ordering to lose.
 {: .prompt-info}
 
+### Can you just run a single partition?
+
+The minimum is one, and it does work - but only in one direction, and the two directions fail very differently.
+
+**On the consumer side it's a legitimate trade.** One partition means one active reader per consumer group under the epoch model, so the drain rate is capped at whatever that single instance sustains. When the login storm arrives, the reader falls behind, the backlog accumulates in the hub, and retention holds it until the reader catches up. Nothing errors: the [scalability guide](https://learn.microsoft.com/azure/event-hubs/event-hubs-scalability#throughput-units) is explicit that "egress doesn't produce throttling exceptions, but it still can't go beyond the capacity of the throughput units you purchased." You pay in **latency** - end-to-end delay between an event landing in the hub and your SIEM seeing it, widening through every peak and closing again afterwards. That's the same recoverable-lag argument from earlier, taken to its extreme.
+
+**On the producer side it is not a trade at all.** Retention cannot absorb what was never accepted. A single partition is also a single append log with its own local ceiling, and Microsoft documents the failure directly under [`ServerBusy` error code 50002](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions#error-code-50002): "the load isn't evenly distributed across all partitions on the event hub, and one partition hits the local throughput unit limitation." Note what that implies - you can hit it with namespace TU budget still unspent, which is exactly the trap, because the TU chart will look fine. And since Defender's handling of `ServerBusy` is undocumented, that's the potential-data-loss path from the top of this post, not a delay.
+
+So the boundary is sharp:
+
+| Peak ingress vs one partition's ~1 MB/s | What you're actually trading |
+|---|---|
+| Comfortably below | Latency. Retention buffers the peak, the reader drains it afterwards, nothing is lost |
+| At or above | Data. `ServerBusy` on publish, with no documented producer-side retry or buffer |
+
+Two things make it worse than the table suggests. Delay compounds: if the reader can't overshoot the arrival rate after the storm, the backlog never fully drains and the lag ratchets up day over day until retention drops the oldest events - and on Standard that ceiling is seven days, on Basic one. And the escape hatch is closed on Standard, where partition count is immutable: fixing a one-partition hub means a new hub and a re-pointed export setting. Adding reader instances won't help either - surplus instances get no assignment.
+
+Worth knowing the option exists for a small tenant or a proof of concept. Don't let it become the production shape by default.
+
 ### Consumer groups, and the egress half of the calculation
 
 Egress is a separate quota, not a competing one - a TU gives 1 MB/s in *and* 2 MB/s out. But every consumer group reading the full stream pulls its own copy over the wire, so the unit count you need is `max(peak ingress MB/s, peak egress MB/s ÷ 2)`. Work that through on the same 6 MB/s ingest and the curve isn't linear:
@@ -587,17 +612,36 @@ This is a first pass at the model rather than a validated benchmark. The through
 
 Every figure in this post that isn't my own measurement traces to one of these. They move, so check them rather than this post.
 
-Streaming setup, event schema, the EPS estimation query: [Configure Microsoft Defender XDR to stream Advanced Hunting events to your Azure event hub](https://learn.microsoft.com/defender-xdr/streaming-api-event-hub) |
-The `estimate_data_size()` caveat, `MachineGroup` decoration: [Configure Microsoft Defender for Endpoint to stream Advanced Hunting events](https://learn.microsoft.com/defender-endpoint/api/raw-data-export-event-hub) |
-The 32 selectable tables: [Supported Microsoft Defender XDR event types in event streaming API](https://learn.microsoft.com/defender-xdr/supported-event-types) |
-TU/PU definitions, per-partition rates, consumer parallelism, increase-and-retest: [Scaling with Event Hubs](https://learn.microsoft.com/azure/event-hubs/event-hubs-scalability) |
-Per-tier limits - publication size, consumer groups, retention, partitions: [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas) |
-Tier feature comparison: [Compare Azure Event Hubs tiers](https://learn.microsoft.com/azure/event-hubs/compare-tiers) |
-`ThrottledRequests`, `QuotaExceededErrors`, `ServerErrors`, deprecated `SVRBSY`, resource logs: [Event Hubs monitoring data reference](https://learn.microsoft.com/azure/event-hubs/monitor-event-hubs-reference) |
-Sum vs Max, one-minute granularity, why averages hide spikes: [Azure Monitor Metrics aggregation and display explained](https://learn.microsoft.com/azure/azure-monitor/metrics/metrics-aggregation-explained) |
-`MessageSizeExceededException` and why retrying won't help: [Event Hubs messaging exceptions](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions) |
-Scale-up-only behaviour and hourly maximum billing: [Automatically scale up throughput units](https://learn.microsoft.com/azure/event-hubs/event-hubs-auto-inflate) |
-Adding partitions on Premium and Dedicated: [Dynamically add partitions to an event hub](https://learn.microsoft.com/azure/event-hubs/dynamically-add-partitions) |
-Availability-zone support and tier minimums: [Premium overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-premium-overview) / [Dedicated overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-dedicated-overview) / [Reliability guide](https://learn.microsoft.com/azure/reliability/reliability-event-hubs) |
-Retention storage allowance and blob-rate overage: [Event Hubs FAQ](https://learn.microsoft.com/azure/event-hubs/event-hubs-faq) |
-List prices: [Event Hubs pricing](https://azure.microsoft.com/en-us/pricing/details/event-hubs/) |
+**Defender side - what gets streamed**
+
+| Source | What it backs here |
+|---|---|
+| [Stream Advanced Hunting events to your Azure event hub](https://learn.microsoft.com/defender-xdr/streaming-api-event-hub) | Streaming setup, the `records` envelope schema, the EPS estimation query |
+| [Stream Defender for Endpoint events (raw data export)](https://learn.microsoft.com/defender-endpoint/api/raw-data-export-event-hub) | The `estimate_data_size()` caveat and the `MachineGroup` decoration |
+| [Supported Defender XDR event types](https://learn.microsoft.com/defender-xdr/supported-event-types) | The 32 selectable tables driving the one-hub-or-many decision |
+
+**Event Hubs side - capacity and limits**
+
+| Source | What it backs here |
+|---|---|
+| [Scaling with Event Hubs](https://learn.microsoft.com/azure/event-hubs/event-hubs-scalability) | TU/PU definitions, per-partition planning rates, consumer parallelism, increase-and-retest |
+| [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas) | Per-tier publication size, consumer groups, retention, partition caps |
+| [Compare Azure Event Hubs tiers](https://learn.microsoft.com/azure/event-hubs/compare-tiers) | The tier feature comparison table |
+| [Dynamically add partitions](https://learn.microsoft.com/azure/event-hubs/dynamically-add-partitions) | Increase-only partition changes on Premium and Dedicated |
+| [Automatically scale up throughput units](https://learn.microsoft.com/azure/event-hubs/event-hubs-auto-inflate) | Auto-inflate being scale-up-only, and hourly maximum billing |
+| [Event Hubs messaging exceptions](https://learn.microsoft.com/azure/event-hubs/event-hubs-messaging-exceptions) | `MessageSizeExceededException` and why retrying won't help; `ServerBusy` error code 50002 and the per-partition local throughput ceiling |
+
+**Operating it - metrics and diagnostics**
+
+| Source | What it backs here |
+|---|---|
+| [Event Hubs monitoring data reference](https://learn.microsoft.com/azure/event-hubs/monitor-event-hubs-reference) | `ThrottledRequests`, `QuotaExceededErrors`, `ServerErrors`, the deprecated `SVRBSY`, resource logs |
+| [Azure Monitor metrics aggregation explained](https://learn.microsoft.com/azure/azure-monitor/metrics/metrics-aggregation-explained) | Sum vs Max, one-minute granularity, why averages hide the spike |
+
+**Cost and resilience**
+
+| Source | What it backs here |
+|---|---|
+| [Event Hubs pricing](https://azure.microsoft.com/en-us/pricing/details/event-hubs/) | Every list price in this post - the source of truth for a real quote |
+| [Event Hubs FAQ](https://learn.microsoft.com/azure/event-hubs/event-hubs-faq#is-there-a-charge-for-retaining-event-hubs-events-for-more-than-24-hours) | The 84 GB retention allowance and blob-rate overage |
+| [Reliability guide](https://learn.microsoft.com/azure/reliability/reliability-event-hubs) · [Premium overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-premium-overview) · [Dedicated overview](https://learn.microsoft.com/azure/event-hubs/event-hubs-dedicated-overview) | Availability-zone support and the per-tier minimums, including the three-CU floor |
