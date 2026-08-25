@@ -18,9 +18,7 @@ So I built a small workaround. It exports Defender for Cloud alerts to Log Analy
 
 ## 🧭 What Defender for Cloud sends to XDR
 
-The native Defender for Cloud integration with Microsoft Defender XDR is useful, but it is intentionally selective. Low, Medium, and High alerts are propagated into the Defender portal, where they can participate in the incident graph, correlation and the unified investigation experience.
-
-Informational alerts are dropped before that integration boundary. They do not reach the XDR alert queue, correlation or incident graph through the tenant-based Defender for Cloud integration. They are not available as native Defender XDR alert context for Advanced Hunting either.
+With Microsoft Sentinel onboarded to the Defender portal, Defender for Cloud alerts are natively available through Defender XDR, so the legacy subscription-based Sentinel connector is no longer the preferred path and required to avoid duplicated alerts. However, the XDR/tenant-based integration still excludes `Informational` Defender for Cloud alerts. The tenant-based Defender Cloud connector may also remain necessary to populate Sentinel incidents with the associated alerts and entities as before, but it does not change the fact that the informational tier is missing. It is plausible that this connector dependency disappears entirely as the unified SOC experience matures, but for now it remains a documented requirement.
 
 Microsoft documents the reason directly:
 
@@ -55,7 +53,7 @@ Sentinel alert and incident
 Defender portal: Sentinel + Defender XDR
 ```
 
-The important detail is that the native Defender for Cloud connector is not being modified. It continues to handle the Low, Medium and High alerts. The analytics rule is scoped to the missing tier only, which avoids creating a second copy of the alerts that already arrive through the tenant-based connector.
+The important detail is that the connector configuration stays untouched, even though Defender for Cloud alerts already flow natively into XDR. Two things keep the Informational tier from being duplicated: continuous export is scoped to Informational alerts only, and the analytics rule is scoped to the same tier. Neither touches what already arrives through the tenant-based connector.
 
 > This requires Defender for Cloud Continuous Export to a Log Analytics workspace connected to Microsoft Sentinel. The tenant-based XDR connector is not a route for informational alerts - it only exposes the higher severities.
 {: .prompt-warning}
@@ -66,7 +64,7 @@ See [Microsoft Defender XDR integration with Microsoft Sentinel](https://learn.m
 
 ## 📡 Exporting the informational tier
 
-Defender for Cloud Continuous Export can stream alerts and recommendations to a Log Analytics workspace or Azure Event Hubs. For this pattern, the destination must be Log Analytics because the Sentinel analytics rule queries the `SecurityAlert` table.
+Defender for Cloud Continuous Export can stream alerts, recommendations, security findings (CVEs) or Attack Paths to a Log Analytics workspace or Azure Event Hubs. For this pattern, the destination must be Log Analytics because the Sentinel analytics rule queries the `SecurityAlert` table.
 
 In the Azure portal, the configuration is under **Defender for Cloud > Environment settings > subscription > Continuous export**. Choose Log Analytics as the target, select alerts as the data type, and include the `Informational` severity.
 
@@ -119,17 +117,9 @@ SecurityAlert
 | extend ProductComponentName = parse_json(ExtendedProperties).ProductComponentName
 ```
 
-The commented line is not just historical. It identifies the other ingestion path. Alerts populated by the Defender for Cloud Sentinel connector use `ProductName == "Azure Security Center"`, while alerts written by Defender for Cloud Continuous Export use `ProductName == "Microsoft Defender for Cloud"`. This rule must select the latter because it is specifically processing the Continuous Export copy. If you are querying both paths together, use a case-insensitive `in~` filter instead:
+The commented line is not just historical. It identifies the other ingestion path. Alerts populated by the Defender for Cloud connector in Sentinel use `ProductName == "Azure Security Center"`, while alerts written by Defender for Cloud Continuous Export use `ProductName == "Microsoft Defender for Cloud"`. This rule must select the latter because it is specifically processing the Continuous Export copy. 
 
-```shell
-SecurityAlert
-| where ProductName in~ ("Microsoft Defender for Cloud", "Azure Security Center")
-| where AlertSeverity has "informational"
-| where Status != "Resolved"
-| extend ProductComponentName = parse_json(ExtendedProperties).ProductComponentName
-```
-
-I use a ten-minute frequency and lookback, with `AlertPerResult` grouping. That keeps each source alert as its own Sentinel alert, which is important when the downstream XDR view needs to retain the original alert identity and context.
+I use a 10-min frequency and lookback, with `AlertPerResult` grouping. That keeps each source alert as its own Sentinel alert, which is important when the downstream XDR view needs to retain the original alert identity and context.
 
 The rule maps `ResourceId` to an Azure resource and carries the useful source fields into custom details: the compromised entity, extended properties, subscription, product component and original alert type. The alert title is also made more useful by adding the Defender for Cloud product component.
 
@@ -201,7 +191,8 @@ kind: "Scheduled"
 
 The result is still an informational alert. The rule is not upgrading the severity or pretending that Defender for Cloud has found a high-confidence attack. It is moving the signal across a product boundary so it can be evaluated alongside stronger evidence. It also does not create a new raw-event table in Defender XDR Advanced Hunting; the extra visibility is the Sentinel/XDR alert and incident context.
 
-There is one lifecycle detail worth calling out. Resolving the copied alert or incident in Microsoft Defender XDR does **not** resolve the original informational alert in Defender for Cloud. The source alert remains active there. For this use case, I am comfortable with that split: the XDR copy is the triage and correlation object, while Defender for Cloud remains the source record.
+> State does not sync back. Resolving the copied alert or incident in Defender XDR leaves the originating Informational alert active in Defender for Cloud. This is expected: the sync behavior documented for the native integration applies to alerts that traveled that path, and these did not - they arrived via continuous export. For this use case I accept the split. XDR is the triage and correlation object; Defender for Cloud stays the source record and remains visible to the workload owner. A Logic App or some other automation could close the loop later if you want strict parity.
+{: .prompt-warning}
 
 ## 🔗 Avoiding duplicate alerts
 
@@ -220,9 +211,6 @@ When having everything in place you will then see those alerts synced into Defen
 
 ![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-info-alerts-in-xdr.png)
 
-> **State does not sync back.** Closing the alert in Defender XDR leaves the originating Defender for Cloud alert active. Accepted by design: XDR is the triage and correlation object, Defender for Cloud stays the source record and remains visible to the workload owner. A Logic App or some other automation could close the loop later if you like, but for now I am happy with the split.
-{: .prompt-warning}
-
 ## 🛠️ Scaling Continuous Export with Azure Policy
 
 For a handful of subscriptions, configuring Continuous Export in the portal is manageable. At scale, Microsoft provides built-in `DeployIfNotExist` policies for exporting Defender for Cloud alerts and recommendations to Log Analytics or Event Hubs.
@@ -233,8 +221,10 @@ The built-in Log Analytics policy is:
 
 Assigning it at management-group scope and creating a remediation task is the practical way to cover existing subscriptions as well as new ones. The policy route is also where the configuration detail becomes important: the default severity selection is normally Low, Medium and High, so the policy parameters must include Informational too.
 
-> If you use Azure Policy for Continuous Export, review the generated automation configuration instead of assuming the portal selection was carried across. For this workaround, an export that omits Informational alerts is functionally the same as no export at all.
+> By default, the built-in policy does not include Informational as alert severity option. To change this behavior you have to duplicate and customize the policy. Otherwise, the exported alerts will be identical to what the native XDR integration already provides, and this workaround will not deliver any new signals.
 {: .prompt-warning}
+
+![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-export-info-alerts-custom-policy.png)
 
 ## 🔍 When the portal stops showing the setting
 
@@ -295,7 +285,7 @@ That does not mean every informational alert should page an analyst or create an
 This is a workaround around an intentional product behaviour, not a change to the native Defender for Cloud integration. A few boundaries matter:
 
 - **Alert volume:** The rule is designed to preserve fidelity, so tune or suppress it later if a particular informational alert becomes operational noise.
-- **Status handling:** The query excludes alerts with `Status == "Resolved"`, but resolving the Sentinel or XDR copy does not resolve the original Defender for Cloud informational alert. The source alert remains active in Defender for Cloud, which is an accepted limitation of this workaround.
+- **Status handling:** The query excludes alerts with `Status == "Resolved"`, but resolving the Sentinel or XDR copy does not resolve the original Defender for Cloud informational alert. The source alert remains active in Defender for Cloud and visible to workload owners, which is an accepted limitation of this workaround.
 - **Schema drift:** Validate `ProductName`, `AlertSeverity` and the fields inside `ExtendedProperties` in your workspace before deploying the rule broadly.
 - **Duplicate paths:** Do not export Low, Medium and High through this rule when the tenant-based connector already provides them.
 - **API configuration:** When multiple automations exist, use the Automations API to inspect every configuration rather than relying on the portal view.
