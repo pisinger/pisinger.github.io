@@ -1,0 +1,307 @@
+---
+title: Defender for Cloud - Syncing the Missing Informational Alerts into XDR
+author: pit
+date: 2026-08-25
+categories: [blogging, tutorial]
+tags: [defender-for-cloud, defender-xdr, microsoft-sentinel, informational-alerts, continuous-export, analytics-rules, kql, agentic-soc]
+render_with_liquid: false
+---
+
+Microsoft Defender for Cloud deliberately keeps informational alerts out of the Microsoft Defender portal. The reason is sensible: focus the incident queue on the signals that need attention and reduce alert fatigue.
+
+That decision was made for a SOC where every alert is reviewed by a human. I am less convinced it is still the right default for an increasingly agentic SOC. An AI-assisted triage flow can discard a low-fidelity signal cheaply. Reconstructing that same signal later - after its context has disappeared upstream - is much harder.
+
+So I built a small workaround. It exports Defender for Cloud alerts to Log Analytics, selects only the informational ones with a Sentinel analytics rule, and makes the resulting Sentinel alerts and incidents available in the Defender portal alongside Defender XDR.
+
+> The goal is not to make informational alerts urgent. It is to make them available as context when an agent, analyst, or correlation engine needs them.
+{: .prompt-tip}
+
+## 🧭 What Defender for Cloud sends to XDR
+
+The native Defender for Cloud integration with Microsoft Defender XDR is useful, but it is intentionally selective. Low, Medium, and High alerts are propagated into the Defender portal, where they can participate in the incident graph, correlation and the unified investigation experience.
+
+Informational alerts are dropped before that integration boundary. They do not reach the XDR alert queue, correlation or incident graph through the tenant-based Defender for Cloud integration. They are not available as native Defender XDR alert context for Advanced Hunting either.
+
+Microsoft documents the reason directly:
+
+> Informational alerts from Defender for Cloud aren't integrated to the Microsoft Defender portal to allow focus on the relevant and high severity alerts. This strategy streamlines management of incidents and reduces alert fatigue.
+{: .prompt-warning}
+
+<https://learn.microsoft.com/en-us/azure/defender-for-cloud/concept-integration-365#investigation-experience-in-microsoft-defender-xdr>
+
+This creates an awkward asymmetry in my opinion. The data still exists in Defender for Cloud, but the signal is unavailable in the place where the rest of the SOC is correlating cloud, identity, endpoint and email activity.
+
+Below is a sample of Defender for Cloud informational alerts which by default are not sent to Microsoft Defender XDR:
+
+![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-info-alerts.png)
+
+## 🧩 The workaround
+
+The path is straightforward:
+
+```text
+Defender for Cloud
+        |
+        | Continuous Export: alerts -> Log Analytics
+        v
+SecurityAlert in Microsoft Sentinel
+        |
+        | Scheduled analytics rule, informational only
+        v
+Sentinel alert and incident
+        |
+        | Sentinel workspace onboarded to Defender portal
+        v
+Defender portal: Sentinel + Defender XDR
+```
+
+The important detail is that the native Defender for Cloud connector is not being modified. It continues to handle the Low, Medium and High alerts. The analytics rule is scoped to the missing tier only, which avoids creating a second copy of the alerts that already arrive through the tenant-based connector.
+
+> This requires Defender for Cloud Continuous Export to a Log Analytics workspace connected to Microsoft Sentinel. The tenant-based XDR connector is not a route for informational alerts - it only exposes the higher severities.
+{: .prompt-warning}
+
+The workspace also needs to be onboarded to the Microsoft Defender portal, or connected through the Microsoft Defender XDR integration when Sentinel is still being managed in the Azure portal. That is what makes Sentinel incidents visible in the unified Defender experience and keeps the incident records synchronised.
+
+See [Microsoft Defender XDR integration with Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-365-defender-sentinel-integration) for the two integration models and their connector requirements.
+
+## 📡 Exporting the informational tier
+
+Defender for Cloud Continuous Export can stream alerts and recommendations to a Log Analytics workspace or Azure Event Hubs. For this pattern, the destination must be Log Analytics because the Sentinel analytics rule queries the `SecurityAlert` table.
+
+In the Azure portal, the configuration is under **Defender for Cloud > Environment settings > subscription > Continuous export**. Choose Log Analytics as the target, select alerts as the data type, and include the `Informational` severity.
+
+The export can be configured for streaming or snapshots. Streaming is the useful choice here: data is sent as the relevant resource health or alert state is updated, rather than waiting for a snapshot. It is the mode that fits an alert-to-incident pipeline.
+
+Microsoft documents the exported Log Analytics tables and the Continuous Export configuration here:
+
+- [Set up Continuous Export in the Azure portal](https://learn.microsoft.com/en-us/azure/defender-for-cloud/continuous-export)
+- [View exported Defender for Cloud data in Azure Monitor](https://learn.microsoft.com/en-us/azure/defender-for-cloud/continuous-export-view-data)
+- [Defender for Cloud alert schemas](https://learn.microsoft.com/en-us/azure/defender-for-cloud/alerts-schemas)
+
+The last link is useful when building entity mappings and custom details. Continuous Export writes the alerts into `SecurityAlert`; it does not turn them into Sentinel incidents on its own.
+
+![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-export-settings.png)
+
+## 🗺️ Looking up alerts in Azure Resource Graph
+
+There is also a useful default lookup path that does not require Continuous Export. Defender for Cloud alerts are represented in Azure Resource Graph under `microsoft.security/locations/alerts`, so you can query them across subscriptions with the `securityresources` table.
+
+This is useful for checking whether an alert exists, reviewing its current state, and building subscription-wide inventory queries. It is not a replacement for Continuous Export: an ARG query does not stream the alert into `SecurityAlert`, create a Sentinel incident, or make the signal available to the unified SOC.
+
+```shell
+securityresources
+| where type == "microsoft.security/locations/alerts"
+| project
+    TimeGeneratedUtc = todatetime(properties.TimeGeneratedUtc),
+    alertId = name,
+    ResourceId = tolower(tostring(properties.ResourceIdentifiers[0].AzureResourceId)),
+    AlertName = tostring(properties.AlertDisplayName),
+    Severity = tostring(properties.Severity),
+    Intent = tostring(properties.Intent),
+    Status = tostring(properties.Status),
+    AlertURL = tostring(properties.AlertUri)
+| project TimeGeneratedUtc, alertId, ResourceId, AlertName, Severity, Intent, Status, AlertURL
+| sort by TimeGeneratedUtc
+```
+
+The query deliberately does not filter out `Informational`, which makes it a handy way to verify that the alerts exist in Defender for Cloud even though they are omitted from the native XDR integration. Microsoft’s [Defender for Cloud Resource Graph samples](https://learn.microsoft.com/en-us/azure/defender-for-cloud/resource-graph-samples) show the same `securityresources` alert resource type.
+
+## 🎯 The analytics rule
+
+The rule only selects unresolved informational alerts from Defender for Cloud:
+
+```shell
+SecurityAlert
+//| where ProductName == "Azure Security Center"
+| where ProductName == "Microsoft Defender for Cloud"
+| where AlertSeverity has "informational"
+| where Status != "Resolved"
+| extend ProductComponentName = parse_json(ExtendedProperties).ProductComponentName
+```
+
+The commented line is not just historical. It identifies the other ingestion path. Alerts populated by the Defender for Cloud Sentinel connector use `ProductName == "Azure Security Center"`, while alerts written by Defender for Cloud Continuous Export use `ProductName == "Microsoft Defender for Cloud"`. This rule must select the latter because it is specifically processing the Continuous Export copy. If you are querying both paths together, use a case-insensitive `in~` filter instead:
+
+```shell
+SecurityAlert
+| where ProductName in~ ("Microsoft Defender for Cloud", "Azure Security Center")
+| where AlertSeverity has "informational"
+| where Status != "Resolved"
+| extend ProductComponentName = parse_json(ExtendedProperties).ProductComponentName
+```
+
+I use a ten-minute frequency and lookback, with `AlertPerResult` grouping. That keeps each source alert as its own Sentinel alert, which is important when the downstream XDR view needs to retain the original alert identity and context.
+
+The rule maps `ResourceId` to an Azure resource and carries the useful source fields into custom details: the compromised entity, extended properties, subscription, product component and original alert type. The alert title is also made more useful by adding the Defender for Cloud product component.
+
+Here is the complete rule definition:
+
+```yaml
+id: "65f0de55-b152-4461-8e15-d3d4ae535936"
+name: "PS - Transform MDC informational alerts into Sentinel ones to get streamed into xdr"
+description: |
+  Defender for Cloud (MDC) only propagates Low/Medium/High alerts to Defender XDR.
+  Informational alerts are intentionally dropped upstream to limit alert fatigue, so they
+  never reach XDR correlation, incident graph, or Advanced Hunting.
+
+  This rule re-materialises those informational MDC alerts as Sentinel alerts/incidents.
+  Because Sentinel (unified SOC) incidents sync into Defender XDR, the signals become
+  available for correlation and enrichment instead of being lost.
+
+  Rationale - with agentic/AI-assisted triage, raw alert volume is no longer the limiting
+  factor - context is. Low-fidelity informational signals are cheap for an agent to
+  discard but expensive to reconstruct after the fact, so full-fidelity ingestion is now
+  preferred over upstream suppression.
+
+  Prerequisite - MDC Continuous Export (alerts -> Log Analytics) must be enabled. The
+  tenant-based Defender for Cloud connector in XDR syncs Low/Medium/High only, so the
+  informational tier is not available through that path.
+severity: "Informational"
+status: "Available"
+requiredDataConnectors: []
+dataTypes:
+  - "SecurityAlert"
+queryFrequency: "10m"
+queryPeriod: "10m"
+triggerOperator: "gt"
+triggerThreshold: 0
+query: |
+  SecurityAlert
+  //| where ProductName == "Azure Security Center"
+  | where ProductName == "Microsoft Defender for Cloud"
+  | where AlertSeverity has "informational"
+  | where Status != "Resolved"
+  | extend ProductComponentName = parse_json(ExtendedProperties).ProductComponentName
+entityMappings:
+  - entityType: "AzureResource"
+    fieldMappings:
+      - identifier: "ResourceId"
+        columnName: "ResourceId"
+customDetails:
+  CompromisedEntity: "CompromisedEntity"
+  ExtendedProperties: "ExtendedProperties"
+  SubscriptionId: "WorkspaceSubscriptionId"
+  TriggerProduct: "ProductComponentName"
+  AlertType: "AlertType"
+alertDetailsOverride:
+  alertDisplayNameFormat: " {{DisplayName}} (mdc/{{ProductComponentName}})"
+  alertDescriptionFormat: "{{Description}}"
+  alertTacticsColumnName: "Tactics"
+  alertDynamicProperties:
+    - alertProperty: "Techniques"
+      value: "Techniques"
+    - alertProperty: "RemediationSteps"
+      value: "RemediationSteps"
+sentinelEntitiesMappings:
+  - columnName: "Entities"
+eventGroupingSettings:
+  aggregationKind: "AlertPerResult"
+version: "1.0.0"
+kind: "Scheduled"
+```
+
+The result is still an informational alert. The rule is not upgrading the severity or pretending that Defender for Cloud has found a high-confidence attack. It is moving the signal across a product boundary so it can be evaluated alongside stronger evidence. It also does not create a new raw-event table in Defender XDR Advanced Hunting; the extra visibility is the Sentinel/XDR alert and incident context.
+
+There is one lifecycle detail worth calling out. Resolving the copied alert or incident in Microsoft Defender XDR does **not** resolve the original informational alert in Defender for Cloud. The source alert remains active there. For this use case, I am comfortable with that split: the XDR copy is the triage and correlation object, while Defender for Cloud remains the source record.
+
+## 🔗 Avoiding duplicate alerts
+
+There are now two paths involved:
+
+| Alert severity | Native tenant connector | Continuous Export + rule |
+| --- | --- | --- |
+| Low | ✅ Yes | ⛔ No |
+| Medium | ✅ Yes | ⛔ No |
+| High | ✅ Yes | ⛔ No |
+| Informational | ⛔ No | ✅ Yes |
+
+That split is intentional. If Continuous Export is configured for Low, Medium and High as well, the same source alerts can enter Sentinel through both the native connector and this analytics-rule path. The rule should remain informational-only unless there is a specific reason to duplicate the other severities.
+
+When having everything in place you will then see those alerts synced into Defender XDR, which is the goal of this workaround. The informational alerts are now available for correlation and enrichment in the unified SOC, instead of being dropped before they reach the XDR portal.
+
+![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-info-alerts-in-xdr.png)
+
+> **State does not sync back.** Closing the alert in Defender XDR leaves the originating Defender for Cloud alert active. Accepted by design: XDR is the triage and correlation object, Defender for Cloud stays the source record and remains visible to the workload owner. A Logic App or some other automation could close the loop later if you like, but for now I am happy with the split.
+{: .prompt-warning}
+
+## 🛠️ Scaling Continuous Export with Azure Policy
+
+For a handful of subscriptions, configuring Continuous Export in the portal is manageable. At scale, Microsoft provides built-in `DeployIfNotExist` policies for exporting Defender for Cloud alerts and recommendations to Log Analytics or Event Hubs.
+
+The built-in Log Analytics policy is:
+
+`ffb6f416-7bd2-4488-8828-56585fef2be9` - **Deploy export to Log Analytics workspace for Microsoft Defender for Cloud alerts and recommendations**
+
+Assigning it at management-group scope and creating a remediation task is the practical way to cover existing subscriptions as well as new ones. The policy route is also where the configuration detail becomes important: the default severity selection is normally Low, Medium and High, so the policy parameters must include Informational too.
+
+> If you use Azure Policy for Continuous Export, review the generated automation configuration instead of assuming the portal selection was carried across. For this workaround, an export that omits Informational alerts is functionally the same as no export at all.
+{: .prompt-warning}
+
+## 🔍 When the portal stops showing the setting
+
+There is another operational wrinkle. With a single export configuration, the portal exposes the severity selection in a fairly friendly way. Once a subscription has multiple export configurations, the portal no longer gives the complete picture and may no longer expose the setting you need to change.
+
+At that point, inspect the Defender for Cloud Automations API. This is the small PowerShell function I use to retrieve either all export configurations or one named configuration:
+
+```powershell
+function Get-DefenderCloudExportSettings {
+    param(
+        [Parameter(Mandatory)]
+        [guid]$subId,
+
+        [Parameter(Mandatory)]
+        [string]$resourceGroup,
+
+        [string]$automationName
+    )
+
+    $baseUri = "https://management.azure.com/subscriptions/$subId/resourceGroups/$resourceGroup/providers/Microsoft.Security/automations"
+    $uri = if ($automationName) {
+        $($baseUri + "/" + $automationName + "?api-version=2023-12-01-preview")
+    } else {
+        $($baseUri + "?api-version=2023-12-01-preview")
+    }
+
+    $result = (Invoke-AzRestMethod -Uri $uri -Method GET).Content | ConvertFrom-Json
+    if ($automationName) { $result } else { $result.value }
+}
+```
+
+For example, retrieve every export configuration in a resource group with:
+
+```powershell
+Get-SxDefenderCloudExportSettings `
+    -subId "00000000-0000-0000-0000-000000000000" `
+    -resourceGroup "defender-export-config"
+```
+
+The resource group is required because the Automations API scopes these configurations beneath a subscription and resource group. It is only the container for the export configuration - you should not expect to see a normal, separately created Continuous Export resource in the Azure portal. When multiple configurations exist, the portal may show only a banner or incomplete view, so the API is the reliable place to inspect them.
+
+Microsoft documents the Automations API here:
+
+<https://learn.microsoft.com/en-us/rest/api/defenderforcloud/automations?view=rest-defenderforcloud-2023-12-01-preview>
+
+The API is the reliable place to verify that the relevant export configuration actually contains the informational severity when multiple configurations exist.
+
+## 🤖 Why this makes more sense with agentic SOC operations
+
+The old trade-off was easy to state: informational alerts create volume, and volume creates alert fatigue. Drop the least urgent signals before they enter the unified experience.
+
+Agentic triage changes the cost curve. An agent can use an informational alert as a cheap piece of supporting evidence, correlate it with the affected resource and nearby activity, and discard it when it adds no value. The expensive operation is recovering context that was never retained.
+
+That does not mean every informational alert should page an analyst or create an automated response. It means the suppression point should move closer to triage, where context-aware logic can make the decision. Sentinel is a useful place for that boundary because the signal can be stored, grouped, enriched and synchronised into Defender XDR without changing the original Defender for Cloud severity.
+
+## ⚠️ Limitations and operational boundaries
+
+This is a workaround around an intentional product behaviour, not a change to the native Defender for Cloud integration. A few boundaries matter:
+
+- **Alert volume:** The rule is designed to preserve fidelity, so tune or suppress it later if a particular informational alert becomes operational noise.
+- **Status handling:** The query excludes alerts with `Status == "Resolved"`, but resolving the Sentinel or XDR copy does not resolve the original Defender for Cloud informational alert. The source alert remains active in Defender for Cloud, which is an accepted limitation of this workaround.
+- **Schema drift:** Validate `ProductName`, `AlertSeverity` and the fields inside `ExtendedProperties` in your workspace before deploying the rule broadly.
+- **Duplicate paths:** Do not export Low, Medium and High through this rule when the tenant-based connector already provides them.
+- **API configuration:** When multiple automations exist, use the Automations API to inspect every configuration rather than relying on the portal view.
+
+## 📝 Conclusion
+
+Defender for Cloud intentionally drops informational alerts before they reach Defender XDR. Continuous Export gives us another route: preserve the alerts in `SecurityAlert`, turn only the missing informational tier into Sentinel alerts, and let the unified SOC synchronise those incidents into XDR.
+
+For a human-only SOC, the original suppression may still be the right choice. With agentic triage, I prefer keeping the full-fidelity signal and letting context-aware automation decide what deserves attention. The alert remains informational - it is simply no longer invisible.
