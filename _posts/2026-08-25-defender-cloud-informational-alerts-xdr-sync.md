@@ -241,7 +241,7 @@ There is another operational wrinkle. With a single export configuration, the po
 
 At that point, inspect the Defender for Cloud Automations API. This is the small PowerShell function I use to retrieve either all export configurations or one named configuration:
 
-```powershell
+```bash
 function Get-DefenderCloudExportSettings {
     param(
         [Parameter(Mandatory)]
@@ -268,7 +268,7 @@ function Get-DefenderCloudExportSettings {
 For example, retrieve every export configuration in a resource group with:
 
 ```powershell
-Get-SxDefenderCloudExportSettings `
+Get-DefenderCloudExportSettings `
     -subId "00000000-0000-0000-0000-000000000000" `
     -resourceGroup "defender-export-config"
 ```
