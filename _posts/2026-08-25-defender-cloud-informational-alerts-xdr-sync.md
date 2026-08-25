@@ -211,6 +211,15 @@ When having everything in place you will then see those alerts synced into Defen
 
 ![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-info-alerts-in-xdr.png)
 
+To check for proper working Analytics Rule, check Sentinel Health:
+
+```shell
+SentinelHealth
+| where SentinelResourceName startswith "PS - Transform MDC"
+| extend AlertsGeneratedAmount = parse_json(ExtendedProperties).AlertsGeneratedAmount
+| where AlertsGeneratedAmount > 0
+```
+
 ## 🛠️ Scaling Continuous Export with Azure Policy
 
 For a handful of subscriptions, configuring Continuous Export in the portal is manageable. At scale, Microsoft provides built-in `DeployIfNotExist` policies for exporting Defender for Cloud alerts and recommendations to Log Analytics or Event Hubs.
