@@ -11,7 +11,7 @@ Microsoft Defender for Cloud deliberately keeps informational alerts out of the 
 
 That decision was made for a SOC where every alert is reviewed by a human. I am less convinced it is still the right default for an increasingly agentic SOC. An AI-assisted triage flow can discard a low-fidelity signal cheaply. Reconstructing that same signal later - after its context has disappeared upstream - is much harder.
 
-So I built a small workaround. It exports Defender for Cloud alerts to Log Analytics, selects only the informational ones with a Sentinel analytics rule, and makes the resulting Sentinel alerts and incidents available in the Defender portal alongside Defender XDR.
+So I built a small workaround that uses Sentinel as the vehicle. It exports Defender for Cloud alerts to Log Analytics, selects only the informational ones with a Sentinel analytics rule, and makes the resulting Sentinel alerts and incidents available in the Defender XDR portal where the rest is then carried by the Defender correlation engine.
 
 > The goal is not to make informational alerts urgent. It is to make them available as context when an agent, analyst, or correlation engine needs them.
 {: .prompt-tip}
@@ -33,27 +33,17 @@ Below is a sample of Defender for Cloud informational alerts which by default ar
 
 ![img-description](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/defender-cloud-info-alerts.png)
 
-## 🧩 The workaround
+## 🧩 The workaround - Sentinel as the vehicle
 
-The path is straightforward:
+The whole pattern fits in one picture. On the left, the native routes that already work. On the right, the route I had to build:
 
-```text
-Defender for Cloud
-        |
-        | Continuous Export: alerts -> Log Analytics
-        v
-SecurityAlert in Microsoft Sentinel
-        |
-        | Scheduled analytics rule, informational only
-        v
-Sentinel alert and incident
-        |
-        | Sentinel workspace onboarded to Defender portal
-        v
-Defender portal: Sentinel + Defender XDR
-```
+![Defender for Cloud informational alerts routed through Microsoft Sentinel into Defender XDR](/assets/img/posts/defender-cloud-informational-alerts-xdr-sync/linkedin-mdc-info-alerts-xdr.png)
 
-The important detail is that the connector configuration stays untouched, even though Defender for Cloud alerts already flow natively into XDR. Two things keep the Informational tier from being duplicated: continuous export is scoped to Informational alerts only, and the analytics rule is scoped to the same tier. Neither touches what already arrives through the tenant-based connector.
+Two native paths can carry Defender for Cloud alerts into the Defender portal, and in practice you often have both: the native Defender for Cloud integration in XDR, and the Defender for Cloud data connector in Sentinel - which is usually already enabled if you arrived here from Sentinel. Either way, neither of them carries the Informational tier. That is not a connector you configured wrongly; it is the documented product behaviour.
+
+So the informational alerts need their own route, and Sentinel is the vehicle: Continuous Export lands them in `SecurityAlert`, a scheduled analytics rule turns only that tier into Sentinel alerts, and the Sentinel/XDR integration carries the resulting incidents into the unified portal.
+
+The important detail is that the existing connector configuration stays untouched. Two things keep the Informational tier from being duplicated: continuous export is scoped to Informational alerts only, and the analytics rule is scoped to the same tier. Neither touches what already arrives through the native paths.
 
 > This requires Defender for Cloud Continuous Export to a Log Analytics workspace connected to Microsoft Sentinel. The tenant-based XDR connector is not a route for informational alerts - it only exposes the higher severities.
 {: .prompt-warning}
@@ -196,9 +186,9 @@ The result is still an informational alert. The rule is not upgrading the severi
 
 ## 🔗 Avoiding duplicate alerts
 
-There are now two paths involved:
+There are now two routes involved - the native one (either integration, or both) and the Sentinel one:
 
-| Alert severity | Native tenant connector | Continuous Export + rule |
+| Alert severity | Native paths | Continuous Export + rule |
 | --- | --- | --- |
 | Low | ✅ Yes | ⛔ No |
 | Medium | ✅ Yes | ⛔ No |
@@ -301,6 +291,6 @@ This is a workaround around an intentional product behaviour, not a change to th
 
 ## 📝 Conclusion
 
-Defender for Cloud intentionally drops informational alerts before they reach Defender XDR. Continuous Export gives us another route: preserve the alerts in `SecurityAlert`, turn only the missing informational tier into Sentinel alerts, and let the unified SOC synchronise those incidents into XDR.
+Defender for Cloud intentionally drops informational alerts before they reach Defender XDR, and no native path gives them back. Continuous Export plus a scheduled rule makes Sentinel the vehicle instead: preserve the alerts in `SecurityAlert`, turn only the missing informational tier into Sentinel alerts, and let the unified SOC synchronise those incidents into XDR.
 
 For a human-only SOC, the original suppression may still be the right choice. With agentic triage, I prefer keeping the full-fidelity signal and letting context-aware automation decide what deserves attention. The alert remains informational - it is simply no longer invisible.
