@@ -14,7 +14,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
+# `contents` stays read-only here; the build job widens it to `write` for itself
+# so it can commit the orphaned-entry prune. See the build job below.
 permissions:
   contents: read
   pages: write
@@ -30,9 +32,32 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    permissions:
+      # Needed by the prune step, which commits the removal of orphaned entries.
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Prune orphaned radar and digest entries
+        id: prune
+        # Entries outside the window listed on the tab pages are no longer linked
+        # from anywhere on the site. Remove them so the repo matches the site.
+        # Full history is kept in pisinger/private-openclaw, which is what the
+        # pisinger.tngx-voice.com apps read.
+        run: tools/prune-orphaned-entries.sh
+      - name: Commit pruned entries
+        if: steps.prune.outputs.pruned == 'true'
+        # Best effort: a content deploy from private-openclaw may land between
+        # checkout and push. The build below runs against the already-pruned
+        # working tree either way, so a failed push only defers the commit to
+        # the next run.
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: prune orphaned radar and digest entries"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Setup Ruby
         # https://github.com/ruby/setup-ruby/releases/tag/v1.207.0
         uses: ruby/setup-ruby@4a9ddd6f338a97768b8006bf671dfbad383215f4

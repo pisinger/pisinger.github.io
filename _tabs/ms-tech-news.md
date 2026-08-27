@@ -12,13 +12,14 @@ Curated roundups of posts published on [techcommunity.microsoft.com](https://tec
 </a>
 {% endif %}
 
+{% assign MAX_ENTRIES = 20 %}
 {% assign entries = site.ms_tech_news | sort: 'date' | reverse %}
 
 {% if entries.size == 0 %}
 *First roundup coming soon.*
 {% else %}
 <ul style="list-style: none; padding: 0;">
-{% for entry in entries limit: 20 %}
+{% for entry in entries limit: MAX_ENTRIES %}
   <li style="margin-bottom: 1.5rem;">
     <h3 style="margin-bottom: 0.25rem;">
       <a href="{{ entry.url | relative_url }}">{{ entry.title }}</a>

@@ -12,13 +12,14 @@ Monthly digest covering Wiz platform updates, cloud security capabilities, and n
 </a>
 {% endif %}
 
+{% assign MAX_DIGESTS = 6 %}
 {% assign digests = site.wiz_release_radar | sort: 'date' | reverse %}
 
 {% if digests.size == 0 %}
 *First digest coming soon.*
 {% else %}
 <ul style="list-style: none; padding: 0;">
-{% for digest in digests limit: 6 %}
+{% for digest in digests limit: MAX_DIGESTS %}
   <li style="margin-bottom: 1.5rem;">
     <h3 style="margin-bottom: 0.25rem;">
       <a href="{{ digest.url | relative_url }}">{{ digest.title }}</a>

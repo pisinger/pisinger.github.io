@@ -1,6 +1,13 @@
 # Set default behavior to automatically normalize line endings.
 * text=auto
 
+# Force markdown and Liquid/HTML source to LF so content generators and
+# editors on Windows do not introduce mixed line endings across the repo.
+*.md text eol=lf
+*.html text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+
 # Force bash scripts to always use LF line endings so that if a repo is accessed
 # in Unix via a file share from Windows, the scripts will work.
 *.sh text eol=lf
