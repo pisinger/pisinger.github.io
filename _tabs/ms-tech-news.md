@@ -5,7 +5,7 @@ order: 6
 title: MS Tech News
 ---
 
-Curated roundups of posts published on [techcommunity.microsoft.com](https://techcommunity.microsoft.com) for the products I track.
+Curated roundups of posts published on [techcommunity.microsoft.com](https://techcommunity.microsoft.com) for the products I track. The latest 20 roundups are listed here — the full history, plus filtering and drill-down, is served via the dedicated [ms-tech-news-app](https://pisinger.tngx-voice.com/ms-tech-news/).
 {% if site.ms_tech_news.size > 0 %}
 <a href="/feed/ms_tech_news.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
   <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
@@ -18,7 +18,7 @@ Curated roundups of posts published on [techcommunity.microsoft.com](https://tec
 *First roundup coming soon.*
 {% else %}
 <ul style="list-style: none; padding: 0;">
-{% for entry in entries %}
+{% for entry in entries limit: 20 %}
   <li style="margin-bottom: 1.5rem;">
     <h3 style="margin-bottom: 0.25rem;">
       <a href="{{ entry.url | relative_url }}">{{ entry.title }}</a>
@@ -26,9 +26,6 @@ Curated roundups of posts published on [techcommunity.microsoft.com](https://tec
     <time datetime="{{ entry.date | date_to_xmlschema }}" style="font-size: 0.875rem; opacity: 0.75;">
       {{ entry.date | date: "%Y-%m-%d" }}
     </time>
-    {% if entry.excerpt %}
-      <p style="margin-top: 0.5rem; margin-bottom: 0;">{{ entry.excerpt | strip_html | truncate: 220 }}</p>
-    {% endif %}
   </li>
 {% endfor %}
 </ul>
