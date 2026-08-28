@@ -44,7 +44,7 @@ jobs:
         # from anywhere on the site. Remove them so the repo matches the site.
         # Full history is kept in pisinger/private-openclaw, which is what the
         # pisinger.tngx-voice.com apps read.
-        run: tools/prune-orphaned-entries.sh
+        run: bash tools/prune-orphaned-entries.sh
       - name: Commit pruned entries
         if: steps.prune.outputs.pruned == 'true'
         # Best effort: a content deploy from private-openclaw may land between
