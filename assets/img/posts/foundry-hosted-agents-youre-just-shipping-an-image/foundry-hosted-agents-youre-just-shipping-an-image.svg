@@ -1,0 +1,345 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Foundry hosted agent: ship an image, run the agent</title>
+  <desc id="desc">You build a container image bundling your code and skills, push it to Azure Container Registry, and Foundry runs it as a hosted agent with a dedicated microVM per session, an agent identity, an endpoint, and telemetry. Tools live behind a single versioned MCP toolbox endpoint, and the agent can be invoked from a SOAR playbook, a schedule, or an API call.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6fbff"/>
+      <stop offset="0.5" stop-color="#eef8f5"/>
+      <stop offset="1" stop-color="#fff8ee"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c5fae"/>
+      <stop offset="0.55" stop-color="#0f7fb0"/>
+      <stop offset="1" stop-color="#15a08f"/>
+    </linearGradient>
+    <linearGradient id="image" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#243b53"/>
+      <stop offset="1" stop-color="#0f6cbd"/>
+    </linearGradient>
+    <linearGradient id="reg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f3a5f"/>
+      <stop offset="1" stop-color="#0f6cbd"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0f6cbd"/>
+      <stop offset="1" stop-color="#15a08f"/>
+    </linearGradient>
+    <radialGradient id="blobA" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#0f6cbd" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#0f6cbd" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blobB" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#15a08f" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#15a08f" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#1b2a4a" flood-opacity="0.16"/>
+    </filter>
+    <filter id="heroGlow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="26" flood-color="#0f6cbd" flood-opacity="0.34"/>
+    </filter>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+
+    <marker id="arrB" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0f6cbd"/>
+    </marker>
+    <marker id="arrT" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#13a394"/>
+    </marker>
+    <marker id="arrV" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/>
+    </marker>
+
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.3" fill="#0f6cbd" opacity="0.06"/>
+    </pattern>
+    <pattern id="dotsLight" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.1" fill="#ffffff" opacity="0.14"/>
+    </pattern>
+
+    <style>
+      .h1   { font: 800 31px "Segoe UI", Inter, Arial, sans-serif; fill:#16243b; }
+      .h2   { font: 500 16px "Segoe UI", Inter, Arial, sans-serif; fill:#52647a; }
+      .ct   { font: 700 20px "Segoe UI", Inter, Arial, sans-serif; fill:#16243b; }
+      .cs   { font: 500 13.5px "Segoe UI", Inter, Arial, sans-serif; fill:#5b6b7e; }
+      .chip { font: 700 12.5px "Segoe UI", Inter, Arial, sans-serif; }
+      .mini { font: 700 11.5px "Segoe UI", Inter, Arial, sans-serif; }
+      .wt   { fill:#ffffff; }
+      .wh1  { font: 800 26px "Segoe UI", Inter, Arial, sans-serif; fill:#ffffff; }
+      .wh2  { font: 500 13.5px "Segoe UI", Inter, Arial, sans-serif; fill:#eaf6ff; }
+      .panel{ fill:#ffffff; stroke:#dbe5ef; stroke-width:1.5; }
+      .lbl  { font: 700 12px "Segoe UI", Inter, Arial, sans-serif; fill:#52647a; }
+      .flow { fill:none; stroke-width:4; stroke-linecap:round; }
+      @keyframes dash { to { stroke-dashoffset:-52; } }
+      .anim { stroke-dasharray:13 13; animation:dash 1.5s linear infinite; }
+      @keyframes pulse { 0%,100%{opacity:0;} 50%{opacity:0.6;} }
+      .pulse { animation:pulse 2.6s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce){ .anim,.pulse{ animation:none; } .anim{stroke-dasharray:none;} }
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <rect width="1200" height="720" fill="url(#dots)"/>
+  <circle cx="170" cy="120" r="150" fill="url(#blobA)" filter="url(#soft)"/>
+  <circle cx="1050" cy="600" r="170" fill="url(#blobB)" filter="url(#soft)"/>
+
+  <!-- header -->
+  <text x="56" y="60" class="h1">You ship the image. Foundry runs the agent.</text>
+  <text x="58" y="90" class="h2">Code and skills can bake into the artifact · tools live behind one versioned MCP toolbox · invoke through a protected endpoint.</text>
+
+  <!-- ===================== STAGE 1 : BUILD ===================== -->
+  <g filter="url(#shadow)">
+    <rect x="48" y="130" width="238" height="250" rx="16" class="panel"/>
+  </g>
+  <text x="72" y="166" class="ct">You build the image</text>
+  <text x="72" y="187" class="cs">code + skills, baked in</text>
+
+  <!-- code window -->
+  <g>
+    <rect x="72" y="200" width="190" height="74" rx="9" fill="#0e1f33"/>
+    <rect x="72" y="200" width="190" height="20" rx="9" fill="#16314d"/>
+    <circle cx="86" cy="210" r="3" fill="#ff5f56"/><circle cx="98" cy="210" r="3" fill="#ffbd2e"/><circle cx="110" cy="210" r="3" fill="#27c93f"/>
+    <rect x="86" y="232" width="84" height="6" rx="3" fill="#5cc8ff"/>
+    <rect x="86" y="245" width="120" height="6" rx="3" fill="#5be0b0"/>
+    <rect x="86" y="258" width="64" height="6" rx="3" fill="#ffd479"/>
+  </g>
+
+  <!-- skills folder -->
+  <g>
+    <path d="M76 296 h22 l7 8 h31 a5 5 0 0 1 5 5 v28 a5 5 0 0 1 -5 5 h-60 a5 5 0 0 1 -5 -5 v-36 a5 5 0 0 1 5 -5 z" fill="#f59e0b"/>
+    <rect x="71" y="306" width="70" height="32" rx="5" fill="#fbbf4d"/>
+    <text x="82" y="328" class="mini" fill="#7a4406">skills</text>
+  </g>
+
+  <!-- image cube -->
+  <g>
+    <rect x="158" y="290" width="104" height="56" rx="9" fill="url(#image)"/>
+    <rect x="158" y="290" width="104" height="56" rx="9" fill="url(#dotsLight)"/>
+    <path d="M168 308 h34 M168 320 h54 M168 332 h28" stroke="#9fd0ff" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+    <text x="158" y="368" class="lbl">agent image</text>
+  </g>
+
+  <!-- version chips -->
+  <g>
+    <rect x="220" y="356" width="44" height="20" rx="10" fill="#e8f3ff"/>
+    <text x="232" y="370" class="chip" fill="#0f6cbd">v1.0</text>
+  </g>
+
+  <!-- pipeline arrow 1 -->
+  <path d="M290 256 H346" class="flow anim" stroke="#0f6cbd" marker-end="url(#arrB)"/>
+
+  <!-- ===================== STAGE 2 : ACR ===================== -->
+  <g filter="url(#shadow)">
+    <rect x="352" y="192" width="128" height="128" rx="16" class="panel"/>
+  </g>
+  <g>
+    <rect x="380" y="208" width="72" height="20" rx="5" fill="url(#reg)"/>
+    <rect x="380" y="232" width="72" height="20" rx="5" fill="url(#reg)"/>
+    <rect x="380" y="256" width="72" height="20" rx="5" fill="url(#reg)"/>
+    <rect x="388" y="214" width="10" height="8" rx="2" fill="#5cc8ff"/>
+    <rect x="388" y="238" width="10" height="8" rx="2" fill="#5be0b0"/>
+    <rect x="388" y="262" width="10" height="8" rx="2" fill="#ffd479"/>
+  </g>
+  <text x="416" y="295" class="ct" font-size="18" text-anchor="middle">ACR</text>
+  <text x="416" y="312" class="cs" text-anchor="middle">registry</text>
+
+  <!-- pipeline arrow 2 -->
+  <path d="M484 256 H514" class="flow anim" stroke="#0f6cbd" marker-end="url(#arrB)"/>
+
+  <!-- ===================== STAGE 3 : FOUNDRY HERO ===================== -->
+  <g filter="url(#heroGlow)">
+    <rect x="520" y="130" width="624" height="250" rx="18" fill="url(#hero)"/>
+  </g>
+  <rect x="520" y="130" width="624" height="250" rx="18" fill="url(#dotsLight)"/>
+  <rect x="520" y="130" width="624" height="58" rx="18" fill="#ffffff" opacity="0.06"/>
+
+  <text x="548" y="170" class="wh1">Foundry Hosted Agent</text>
+  <text x="548" y="194" class="wh2" opacity="0.92">managed endpoint · agent identity · versions · telemetry</text>
+
+  <!-- session sandboxes -->
+  <!-- session A (pulsing) -->
+  <rect x="544" y="214" width="112" height="100" rx="12" class="pulse" fill="none" stroke="#bfe6ff" stroke-width="2"/>
+  <g>
+    <rect x="548" y="218" width="104" height="96" rx="11" fill="#ffffff" opacity="0.96"/>
+    <rect x="558" y="228" width="62" height="17" rx="8" fill="#dff1ff"/>
+    <text x="565" y="241" class="mini" fill="#0f6cbd">microVM</text>
+    <rect x="582" y="252" width="36" height="30" rx="8" fill="#e8f3ff" stroke="#0f6cbd" stroke-width="1.6"/>
+    <line x1="600" y1="246" x2="600" y2="252" stroke="#0f6cbd" stroke-width="2.4"/><circle cx="600" cy="244" r="2.4" fill="#0f6cbd"/>
+    <circle cx="593" cy="266" r="2.6" fill="#0f6cbd"/><circle cx="607" cy="266" r="2.6" fill="#0f6cbd"/>
+    <text x="600" y="302" class="mini" fill="#52647a" text-anchor="middle">session A</text>
+  </g>
+  <!-- session B -->
+  <g>
+    <rect x="664" y="218" width="104" height="96" rx="11" fill="#ffffff" opacity="0.96"/>
+    <rect x="674" y="228" width="62" height="17" rx="8" fill="#e4f8ee"/>
+    <text x="681" y="241" class="mini" fill="#047857">microVM</text>
+    <rect x="698" y="252" width="36" height="30" rx="8" fill="#ecfdf5" stroke="#047857" stroke-width="1.6"/>
+    <line x1="716" y1="246" x2="716" y2="252" stroke="#047857" stroke-width="2.4"/><circle cx="716" cy="244" r="2.4" fill="#047857"/>
+    <circle cx="709" cy="266" r="2.6" fill="#047857"/><circle cx="723" cy="266" r="2.6" fill="#047857"/>
+    <text x="716" y="302" class="mini" fill="#52647a" text-anchor="middle">session B</text>
+  </g>
+  <!-- session C -->
+  <g>
+    <rect x="780" y="218" width="104" height="96" rx="11" fill="#ffffff" opacity="0.96"/>
+    <rect x="790" y="228" width="62" height="17" rx="8" fill="#fff0e2"/>
+    <text x="797" y="241" class="mini" fill="#c2410c">microVM</text>
+    <rect x="814" y="252" width="36" height="30" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.6"/>
+    <line x1="832" y1="246" x2="832" y2="252" stroke="#ea580c" stroke-width="2.4"/><circle cx="832" cy="244" r="2.4" fill="#ea580c"/>
+    <circle cx="825" cy="266" r="2.6" fill="#ea580c"/><circle cx="839" cy="266" r="2.6" fill="#ea580c"/>
+    <text x="832" y="302" class="mini" fill="#52647a" text-anchor="middle">session C</text>
+  </g>
+  <!-- scale to N -->
+  <g>
+    <rect x="896" y="218" width="62" height="96" rx="11" fill="#ffffff" opacity="0.30" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="5 6"/>
+    <text x="927" y="266" class="wt" font-size="22" font-weight="800" text-anchor="middle">+N</text>
+    <text x="927" y="302" class="mini wt" text-anchor="middle" opacity="0.92">0 ↔ N</text>
+  </g>
+
+  <!-- isolation shield cluster -->
+  <g>
+    <path d="M1052 220 l30 11 v17 c0 22 -15 35 -30 43 c-15 -8 -30 -21 -30 -43 v-17 z" fill="#ffffff" opacity="0.96"/>
+    <path d="M1040 250 l9 9 l16 -18" fill="none" stroke="#15a08f" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1052" y="300" class="mini wt" text-anchor="middle" opacity="0.95">hypervisor</text>
+    <text x="1052" y="313" class="mini wt" text-anchor="middle" opacity="0.95">isolated</text>
+  </g>
+
+  <!-- hero footer chips -->
+  <g>
+    <rect x="548" y="330" width="150" height="32" rx="16" fill="#ffffff" opacity="0.94"/>
+    <circle cx="569" cy="346" r="7" fill="#ede9fe"/><path d="M566 346 h6 M569 343 v6" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="583" y="350" class="chip" fill="#3b2f6b">Entra agent ID</text>
+  </g>
+  <g>
+    <rect x="706" y="330" width="160" height="32" rx="16" fill="#ffffff" opacity="0.94"/>
+    <path d="M724 340 h12 a4 4 0 0 1 4 4 v4 a4 4 0 0 1 -4 4 h-12" fill="none" stroke="#0f6cbd" stroke-width="2.2"/>
+    <text x="746" y="350" class="chip" fill="#114a7a">version selector</text>
+  </g>
+  <g>
+    <rect x="874" y="330" width="120" height="32" rx="16" fill="#ffffff" opacity="0.94"/>
+    <path d="M892 350 v-7 M900 350 v-13 M908 350 v-19" stroke="#15a08f" stroke-width="3.4" stroke-linecap="round"/>
+    <text x="918" y="350" class="chip" fill="#0d6b60">OTel traces</text>
+  </g>
+  <g>
+    <rect x="1002" y="330" width="118" height="32" rx="16" fill="#ffffff" opacity="0.94"/>
+    <circle cx="1022" cy="346" r="6.5" fill="none" stroke="#ea580c" stroke-width="2.2"/><circle cx="1022" cy="346" r="2" fill="#ea580c"/>
+    <text x="1036" y="350" class="mini" fill="#9a3412">Memory · preview</text>
+  </g>
+
+  <!-- ===================== ROW B : TOOLBOX ===================== -->
+  <g filter="url(#shadow)">
+    <rect x="48" y="416" width="470" height="240" rx="16" class="panel"/>
+  </g>
+  <!-- MCP plug glyph -->
+  <g>
+    <rect x="74" y="442" width="46" height="34" rx="8" fill="#e4f8ee" stroke="#13a394" stroke-width="1.8"/>
+    <path d="M88 442 v-9 M106 442 v-9" stroke="#13a394" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M97 476 v12" stroke="#13a394" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+  <text x="134" y="456" class="ct">Toolbox</text>
+  <text x="134" y="477" class="cs">one versioned MCP-compatible endpoint</text>
+
+  <!-- tool chips strip -->
+  <g>
+    <rect x="74" y="498" width="40" height="40" rx="9" fill="#e8f3ff"/><circle cx="92" cy="516" r="6" fill="none" stroke="#0f6cbd" stroke-width="2.4"/><line x1="97" y1="521" x2="102" y2="526" stroke="#0f6cbd" stroke-width="2.4" stroke-linecap="round"/>
+    <rect x="122" y="498" width="40" height="40" rx="9" fill="#ecfdf5"/><path d="M133 512 h18 M133 519 h18 M133 526 h12" stroke="#047857" stroke-width="2.4" stroke-linecap="round"/>
+    <rect x="170" y="498" width="40" height="40" rx="9" fill="#fff7ed"/><path d="M180 510 l-5 8 l5 8 M200 510 l5 8 l-5 8" stroke="#ea580c" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    <rect x="218" y="498" width="40" height="40" rx="9" fill="#ede9fe"/><rect x="228" y="508" width="20" height="22" rx="3" fill="none" stroke="#7c3aed" stroke-width="2.2"/><line x1="232" y1="515" x2="244" y2="515" stroke="#7c3aed" stroke-width="2"/>
+    <rect x="266" y="498" width="40" height="40" rx="9" fill="#e4f8ee"/><path d="M280 504 v9 M286 504 v9" stroke="#13a394" stroke-width="2.8" stroke-linecap="round"/><rect x="276" y="513" width="14" height="11" rx="3" fill="none" stroke="#13a394" stroke-width="2"/>
+    <text x="318" y="523" class="cs">Web Search · AI Search · Code · Files · MCP · A2A</text>
+  </g>
+
+  <!-- tool_search meta tool -->
+  <g>
+    <rect x="74" y="552" width="170" height="34" rx="17" fill="#0f6cbd"/>
+    <circle cx="94" cy="569" r="6.5" fill="none" stroke="#ffffff" stroke-width="2.2"/><line x1="99" y1="574" x2="104" y2="579" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="110" y="573" class="chip wt">tool_search · preview</text>
+  </g>
+  <text x="256" y="573" class="cs">token cost stays flat as the toolbox grows</text>
+
+  <!-- version selector v1 -> v2 default -->
+  <g>
+    <rect x="74" y="600" width="58" height="30" rx="15" fill="#eef2f7" stroke="#cbd6e2" stroke-width="1.5"/>
+    <text x="103" y="620" class="chip" fill="#7a8aa0" text-anchor="middle">v1</text>
+    <path d="M138 615 H160" stroke="#9aa8b7" stroke-width="2.4" stroke-linecap="round" marker-end="url(#arrV)"/>
+    <rect x="168" y="600" width="118" height="30" rx="15" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+    <text x="227" y="620" class="chip" fill="#5b3ec4" text-anchor="middle">v2 · default</text>
+    <text x="300" y="620" class="cs">consumer endpoint → default</text>
+  </g>
+
+  <!-- ===================== ROW B : TRIGGERS ===================== -->
+  <g filter="url(#shadow)">
+    <rect x="542" y="416" width="296" height="240" rx="16" class="panel"/>
+  </g>
+  <text x="568" y="452" class="ct">Invoke through the endpoint</text>
+  <text x="568" y="473" class="cs">Entra auth · network boundary</text>
+
+  <!-- SOAR / Logic App -->
+  <g>
+    <rect x="568" y="492" width="244" height="44" rx="12" fill="#f7fafc" stroke="#dbe5ef" stroke-width="1.5"/>
+    <circle cx="590" cy="514" r="6" fill="#0f6cbd"/><circle cx="612" cy="504" r="5" fill="#15a08f"/><circle cx="612" cy="524" r="5" fill="#15a08f"/>
+    <path d="M595 514 l13 -8 M595 514 l13 8" stroke="#9aa8b7" stroke-width="2" />
+    <text x="636" y="519" class="chip" fill="#16243b">SOAR playbook · Logic App</text>
+  </g>
+  <!-- Schedule -->
+  <g>
+    <rect x="568" y="544" width="244" height="44" rx="12" fill="#f7fafc" stroke="#dbe5ef" stroke-width="1.5"/>
+    <circle cx="592" cy="566" r="11" fill="none" stroke="#7c3aed" stroke-width="2.4"/><path d="M592 566 v-6 M592 566 l5 3" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="618" y="571" class="chip" fill="#16243b">Schedule · routine (preview)</text>
+  </g>
+  <!-- API -->
+  <g>
+    <rect x="568" y="596" width="244" height="44" rx="12" fill="#f7fafc" stroke="#dbe5ef" stroke-width="1.5"/>
+    <path d="M588 610 l-7 8 l7 8 M600 610 l7 8 l-7 8" fill="none" stroke="#ea580c" stroke-width="2.6" stroke-linecap="round"/>
+    <text x="620" y="623" class="chip" fill="#16243b">API call · your code</text>
+  </g>
+
+  <!-- ===================== ROW B : PIN WARNING ===================== -->
+  <g filter="url(#shadow)">
+    <rect x="862" y="416" width="282" height="240" rx="16" fill="#fff7ed" stroke="#fdba74" stroke-width="1.8"/>
+  </g>
+  <g>
+    <path d="M903 452 l22 38 h-44 z" fill="#fbbf24"/>
+    <line x1="903" y1="466" x2="903" y2="478" stroke="#7a3d04" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="903" cy="485" r="2.2" fill="#7a3d04"/>
+  </g>
+  <text x="930" y="464" class="ct" font-size="18" fill="#9a3412">Release the toolbox version</text>
+  <text x="930" y="484" class="cs" fill="#b45309">test first · promote deliberately</text>
+
+  <g>
+    <rect x="886" y="506" width="234" height="40" rx="10" fill="#ffffff" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="903" y="531" class="chip" fill="#9a3412">default = release channel</text>
+    <rect x="1058" y="514" width="48" height="24" rx="12" fill="#fee2e2"/>
+    <text x="1082" y="531" class="mini" fill="#b91c1c" text-anchor="middle">promoted</text>
+  </g>
+
+  <text x="886" y="572" class="cs" fill="#7c4a13">Publishing a new toolbox version</text>
+  <text x="886" y="592" class="cs" fill="#7c4a13">does nothing until you promote it.</text>
+  <g>
+    <rect x="886" y="606" width="234" height="34" rx="10" fill="#ecfdf5" stroke="#7dd3a7" stroke-width="1.5"/>
+    <path d="M903 623 l6 6 l12 -13" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="930" y="628" class="chip" fill="#066a4c">Pin when immutability matters</text>
+  </g>
+
+  <!-- ===================== CONNECTORS UP INTO HERO ===================== -->
+  <!-- toolbox -> foundry (MCP tools in) -->
+  <path d="M300 416 C320 392 470 384 596 382" class="flow anim" stroke="#13a394" marker-end="url(#arrT)"/>
+  <g>
+    <rect x="372" y="386" width="118" height="24" rx="12" fill="#ffffff" stroke="#a7e0d4" stroke-width="1.4"/>
+    <text x="431" y="403" class="mini" fill="#0d6b60" text-anchor="middle">MCP tools in</text>
+  </g>
+
+  <!-- triggers -> foundry endpoint -->
+  <path d="M690 416 C708 398 770 388 832 382" class="flow anim" stroke="#0f6cbd" marker-end="url(#arrB)"/>
+  <g>
+    <rect x="700" y="388" width="78" height="24" rx="12" fill="#ffffff" stroke="#9fd0ff" stroke-width="1.4"/>
+    <text x="739" y="405" class="mini" fill="#114a7a" text-anchor="middle">invoke</text>
+  </g>
+
+  <!-- footer caption -->
+  <text x="56" y="690" class="lbl" fill="#6b7a8c">Same muscle memory as containers — immutable artifacts · controlled releases · scale-to-zero · one active agent version.</text>
+</svg>
