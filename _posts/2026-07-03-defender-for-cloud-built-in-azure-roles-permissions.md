@@ -3,7 +3,7 @@ title: Defender for Cloud - Built-in Azure Roles and Permissions
 author: pit
 date: 2026-07-03
 categories: [blogging]
-tags: [azure, defender, defender-for-cloud, rbac, built-in-roles, permissions, security]
+tags: [azure, defender, defender-for-cloud, rbac, built-in-roles, permissions, urbac, sentinel, security]
 render_with_liquid: false
 ---
 
@@ -13,7 +13,10 @@ I flattened those definitions into one reference. Each section below keeps the r
 
 Microsoft's Azure RBAC documentation is still the official starting point for understanding role assignments and built-in roles. Its built-in-role reference covers the broader Azure catalogue and links to individual permission definitions, but it does not bring every Defender-specific service role from this snapshot together in one Defender for Cloud view. That gap is the reason I created this consolidated list instead. 
 
-The source snapshot contains 34 Defender for Cloud-related built-in roles and 372 individual permission entries.
+The source snapshot contains 34 built-in roles carrying the `Defender` name prefix and 372 individual permission entries. Twenty-seven of them are genuine Defender for Cloud service roles. The remaining seven - every role named `Defender Unified RBAC *` - belong to a different product, so I have flagged them in place rather than dropping them from the extract.
+
+> ⚠️ The seven `Defender Unified RBAC *` roles are **not** Defender for Cloud roles. They are the Azure-side backing roles for Microsoft Sentinel in the Defender unified RBAC (URBAC) model, written into Azure RBAC automatically when a Sentinel workspace is activated in URBAC in the Defender portal. Nothing in Defender for Cloud assigns or consumes them. Details in [Microsoft Sentinel in Defender Unified RBAC](/posts/microsoft-sentinel-defender-unified-rbac-urbac-roles-permissions/) and in the section [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel) below.
+{: .prompt-warning}
 
 > Official Azure RBAC documentation: <https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles>
 {: .prompt-info}
@@ -101,6 +104,27 @@ The complete evaluation logic is:
 {: .prompt-warning}
 
 > Wildcard entries such as `Microsoft.Security/*/read` are retained exactly as defined. They can cover new matching operations added by the resource provider later.
+{: .prompt-info}
+
+## The Defender Unified RBAC Roles Belong to Sentinel
+
+Seven roles in this snapshot are named `Defender Unified RBAC <something>`. The name files them alphabetically next to the Defender for Cloud service roles, and the shipped description - "managed and assigned automatically by the Defender Unified RBAC system" - never says which product that system serves. The permission sets do: `Microsoft.SecurityInsights/*` and `Microsoft.OperationalInsights/workspaces/*` throughout, and not one `Microsoft.Security/*` action between them.
+
+They are the Azure-side counterparts of the Microsoft Defender unified RBAC (URBAC) roles for Microsoft Sentinel. When a Sentinel workspace is activated in URBAC, the platform assigns `User Access Administrator` to the MTP Unified RBAC application on that workspace and uses it to write these role assignments into Azure RBAC. That is what the description means by managed automatically - URBAC owns them and will rewrite or remove them.
+
+| Azure role in this snapshot | URBAC role it backs | Azure RBAC role it replaces |
+|---|---|---|
+| `Defender Unified RBAC Reader` | Defender Unified RBAC Reader | `Microsoft Sentinel Reader` |
+| `Defender Unified RBAC Responder` | Defender Unified RBAC Responder | `Microsoft Sentinel Responder` |
+| `Defender Unified RBAC Contributor and Responder` | Defender Unified RBAC Contributor and Responder | `Microsoft Sentinel Contributor` |
+| `Defender Unified RBAC Scoped Reader` | Defender Unified RBAC Scoped Reader | none - row-level Sentinel scoping (preview) |
+| `Defender Unified RBAC Data Manager` | Defender Unified RBAC Data Manager | none - data and data lake table management |
+| `Defender Unified RBAC Authorization Reader` | authorization plane | none - no `Actions` in the definition |
+| `Defender Unified RBAC Authorization Manager` | authorization plane | none - no `Actions` in the definition |
+
+Their permission tables are kept below with the rest of the extract, since the whole point of this post is a complete flattening of what `Get-AzRoleDefinition` returns. Treat them as read-only forensics: do not assign them by hand, and do not count them when sizing Defender for Cloud delegation.
+
+> The role mapping, the URBAC permission groups, what activation actually changes, and row-level Sentinel scoping are covered in [Microsoft Sentinel in Defender Unified RBAC](/posts/microsoft-sentinel-defender-unified-rbac-urbac-roles-permissions/). Microsoft's mapping table: <https://learn.microsoft.com/en-us/defender-xdr/compare-rbac-roles#microsoft-sentinel>
 {: .prompt-info}
 
 ## Defender Agentless VM Scan
@@ -340,6 +364,9 @@ Grants Microsoft Defender for Cloud access to Azure Container Registries
 
 Defender Unified RBAC Data Manager. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
 
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
+
 **Role ID:** `40ead2a5-466e-4039-8a80-325542d9d2dd`
 
 | Permission Type | Permission |
@@ -355,6 +382,9 @@ Defender Unified RBAC Data Manager. This role is managed and assigned automatica
 
 Defender Unified RBAC Authorization Reader. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
 
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
+
 **Role ID:** `ca62263b-07d5-4b48-b437-088803f5c2ff`
 
 No `Actions`, `NotActions`, or `DataActions` are present in the source definition.
@@ -363,6 +393,9 @@ No `Actions`, `NotActions`, or `DataActions` are present in the source definitio
 
 Defender Unified RBAC Authorization Manager. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
 
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
+
 **Role ID:** `1fd5d8bf-9037-4ede-89bf-680f798e2765`
 
 No `Actions`, `NotActions`, or `DataActions` are present in the source definition.
@@ -370,6 +403,9 @@ No `Actions`, `NotActions`, or `DataActions` are present in the source definitio
 ## Defender Unified RBAC Responder
 
 Defender Unified RBAC Responder. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
+
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
 
 **Role ID:** `1bacae94-6c0f-4d2d-8dfa-408d5a28e6ec`
 
@@ -410,6 +446,9 @@ Defender Unified RBAC Responder. This role is managed and assigned automatically
 
 Defender Unified RBAC Contributor and Responder. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
 
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
+
 **Role ID:** `625a1cea-653b-4a19-bd3a-df1d66ab6637`
 
 | Permission Type | Permission |
@@ -448,6 +487,9 @@ Defender Unified RBAC Contributor and Responder. This role is managed and assign
 ## Defender Unified RBAC Reader
 
 Defender Unified RBAC Reader. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
+
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
 
 **Role ID:** `78b7345a-1e1b-483a-ac62-62228c6ea89d`
 
@@ -549,6 +591,9 @@ Grants Microsoft Defender for Cloud access to Defender Settings
 ## Defender Unified RBAC Scoped Reader
 
 Defender Unified RBAC Scoped Reader. This role is managed and assigned automatically by the Defender Unified RBAC system. Manual assignment of this role is not recommended, as the Defender Unified RBAC system may modify or remove it at any time based on system requirements.
+
+> ⚠️ Sentinel URBAC role, not Defender for Cloud - see [The Defender Unified RBAC Roles Belong to Sentinel](#the-defender-unified-rbac-roles-belong-to-sentinel).
+{: .prompt-warning}
 
 **Role ID:** `d56b031f-8d90-4376-9231-b5c94fce88ef`
 
