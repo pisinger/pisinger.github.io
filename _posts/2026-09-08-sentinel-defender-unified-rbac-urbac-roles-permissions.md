@@ -1,5 +1,5 @@
 ---
-title: Sentinel in Defender Unified RBAC - URBAC Roles, Permissions and Row-Level Scoping
+title: Sentinel in Defender Unified RBAC - Roles and Permissions
 author: pit
 date: 2026-09-08
 categories: [blogging]
