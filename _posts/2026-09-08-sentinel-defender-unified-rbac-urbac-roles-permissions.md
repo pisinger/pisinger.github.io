@@ -67,7 +67,7 @@ The three Azure RBAC Sentinel roles map onto URBAC roles built from permission g
 | n/a | Defender Unified RBAC Scoped Reader | Security data basics (read), only for assignments with a Sentinel scope applied |
 | n/a | Defender Unified RBAC Data Manager | Data operations \ Data management \ Data (manage) |
 
-Read the `Contributor and Responder` row carefully. In Azure RBAC, `Microsoft Sentinel Contributor` is a broad grant: `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*`, `Microsoft.Insights/alertRules/*`, `Microsoft.Resources/deployments/*` and content hub solution installs. Its URBAC counterpart resolves down to responder rights plus one settings permission, `Detection tuning (manage)`, which covers custom detections, alert tuning and threat indicators. Analytics-rule and Sentinel resource management, content hub, workbooks and deployments are not in that mapping and have to come from somewhere else. The Azure-side definition tells a slightly different story - `Defender Unified RBAC Contributor and Responder` does carry `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*` and `Microsoft.Resources/deployments/*` (see the [appendix](#-appendix---full-role-definitions)) - so what the synchronized ARM assignment permits and what the URBAC permission groups describe are not the same thing.
+Read the `Contributor and Responder` row carefully. In Azure RBAC, `Microsoft Sentinel Contributor` is a broad grant: `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*`, `Microsoft.Insights/alertRules/*`, `Microsoft.Resources/deployments/*` and content hub solution installs. Its URBAC counterpart resolves down to responder rights plus one settings permission, `Detection tuning (manage)`, which covers custom detections, alert tuning and threat indicators. Analytics-rule and Sentinel resource management, content hub, workbooks and deployments are not in that mapping and have to come from somewhere else. The synchronized Azure role tells a different story though - it carries `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*` and `Microsoft.Resources/deployments/*` (see the [appendix](#-appendix---full-role-definitions)) - so what the ARM assignment permits and what the URBAC groups describe are not the same thing.
 
 Worth being precise about playbooks here: `Microsoft Sentinel Contributor` never ran or authored them in the first place. Manually running playbooks needs `Microsoft Sentinel Playbook Operator`. Creating and editing Consumption playbooks uses `Logic App Contributor`; creating and editing Standard playbooks uses `Logic Apps Standard Developer` or `Logic Apps Standard Contributor`, while `Logic Apps Standard Operator` covers operational actions such as enabling, resubmitting and disabling workflows. None of those permissions exists in URBAC. Workbooks are a similar split - since August 2025 you can create and edit Sentinel workbooks directly in the Defender portal under **Microsoft Sentinel > Threat management > Workbooks** (still preview), but the permission that lets you do it, `Workbook Contributor`, is still an Azure RBAC role assigned in the Azure portal.
 
@@ -77,8 +77,11 @@ That is the detail that would change how I stage a migration: URBAC replaces the
 
 Three Sentinel-adjacent roles are explicitly unsupported in URBAC and stay in the Azure portal: `Microsoft Sentinel Playbook Operator`, `Microsoft Sentinel Automation Contributor` and `Workbook Contributor`. In practice you also keep assigning `Logic App Contributor` for Consumption playbooks or the applicable Logic Apps Standard role for Standard playbooks, `Monitoring Contributor` for data collection rules, `Log Analytics Contributor` for the Search feature, and `Template Spec Contributor` for deploying v2.0 content hub solutions.
 
-> ⚠️ Two capabilities are missing from URBAC for Sentinel entirely: you cannot assign Sentinel permissions to a **service principal**, and you cannot assign them to a **GDAP user group**. If your automation authenticates as an app registration - CI/CD that deploys analytics rules, an external SOAR platform, an MSSP tooling stack - or you are a partner operating through GDAP, keep that workspace on Azure RBAC and do not activate it in URBAC yet. Do not read the new [governance relationships](https://learn.microsoft.com/en-us/unified-secops/governance-relationships) preview as a fix for this: it is Entra tenant governance extended to Defender XDR, and it delegates through Microsoft Entra built-in roles and remote tenant groups rather than through URBAC. Sentinel permissions for those groups are still assigned as Azure RBAC in the Azure portal - `Microsoft Sentinel Contributor` on the resource group, with **Remote tenant group** as the member type - and that assignment is management plane only, so any data-plane access has to be granted separately.
+> ⚠️ Two capabilities are missing from URBAC for Sentinel entirely: you cannot assign Sentinel permissions to a **service principal**, and you cannot assign them to a **GDAP user group**. If your automation authenticates as an app registration - CI/CD that deploys analytics rules, an external SOAR platform, an MSSP tooling stack - or you are a partner operating through GDAP, keep that workspace on Azure RBAC and do not activate it in URBAC yet.
 {: .prompt-warning}
+
+> The [governance relationships](https://learn.microsoft.com/en-us/unified-secops/governance-relationships) preview does not lift this restriction either - it is a separate Entra Tenant Governance capability, and Sentinel permissions for the tenants it delegates are still assigned in Azure RBAC.
+{: .prompt-info}
 
 ## 🔐 The URBAC Permission Groups That Matter for Sentinel
 
@@ -94,7 +97,7 @@ URBAC does not hand you role definitions to copy. You build a custom role by pic
 | Data operations \ Data management | Data | Manage | Retention, tier moves, data lake tables, lake connectors |
 | Data operations \ Data management | Analytics Jobs Schedule | Read / Manage | Schedule analytics jobs via lake exploration, ADX or notebooks |
 
-The `Data operations` group is in preview and only applies to workspaces onboarded to the Defender portal, plus the Sentinel data lake default workspace. It is also the group behind `Defender Unified RBAC Data Manager`. In the role-definition snapshot I pulled on 3 September 2026, that role's Azure-side actions were `workspaces/read`, `workspaces/write`, `workspaces/query/read`, `workspaces/tables/write`, `workspaces/tables/delete` and `workspaces/sharedkeys/action` - a considerably sharper set of permissions than the name suggests.
+The `Data operations` group is in preview and only applies to workspaces onboarded to the Defender portal, plus the Sentinel data lake default workspace. It is also the group behind `Defender Unified RBAC Data Manager`. Its Azure-side definition (in the appendix) reaches further than the name suggests: workspace write, table write and delete, and workspace shared keys.
 
 > In that snapshot, `Data Manager` holds `Microsoft.operationalinsights/workspaces/sharedkeys/action`. Workspace shared keys are a legacy ingestion credential - anything holding that key can write to the workspace. Treat `Data (manage)` as a privileged permission, not a data-hygiene one.
 {: .prompt-warning}
@@ -213,7 +216,7 @@ Two more asymmetries worth knowing before you plan delegation:
 
 ## 🎯 Row-Level RBAC with Sentinel Scoping (Preview)
 
-`Defender Unified RBAC Scoped Reader` is the piece with no Azure RBAC ancestor, and it is the most interesting thing in the model. Sentinel scoping gives you row-level access control inside a single workspace, which is the long-standing answer to "do we split the workspace per business unit or per customer". It arrived in **April 2026 and is still in preview**, so treat everything in this section as subject to change.
+`Defender Unified RBAC Scoped Reader` is the piece with no Azure RBAC ancestor. Sentinel scoping gives you row-level access control inside a single workspace - the long-standing answer to "do we split the workspace per business unit or per customer". It arrived in **April 2026 and is still in preview**, so treat this section as subject to change.
 
 To configure it you need `Security Authorization (Manage)` in URBAC for the scopes and assignments, `Data Operations (Manage)` plus `Alerts (Manage)` for table management, and either Subscription Owner or `Microsoft.Insights/DataCollectionRules/Write` to create the DCRs.
 
@@ -273,7 +276,7 @@ If the workspace is onboarded to both the Defender portal and the Sentinel data 
 | Write to any other workspace in the lake | Azure RBAC actions `workspaces/write`, `workspaces/tables/write`, `workspaces/tables/delete` |
 | Create or manage scheduled lake jobs | Microsoft's [URBAC permission catalog](https://learn.microsoft.com/en-us/defender-xdr/custom-permissions-details#data-operations-preview) lists `Analytics Jobs Schedule` (read/manage), while the [Sentinel roles page](https://learn.microsoft.com/en-us/azure/sentinel/roles#manage-jobs-in-the-microsoft-sentinel-data-lake) still says Entra ID `Security Operator`, `Security Administrator` or `Global Administrator` is required |
 
-Microsoft's documentation is internally inconsistent on lake job management as of 3 September 2026. The current URBAC permission catalog says `Analytics Jobs Schedule` can schedule and manage jobs through lake exploration, Azure Data Explorer or notebooks. The Sentinel roles page still says the task requires a tenant-wide `Security Operator`, `Security Administrator` or `Global Administrator` role. I would test the least-privilege URBAC permission in the target tenant before rollout.
+That last row is a genuine documentation conflict as of 3 September 2026, and the two answers are a tenant-wide Entra role apart. Test the least-privilege URBAC permission in the target tenant before you plan around it.
 
 ### The Sentinel MCP server runs on Entra roles, not URBAC
 
@@ -286,7 +289,7 @@ The [Microsoft Sentinel MCP server](https://learn.microsoft.com/en-us/azure/sent
 | Create, update or delete custom MCP tools | `Security Operator`, `Security Administrator` or `Global Administrator` |
 | Reach graph data in the Defender portal | Additionally read-only access in Microsoft Security Exposure Management |
 
-Note what that does to least privilege. `Security Reader` is a tenant-wide directory role, and the Sentinel roles page lists it among the roles granting read access to **all** workspaces in the data lake. Scopes cannot rein that in: they attach only to Defender XDR RBAC roles, and Microsoft's own example of a scope being overridden is a user holding an Entra global role. So the problem is not that the MCP tools bypass scoping - it is that you cannot onboard a scoped analyst to them at all without first granting a role their scope was never able to constrain. Budget for that before you hand agents, or analysts, an MCP endpoint.
+Note what that does to least privilege. `Security Reader` is tenant-wide, and the Sentinel roles page lists it among the roles that read **all** workspaces in the data lake - and scopes cannot rein it in, because they attach only to Defender XDR RBAC roles. The MCP tools do not bypass scoping; you simply cannot onboard a scoped analyst to them without first granting a role their scope was never able to constrain.
 
 The [triage tool collection](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-triage-tool) is the one that behaves differently, though not as an exemption from the prerequisite: Microsoft describes it as enforcing existing permissions, so users can only reach data their role already grants.
 
@@ -295,9 +298,9 @@ The [triage tool collection](https://learn.microsoft.com/en-us/azure/sentinel/da
 **Current product behaviour:**
 
 - Sentinel activation in URBAC is per workspace, not tenant-wide.
-- Service principal and GDAP assignments are unsupported for Sentinel in URBAC. Azure RBAC remains the answer for both. Governance relationships (preview) gives MSSPs and multitenant organisations a delegation path that is not GDAP, but it lands Sentinel permissions in Azure RBAC too, so it does not change this line.
+- Service principals and GDAP assignments aren't currently supported for Sentinel URBAC role assignments. Azure RBAC is still required for those scenarios. [Governance relationships](https://learn.microsoft.com/en-us/unified-secops/governance-relationships) (preview) are a separate Entra Tenant Governance capability, not the Partner Center GDAP relationship. They provide delegated access to Defender XDR across tenants, but don't remove the Azure RBAC dependency for Sentinel scenarios that URBAC doesn't yet support.
 - `Playbook Operator`, `Automation Contributor` and `Workbook Contributor` stay in Azure.
-- URBAC does not override ARM. Broader ARM permissions still show more data in Defender portal Sentinel pages.
+- URBAC does not override ARM. Broader ARM permissions still show more data in the Defender portal.
 - `Data operations` permissions, the URBAC side of the Sentinel data lake, and custom roles for the lake are all in preview.
 - Sentinel scoping is in preview. It requires ingestion-time transformations, tags only new data, and does not cover playbooks or notebooks.
 - In multitenant management, *viewing* unified RBAC went GA in August 2025 but *creating and editing* custom roles there is still preview - relevant if you are an MSSP planning to drive this from the MTO portal.
@@ -323,7 +326,7 @@ For reference, here are the complete permission sets of all seven `Defender Unif
 
 Two things to read out of them before scrolling the tables:
 
-- The Azure-side definitions are **broader than the URBAC permission-group mapping suggests**. `Contributor and Responder` carries `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*` and `Microsoft.Resources/deployments/*` - so the synchronized Azure assignment can reach further than `Detection tuning (manage)` implies. Where the two disagree, the ARM actions are what the resource provider enforces.
+- The Azure-side definitions are **broader than the URBAC permission-group mapping suggests**, and where the two disagree it is the ARM actions the resource provider enforces.
 - Every role except `Data Manager` and the two Authorization roles carries the same pair of `NotActions`: `Microsoft.SecurityInsights/ConfidentialWatchlists/*` and `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*`. Confidential watchlists are excluded from all of them, including `Contributor and Responder`.
 
 > These are the definitions, not the assignments, and they are Microsoft-managed. Reproduced here to make the effective ARM permissions auditable - not as a suggestion to assign them by hand.
