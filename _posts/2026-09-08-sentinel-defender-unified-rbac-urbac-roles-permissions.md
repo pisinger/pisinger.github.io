@@ -77,7 +77,7 @@ That is the detail that would change how I stage a migration: URBAC replaces the
 
 Three Sentinel-adjacent roles are explicitly unsupported in URBAC and stay in the Azure portal: `Microsoft Sentinel Playbook Operator`, `Microsoft Sentinel Automation Contributor` and `Workbook Contributor`. In practice you also keep assigning `Logic App Contributor` for Consumption playbooks or the applicable Logic Apps Standard role for Standard playbooks, `Monitoring Contributor` for data collection rules, `Log Analytics Contributor` for the Search feature, and `Template Spec Contributor` for deploying v2.0 content hub solutions.
 
-> ⚠️ Two capabilities are missing from URBAC for Sentinel entirely: you cannot assign Sentinel permissions to a **service principal**, and you cannot assign them to a **GDAP user group**. If your automation authenticates as an app registration - CI/CD that deploys analytics rules, an external SOAR platform, an MSSP tooling stack - or you are a partner operating through GDAP, keep that workspace on Azure RBAC and do not activate it in URBAC yet.
+> ⚠️ Two capabilities are missing from URBAC for Sentinel entirely: you cannot assign Sentinel permissions to a **service principal**, and you cannot assign them to a **GDAP user group**. If your automation authenticates as an app registration - CI/CD that deploys analytics rules, an external SOAR platform, an MSSP tooling stack - or you are a partner operating through GDAP, keep that workspace on Azure RBAC and do not activate it in URBAC yet. Do not read the new [governance relationships](https://learn.microsoft.com/en-us/unified-secops/governance-relationships) preview as a fix for this: it is Entra tenant governance extended to Defender XDR, and it delegates through Microsoft Entra built-in roles and remote tenant groups rather than through URBAC. Sentinel permissions for those groups are still assigned as Azure RBAC in the Azure portal - `Microsoft Sentinel Contributor` on the resource group, with **Remote tenant group** as the member type - and that assignment is management plane only, so any data-plane access has to be granted separately.
 {: .prompt-warning}
 
 ## 🔐 The URBAC Permission Groups That Matter for Sentinel
@@ -90,11 +90,11 @@ URBAC does not hand you role definitions to copy. You build a custom role by pic
 | Security operations \ Security data | Alerts | Manage | Manage alerts, start automated investigations |
 | Security operations \ Security data | Response | Manage | Response actions, approve or dismiss pending remediation |
 | Authorization and settings | Detection tuning | Manage | Custom detections, alert tuning, threat indicators |
-| Authorization and settings | Authorization | Read / Manage | Create and assign URBAC roles, create Sentinel scopes |
+| Authorization and settings | Authorization | Read / Manage | View or manage custom and built-in roles and device groups. The scoping doc names `Security Authorization (Manage)` as what creates Sentinel scopes |
 | Data operations \ Data management | Data | Manage | Retention, tier moves, data lake tables, lake connectors |
 | Data operations \ Data management | Analytics Jobs Schedule | Read / Manage | Schedule analytics jobs via lake exploration, ADX or notebooks |
 
-The `Data operations` group is in preview and only applies to workspaces onboarded to the Defender portal, plus the Sentinel data lake default workspace. It is also the group behind `Defender Unified RBAC Data Manager`. In the role-definition snapshot I pulled on 3 September 2026, that role's Azure-side actions were `workspaces/tables/write`, `workspaces/tables/delete` and `workspaces/sharedkeys/action`, which is a considerably sharper set of permissions than the name suggests.
+The `Data operations` group is in preview and only applies to workspaces onboarded to the Defender portal, plus the Sentinel data lake default workspace. It is also the group behind `Defender Unified RBAC Data Manager`. In the role-definition snapshot I pulled on 3 September 2026, that role's Azure-side actions were `workspaces/read`, `workspaces/write`, `workspaces/query/read`, `workspaces/tables/write`, `workspaces/tables/delete` and `workspaces/sharedkeys/action` - a considerably sharper set of permissions than the name suggests.
 
 > In that snapshot, `Data Manager` holds `Microsoft.operationalinsights/workspaces/sharedkeys/action`. Workspace shared keys are a legacy ingestion credential - anything holding that key can write to the workspace. Treat `Data (manage)` as a privileged permission, not a data-hygiene one.
 {: .prompt-warning}
@@ -106,16 +106,77 @@ Activation is per workspace, from **System > Permissions > Microsoft Defender XD
 - `Security Administrator` in Microsoft Entra ID, **and**
 - subscription `Owner`, **or** `User Access Administrator` plus `Microsoft Sentinel Contributor` on the workspace
 
-Because the activation flow has to create a role assignment itself, an `Owner` or `User Access Administrator` assignment carrying an ABAC condition that restricts which roles the principal may assign is likely to break it. Microsoft does not document that case either way, so test it before you plan a rollout around conditioned Owner assignments.
-
-Under the covers, the platform assigns `User Access Administrator` to the **MTP Unified RBAC** application on the activated workspace. From then on, Sentinel role assignments made in URBAC synchronize into Azure RBAC and are visible there. Microsoft documents that synchronization, but not that every activation creates assignments for all seven roles.
+Under the covers, the platform assigns `User Access Administrator` to the **MTP Unified RBAC** application on the activated workspace. From then on, Sentinel role assignments made in URBAC synchronize into Azure RBAC and are visible there. Microsoft documents that synchronization, but not which of the seven definitions a given activation ends up assigning - `Get-AzRoleAssignment` at workspace scope is the only way to see what your own tenant got.
 
 It is important not to mix up the definitions with their assignments. [`Get-AzRoleDefinition`](https://learn.microsoft.com/en-us/powershell/module/az.resources/get-azroledefinition) lists roles available for assignment and is the right command for inspecting their permission sets:
 
 ```powershell
+# per role - name, ID and each permission bucket
 Get-AzRoleDefinition |
     Where-Object Name -Like "Defender Unified RBAC*" |
-    Select-Object Name, Id, @{n='Actions';e={$_.Actions -join '; '}}
+    ForEach-Object {
+        [pscustomobject]@{
+            Role           = $_.Name
+            Id             = $_.Id
+            Actions        = (($_.Permissions.Actions        + $_.Permissions.Action)        | Where-Object { $_ }) -join "; "
+            NotActions     = (($_.Permissions.NotActions     + $_.Permissions.NotAction)     | Where-Object { $_ }) -join "; "
+            DataActions    = (($_.Permissions.DataActions    + $_.Permissions.DataAction)    | Where-Object { $_ }) -join "; "
+            NotDataActions = (($_.Permissions.NotDataActions + $_.Permissions.NotDataAction) | Where-Object { $_ }) -join "; "
+        }
+    } | Format-List
+```
+
+Same data one row per permission, which is the shape the appendix tables are built from:
+
+```powershell
+Get-AzRoleDefinition |
+    Where-Object Name -Like "Defender Unified RBAC*" |
+    ForEach-Object {
+        $role = $_
+        foreach ($set in $role.Permissions) {
+            $set.PSObject.Properties |
+                Where-Object Name -Match '^(Not)?(Data)?Actions?$' |
+                ForEach-Object {
+                    $type = $_.Name -replace 's$'
+                    foreach ($permission in $_.Value) {
+                        [pscustomobject]@{
+                            Role       = $role.Name
+                            Id         = $role.Id
+                            Type       = $type
+                            Permission = $permission
+                        }
+                    }
+                }
+        }
+    } | Sort-Object Role, Type, Permission | Format-Table -AutoSize
+```
+
+> The permission arrays hang off the `Permissions` collection on each role definition, not off the role object itself - `Select-Object Name, Id, Actions` comes back empty. Property names inside that collection are singular in the newer generated `Az.Resources` cmdlets (`Action`, `NotAction`) and plural in older ones, so both scripts above cover either shape.
+{: .prompt-info}
+
+To do the same for the classic Sentinel roles, run the below:
+
+```powershell
+# classic azure rbac sentinel roles
+Get-AzRoleDefinition | Where-Object Name -Like "Microsoft Sentinel*" |
+	ForEach-Object {
+		$role = $_
+		foreach ($set in $role.Permissions) {
+			$set.PSObject.Properties |
+				Where-Object Name -Match '^(Not)?(Data)?Actions?$' |
+				ForEach-Object {
+					$type = $_.Name -replace 's$'
+					foreach ($permission in $_.Value) {
+						[pscustomobject]@{
+							Role       = $role.Name
+							Id         = $role.Id
+							Type       = $type
+							Permission = $permission
+						}
+					}
+				}
+		}
+	} | Sort-Object Role, Type, Permission | Format-Table -AutoSize
 ```
 
 Use [`Get-AzRoleAssignment`](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-powershell) to find which of them the MTP application has actually assigned on a workspace:
@@ -138,7 +199,7 @@ Mapped back to their purpose, the seven definitions in my 3 September 2026 snaps
 | `Defender Unified RBAC Authorization Reader` | `ca62263b-07d5-4b48-b437-088803f5c2ff` | Authorization plane - no `Actions` in the definition |
 | `Defender Unified RBAC Authorization Manager` | `1fd5d8bf-9037-4ede-89bf-680f798e2765` | Authorization plane - no `Actions` in the definition |
 
-The two Authorization roles carry no `Actions`, `NotActions` or `DataActions` at all in the snapshot I pulled - see the [appendix](#-appendix---full-role-definitions). An empty role definition still functions as a marker that URBAC's own tooling can look for, so I would read them as assignment plumbing rather than as a grant - but that is inference from the definition, not documented behaviour.
+The two Authorization roles carry no `Actions`, `NotActions` or `DataActions` at all in the snapshot I pulled - see the [appendix](#-appendix---full-role-definitions). Microsoft does not document what they are for, and an empty definition grants nothing on its own.
 
 The full permission tables for all seven roles, straight out of the role definitions, are in the [appendix](#-appendix---full-role-definitions) at the end of this post - they were originally captured in the [Defender for Cloud roles post](/posts/defender-for-cloud-built-in-azure-roles-permissions/).
 
@@ -206,18 +267,35 @@ If the workspace is onboarded to both the Defender portal and the Sentinel data 
 |---|---|
 | Read system tables in the lake | Custom URBAC role with `security data basics (read)` over the Microsoft Sentinel data collection |
 | Update system tables in the lake | Custom URBAC role with `data (manage)` over the Microsoft Sentinel data collection |
+| Read every workspace in the lake at once | Entra ID `Global Reader`, `Security Reader`, `Security Operator`, `Security Administrator` or `Global Administrator` - broad, tenant-wide, and unrestricted by Sentinel scoping |
+| Write lake tables or analytics-tier tables via KQL jobs and notebooks | Entra ID `Security Operator`, `Security Administrator` or `Global Administrator` |
 | Read any other workspace in the lake | Azure RBAC on that workspace - `Log Analytics Reader`, `Microsoft Sentinel Reader`, `Reader` and upwards |
 | Write to any other workspace in the lake | Azure RBAC actions `workspaces/write`, `workspaces/tables/write`, `workspaces/tables/delete` |
 | Create or manage scheduled lake jobs | Microsoft's [URBAC permission catalog](https://learn.microsoft.com/en-us/defender-xdr/custom-permissions-details#data-operations-preview) lists `Analytics Jobs Schedule` (read/manage), while the [Sentinel roles page](https://learn.microsoft.com/en-us/azure/sentinel/roles#manage-jobs-in-the-microsoft-sentinel-data-lake) still says Entra ID `Security Operator`, `Security Administrator` or `Global Administrator` is required |
 
-Microsoft's documentation is internally inconsistent on lake job management as of 3 September 2026. The current URBAC permission catalog says `Analytics Jobs Schedule` can schedule and manage jobs through lake exploration, Azure Data Explorer or notebooks. The Sentinel roles page still says the task requires a tenant-wide `Security Operator`, `Security Administrator` or `Global Administrator` role. I would test the least-privilege URBAC permission in the target tenant before rollout and escalate the documentation conflict through Microsoft support rather than assuming the broader Entra role is the only path.
+Microsoft's documentation is internally inconsistent on lake job management as of 3 September 2026. The current URBAC permission catalog says `Analytics Jobs Schedule` can schedule and manage jobs through lake exploration, Azure Data Explorer or notebooks. The Sentinel roles page still says the task requires a tenant-wide `Security Operator`, `Security Administrator` or `Global Administrator` role. I would test the least-privilege URBAC permission in the target tenant before rollout.
+
+### The Sentinel MCP server runs on Entra roles, not URBAC
+
+The [Microsoft Sentinel MCP server](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-get-started) gates access on Microsoft Entra ID directory roles, and it does so for **whichever identity calls it** - your own user account under on-behalf-of authentication in VS Code, Security Copilot, Copilot Studio or Foundry, just as much as a managed identity or service principal running an agent unattended. Microsoft's wording covers all three: access is supported for *"users, managed identities, or service principals"* holding at least `Security Reader`. A URBAC role does not satisfy it in any of those cases, and for a service principal there is no URBAC option to begin with.
+
+| Task | Entra ID role on the calling identity |
+|---|---|
+| List and invoke the Sentinel MCP tool collections | `Security Reader` at minimum, or `Security Operator` / `Security Administrator` |
+| List and invoke custom MCP tools | `Security Reader` or `Global Reader` |
+| Create, update or delete custom MCP tools | `Security Operator`, `Security Administrator` or `Global Administrator` |
+| Reach graph data in the Defender portal | Additionally read-only access in Microsoft Security Exposure Management |
+
+Note what that does to least privilege. `Security Reader` is a tenant-wide directory role, and the Sentinel roles page lists it among the roles granting read access to **all** workspaces in the data lake. Scopes cannot rein that in: they attach only to Defender XDR RBAC roles, and Microsoft's own example of a scope being overridden is a user holding an Entra global role. So the problem is not that the MCP tools bypass scoping - it is that you cannot onboard a scoped analyst to them at all without first granting a role their scope was never able to constrain. Budget for that before you hand agents, or analysts, an MCP endpoint.
+
+The [triage tool collection](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-triage-tool) is the one that behaves differently, though not as an exemption from the prerequisite: Microsoft describes it as enforcing existing permissions, so users can only reach data their role already grants.
 
 ## ⚠️ Limitations and Open Questions
 
 **Current product behaviour:**
 
 - Sentinel activation in URBAC is per workspace, not tenant-wide.
-- Service principal and GDAP assignments are unsupported for Sentinel in URBAC. Azure RBAC remains the answer for both.
+- Service principal and GDAP assignments are unsupported for Sentinel in URBAC. Azure RBAC remains the answer for both. Governance relationships (preview) gives MSSPs and multitenant organisations a delegation path that is not GDAP, but it lands Sentinel permissions in Azure RBAC too, so it does not change this line.
 - `Playbook Operator`, `Automation Contributor` and `Workbook Contributor` stay in Azure.
 - URBAC does not override ARM. Broader ARM permissions still show more data in Defender portal Sentinel pages.
 - `Data operations` permissions, the URBAC side of the Sentinel data lake, and custom roles for the lake are all in preview.
@@ -227,9 +305,9 @@ Microsoft's documentation is internally inconsistent on lake job management as o
 **Open questions, and my own reading:**
 
 - The `Authorization Reader` and `Authorization Manager` roles ship with no permissions. Whether they are placeholders for a future authorization surface or purely internal markers is not documented, and I would not build anything on top of them.
-- `Microsoft Sentinel Contributor` maps to responder plus `Detection tuning (manage)` and nothing more, which leaves content hub, workbook and playbook management outside URBAC. With Sentinel in the Azure portal retiring after **31 March 2027**, either those capabilities arrive in URBAC or every organisation keeps a parallel set of Azure role assignments indefinitely. I expect the former, but I would plan for the latter.
+- `Microsoft Sentinel Contributor` maps to responder plus `Detection tuning (manage)` and nothing more, which leaves content hub, workbook and playbook management outside URBAC. With Sentinel in the Azure portal retiring after **31 March 2027**, either those capabilities arrive in URBAC or organisations keep a parallel set of Azure role assignments alongside it. Microsoft has not said which, so plan for the parallel assignments and treat anything better as a bonus.
 - Scope inheritance stopping at the Log Analytics `SecurityAlert` and `SecurityIncident` tables is the sharpest edge in scoping. The documented workaround - tag those tables manually - is explicitly not equivalent to inheritance, so a federated-SOC design that relies on them needs testing rather than assumption.
-- Nothing in the model reconciles Entra global roles with scopes, and by design nothing can - scopes only attach to Defender XDR RBAC roles. Until that changes, row-level RBAC is a delegation tool, not a data boundary you can attest to, because anyone holding a global Entra role sees past it.
+- Nothing in the model reconciles Entra global roles with scopes, and by design nothing can - scopes only attach to Defender XDR RBAC roles. So treat row-level RBAC as a delegation tool rather than a hard data boundary: it restricts the users you scope, but anyone holding a global Entra role still sees past it, which is worth knowing before you lean on scoping in a compliance argument.
 
 ## 📝 Conclusion
 
@@ -251,143 +329,284 @@ Two things to read out of them before scrolling the tables:
 > These are the definitions, not the assignments, and they are Microsoft-managed. Reproduced here to make the effective ARM permissions auditable - not as a suggestion to assign them by hand.
 {: .prompt-info}
 
-### `Defender Unified RBAC Reader`
+### The seven Defender Unified RBAC definitions
+
+The Microsoft-managed roles the Defender portal writes into Azure RBAC when a workspace is activated in URBAC.
+
+#### Defender Unified RBAC Reader
 
 **Role ID:** `78b7345a-1e1b-483a-ac62-62228c6ea89d`
 
 | Permission Type | Permission |
 |---|---|
-| `Action` | `Microsoft.SecurityInsights/*/read` |
-| `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/LinkedServices/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
-| `Action` | `Microsoft.OperationsManagement/solutions/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
-| `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/read` |
-| `Action` | `Microsoft.Insights/workbooks/read` |
-| `Action` | `Microsoft.Authorization/*/read` |
-| `Action` | `Microsoft.Resources/deployments/*` |
-| `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
-| `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
-| `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/LinkedServices/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/read` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/read` |
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
 | `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
 
-### `Defender Unified RBAC Responder`
+#### Defender Unified RBAC Responder
 
 **Role ID:** `1bacae94-6c0f-4d2d-8dfa-408d5a28e6ec`
 
 | Permission Type | Permission |
 |---|---|
-| `Action` | `Microsoft.SecurityInsights/*/read` |
-| `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
-| `Action` | `Microsoft.SecurityInsights/automationRules/*` |
-| `Action` | `Microsoft.SecurityInsights/cases/*` |
-| `Action` | `Microsoft.SecurityInsights/incidents/*` |
-| `Action` | `Microsoft.SecurityInsights/entities/runPlaybook/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/bulkTag/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/replaceTags/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
-| `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/undoAction/action` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
-| `Action` | `Microsoft.OperationsManagement/solutions/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
-| `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
-| `Action` | `Microsoft.Resources/deployments/*` |
-| `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
-| `Action` | `Microsoft.Insights/workbooks/read` |
-| `Action` | `Microsoft.Authorization/*/read` |
-| `NotAction` | `Microsoft.SecurityInsights/cases/*/Delete` |
-| `NotAction` | `Microsoft.SecurityInsights/incidents/*/Delete` |
-| `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
-| `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/automationRules/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/cases/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/incidents/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/entities/runPlaybook/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/bulkTag/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/replaceTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/undoAction/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/read` |
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/cases/*/Delete` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/incidents/*/Delete` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
 
-### `Defender Unified RBAC Contributor and Responder`
+#### Defender Unified RBAC Contributor and Responder
 
 **Role ID:** `625a1cea-653b-4a19-bd3a-df1d66ab6637`
 
 | Permission Type | Permission |
 |---|---|
-| `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/*` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
-| `Action` | `Microsoft.OperationsManagement/solutions/read` |
-| `Action` | `Microsoft.Resources/deployments/*` |
-| `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
-| `Action` | `Microsoft.SecurityInsights/*` |
-| `Action` | `Microsoft.SecurityInsights/*/read` |
-| `Action` | `Microsoft.SecurityInsights/automationRules/*` |
-| `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/undoAction/action` |
-| `Action` | `Microsoft.SecurityInsights/cases/*` |
-| `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
-| `Action` | `Microsoft.SecurityInsights/entities/runPlaybook/action` |
-| `Action` | `Microsoft.SecurityInsights/incidents/*` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/bulkTag/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/replaceTags/action` |
-| `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
-| `Action` | `Microsoft.Insights/workbooks/*` |
-| `Action` | `Microsoft.Authorization/*/read` |
-| `NotAction` | `Microsoft.SecurityInsights/cases/*/Delete` |
-| `NotAction` | `Microsoft.SecurityInsights/incidents/*/Delete` |
-| `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
-| `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/*` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/automationRules/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/undoAction/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/cases/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/entities/runPlaybook/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/incidents/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/bulkTag/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/replaceTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/*` |
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/cases/*/Delete` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/incidents/*/Delete` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
 
-### `Defender Unified RBAC Scoped Reader`
+#### Defender Unified RBAC Scoped Reader
 
 **Role ID:** `d56b031f-8d90-4376-9231-b5c94fce88ef`
 
 | Permission Type | Permission |
 |---|---|
-| `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
-| `Action` | `Microsoft.OperationalInsights/workspaces/read` |
-| `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
-| `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
-| `NotAction` | `Microsoft.SecurityInsights/alertRules/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/read` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/alertRules/read` |
 | `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
 
-### `Defender Unified RBAC Data Manager`
+#### Defender Unified RBAC Data Manager
 
 **Role ID:** `40ead2a5-466e-4039-8a80-325542d9d2dd`
 
 | Permission Type | Permission |
 |---|---|
-| `Action` | `Microsoft.operationalinsights/workspaces/read` |
-| `Action` | `Microsoft.operationalinsights/workspaces/write` |
-| `Action` | `Microsoft.operationalinsights/workspaces/query/read` |
-| `Action` | `Microsoft.operationalinsights/workspaces/tables/write` |
-| `Action` | `Microsoft.operationalinsights/workspaces/tables/delete` |
-| `Action` | `Microsoft.operationalinsights/workspaces/sharedkeys/action` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/read` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/write` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/tables/write` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/tables/delete` |
+| ✅ `Action` | `Microsoft.operationalinsights/workspaces/sharedkeys/action` |
 
-### `Defender Unified RBAC Authorization Reader`
+#### Defender Unified RBAC Authorization Reader
 
 **Role ID:** `ca62263b-07d5-4b48-b437-088803f5c2ff`
 
 No `Actions`, `NotActions` or `DataActions` are present in the role definition.
 
-### `Defender Unified RBAC Authorization Manager`
+#### Defender Unified RBAC Authorization Manager
 
 **Role ID:** `1fd5d8bf-9037-4ede-89bf-680f798e2765`
 
 No `Actions`, `NotActions` or `DataActions` are present in the role definition.
 
+### The classic Microsoft Sentinel Azure RBAC roles
+
+For comparison, the roles you assign yourself in the Azure portal - the ones URBAC maps onto, and the ones that stay behind for playbooks and automation. They are noticeably wider than their URBAC counterparts: `Microsoft Sentinel Contributor` carries `Microsoft.SecurityInsights/*`, `Microsoft.Insights/workbooks/*`, `Microsoft.Insights/alertRules/*` and `Microsoft.Support/*`, none of which has an equivalent in the `Detection tuning (manage)` permission it maps to. `Microsoft Sentinel Business Applications Agent Operator` has no URBAC mapping at all.
+
+#### Microsoft Sentinel Reader
+
+**Role ID:** `8d289c81-5878-46d4-8554-54e1e3d8b5cb`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Insights/alertRules/*` |
+| ✅ `Action` | `Microsoft.Insights/myworkbooks/read` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/LinkedServices/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.Resources/templateSpecs/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
+| ✅ `Action` | `Microsoft.Support/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+
+#### Microsoft Sentinel Responder
+
+**Role ID:** `3e150937-b8fe-4cfb-8069-0eaf05ecd056`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Insights/alertRules/*` |
+| ✅ `Action` | `Microsoft.Insights/myworkbooks/read` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/read` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/automationRules/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/undoAction/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/cases/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/dataConnectorsCheckRequirements/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/entities/runPlaybook/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/incidents/*` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/bulkTag/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/appendTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/query/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/indicators/replaceTags/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/threatIntelligence/queryIndicators/action` |
+| ✅ `Action` | `Microsoft.Support/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/cases/*/Delete` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/incidents/*/Delete` |
+
+#### Microsoft Sentinel Contributor
+
+**Role ID:** `ab8e14d6-4a74-4a29-9ba8-549422addade`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Insights/alertRules/*` |
+| ✅ `Action` | `Microsoft.Insights/myworkbooks/read` |
+| ✅ `Action` | `Microsoft.Insights/workbooks/*` |
+| ✅ `Action` | `Microsoft.OperationalInsights/querypacks/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/analytics/query/action` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/dataSources/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/*/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/query/read` |
+| ✅ `Action` | `Microsoft.OperationalInsights/workspaces/savedSearches/*` |
+| ✅ `Action` | `Microsoft.OperationsManagement/solutions/read` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/*` |
+| ✅ `Action` | `Microsoft.Support/*` |
+| ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
+| ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
+
+#### Microsoft Sentinel Playbook Operator
+
+**Role ID:** `51d6186e-6489-4900-b93f-92e23144cca5`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Logic/workflows/read` |
+| ✅ `Action` | `Microsoft.Logic/workflows/triggers/listCallbackUrl/action` |
+| ✅ `Action` | `Microsoft.Web/sites/hostruntime/webhooks/api/workflows/triggers/listCallbackUrl/action` |
+| ✅ `Action` | `Microsoft.Web/sites/read` |
+
+#### Microsoft Sentinel Automation Contributor
+
+**Role ID:** `f4c81013-99ee-4d62-a7ee-b3f1f648599a`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Logic/workflows/runs/read` |
+| ✅ `Action` | `Microsoft.Logic/workflows/triggers/listCallbackUrl/action` |
+| ✅ `Action` | `Microsoft.Logic/workflows/triggers/read` |
+| ✅ `Action` | `Microsoft.Web/sites/hostruntime/webhooks/api/workflows/runs/read` |
+| ✅ `Action` | `Microsoft.Web/sites/hostruntime/webhooks/api/workflows/triggers/listCallbackUrl/action` |
+| ✅ `Action` | `Microsoft.Web/sites/hostruntime/webhooks/api/workflows/triggers/read` |
+
+#### Microsoft Sentinel Business Applications Agent Operator
+
+**Role ID:** `c18f9900-27b8-47c7-a8f0-5b3b3d4c2bc2`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/roleAssignments/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/listActions/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/read` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/reportActionStatus/action` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/write` |
+| ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/write` |
