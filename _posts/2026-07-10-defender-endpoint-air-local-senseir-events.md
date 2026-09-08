@@ -18,16 +18,16 @@ I came across this again while looking at Automated Investigation and Response, 
 
 Before September 1, 2026, Automated Investigation and Response was the separate Defender for Endpoint experience that started investigations from alerts or operator action, examined evidence, assigned verdicts, and could trigger remediation actions depending on the automation level and approvals in your tenant.
 
-Microsoft's own overview is here:
-
-> <https://learn.microsoft.com/en-us/defender-endpoint/automated-investigations>
-{: .prompt-info}
-
 > ⚠️ **Update - September 2026:** Did you notice that **Initiate investigation** is no longer available as an automatic action for custom detections? This aligns with Microsoft's change to Automated Investigation and Response (AIR) in Defender for Endpoint. As of September 1, 2026, AIR no longer runs as a separate investigation experience and cannot be triggered manually. Its detection and response capabilities are now included in Defender for Endpoint's default antivirus protection stack and run automatically; for an on-demand investigation, run a full antivirus scan. Microsoft documents the transition here: <https://learn.microsoft.com/en-us/defender-endpoint/automated-investigations>
 {: .prompt-warning}
 
-> The remaining remediation actions for devices in a custom detection are `Isolate device`, `Collect investigation package`, `Run antivirus scan`, and `Restrict app execution`.
->
+The remaining remediation actions for devices in a custom detection are:
+
+- `Isolate device`
+- `Collect investigation package`
+- `Run antivirus scan`
+- `Restrict app execution`
+
 > As a result, you should no longer expect the former AIR workflow to surface through `Microsoft-Windows-SenseIR` events in the same way shown below. The AIR-specific event examples in this post are retained as a historical reference. The observations for **Live Response** and **Device/Network Discovery** are unaffected by this change.
 {: .prompt-info}
 
