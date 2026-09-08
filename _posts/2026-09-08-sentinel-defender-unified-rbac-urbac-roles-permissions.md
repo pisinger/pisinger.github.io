@@ -229,7 +229,7 @@ The mechanics are four steps:
 
 Behind the toggle sits a plain string column, `SentinelScope_CF`. If you already manage schemas and ingestion-time transformations as code, you can add that column and populate it from your own DCR, then set **Control access with scope tags** to On while leaving **Rule status** Off so the portal does not fight your deployment.
 
-```json
+```shell
 // scope-aware detection - the scope column must be projected
 // or the alerts this rule raises come out unscoped
 SigninLogs
