@@ -113,7 +113,7 @@ Under the covers, the platform assigns `User Access Administrator` to the **MTP 
 
 It is important not to mix up the definitions with their assignments. [`Get-AzRoleDefinition`](https://learn.microsoft.com/en-us/powershell/module/az.resources/get-azroledefinition) lists roles available for assignment and is the right command for inspecting their permission sets:
 
-```powershell
+```shell
 # per role - name, ID and each permission bucket
 Get-AzRoleDefinition |
     Where-Object Name -Like "Defender Unified RBAC*" |
@@ -131,7 +131,7 @@ Get-AzRoleDefinition |
 
 Same data one row per permission, which is the shape the appendix tables are built from:
 
-```powershell
+```shell
 Get-AzRoleDefinition |
     Where-Object Name -Like "Defender Unified RBAC*" |
     ForEach-Object {
@@ -159,7 +159,7 @@ Get-AzRoleDefinition |
 
 To do the same for the classic Sentinel roles, run the below:
 
-```powershell
+```shell
 # classic azure rbac sentinel roles
 Get-AzRoleDefinition | Where-Object Name -Like "Microsoft Sentinel*" |
 	ForEach-Object {
@@ -184,7 +184,7 @@ Get-AzRoleDefinition | Where-Object Name -Like "Microsoft Sentinel*" |
 
 Use [`Get-AzRoleAssignment`](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-powershell) to find which of them the MTP application has actually assigned on a workspace:
 
-```powershell
+```shell
 Get-AzRoleAssignment -Scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.OperationalInsights/workspaces/<workspace>" |
     Where-Object RoleDefinitionName -Like "Defender Unified RBAC*" |
     Select-Object DisplayName, RoleDefinitionName, Scope
@@ -229,7 +229,7 @@ The mechanics are four steps:
 
 Behind the toggle sits a plain string column, `SentinelScope_CF`. If you already manage schemas and ingestion-time transformations as code, you can add that column and populate it from your own DCR, then set **Control access with scope tags** to On while leaving **Rule status** Off so the portal does not fight your deployment.
 
-```kql
+```json
 // scope-aware detection - the scope column must be projected
 // or the alerts this rule raises come out unscoped
 SigninLogs
@@ -613,3 +613,58 @@ For comparison, the roles you assign yourself in the Azure portal - the ones URB
 | ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/reportActionStatus/action` |
 | ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/systems/write` |
 | ✅ `Action` | `Microsoft.SecurityInsights/businessApplicationAgents/write` |
+
+### The Logic Apps roles behind Sentinel playbooks
+
+Playbooks are Logic Apps resources, and no Sentinel or URBAC role writes to them. `Microsoft Sentinel Playbook Operator` runs a playbook; creating or editing one needs a Logic Apps role, assigned in Azure. Two of them, from the same snapshot:
+
+#### Logic App Contributor
+
+**Role ID:** `87a39d53-fc1b-424a-814c-f7e04687dc9e`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.ClassicStorage/storageAccounts/listKeys/action` |
+| ✅ `Action` | `Microsoft.ClassicStorage/storageAccounts/read` |
+| ✅ `Action` | `Microsoft.Insights/alertRules/*` |
+| ✅ `Action` | `Microsoft.Insights/diagnosticSettings/*` |
+| ✅ `Action` | `Microsoft.Insights/logdefinitions/*` |
+| ✅ `Action` | `Microsoft.Insights/metricAlerts/*` |
+| ✅ `Action` | `Microsoft.Insights/metricDefinitions/*` |
+| ✅ `Action` | `Microsoft.Logic/*` |
+| ✅ `Action` | `Microsoft.Resources/deployments/*` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/operationresults/read` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.Storage/storageAccounts/listkeys/action` |
+| ✅ `Action` | `Microsoft.Storage/storageAccounts/read` |
+| ✅ `Action` | `Microsoft.Support/*` |
+| ✅ `Action` | `Microsoft.Web/connectionGateways/*` |
+| ✅ `Action` | `Microsoft.Web/connections/*` |
+| ✅ `Action` | `Microsoft.Web/customApis/*` |
+| ✅ `Action` | `Microsoft.Web/serverFarms/join/action` |
+| ✅ `Action` | `Microsoft.Web/serverFarms/read` |
+| ✅ `Action` | `Microsoft.Web/sites/functions/listSecrets/action` |
+
+#### Logic Apps Standard Contributor
+
+**Role ID:** `ad710c24-b039-4e85-a019-deb4a06e8570`
+
+| Permission Type | Permission |
+|---|---|
+| ✅ `Action` | `Microsoft.Authorization/*/read` |
+| ✅ `Action` | `Microsoft.Insights/alertRules/*` |
+| ✅ `Action` | `Microsoft.Resources/deployments/operations/read` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/operationresults/read` |
+| ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
+| ✅ `Action` | `Microsoft.Support/*` |
+| ✅ `Action` | `Microsoft.Web/*/read` |
+| ✅ `Action` | `Microsoft.Web/certificates/*` |
+| ✅ `Action` | `Microsoft.Web/connectionGateways/*` |
+| ✅ `Action` | `Microsoft.Web/connections/*` |
+| ✅ `Action` | `Microsoft.Web/customApis/*` |
+| ✅ `Action` | `Microsoft.Web/serverFarms/*` |
+| ✅ `Action` | `Microsoft.Web/sites/*` |
+
+> `Logic Apps Hybrid Contributor` (`32109304-a0e2-4d64-bd07-b23ac5efbe43`) also shows up in my tenant, but it is not listed in Microsoft's [Azure built-in roles for Integration](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/integration) reference, so I have left its permission set out. The Standard companions - `Logic Apps Standard Developer`, `Logic Apps Standard Operator`, `Logic Apps Standard Reader` and `Logic App Operator` - are documented on that same page.
+{: .prompt-info}
