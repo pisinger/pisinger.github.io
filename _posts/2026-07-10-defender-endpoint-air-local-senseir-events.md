@@ -9,28 +9,28 @@ render_with_liquid: false
 
 Sometimes the interesting part of Defender for Endpoint is not only what you see in the Defender portal, but what the endpoint quietly records while the cloud service is doing its work.
 
-I came across this again while looking at Automated Investigation and Response, usually shortened to **AIR**. The portal gives you the investigation story, verdicts, evidence, and remediation state. Locally, the interesting part is that AIR and operator-driven Live Response both use the same Defender incident-response module: `SenseIR.exe`. Its actions leave a small but useful trail in the `Microsoft-Windows-SenseIR` event provider.
+I came across this again while looking at Automated Investigation and Response, usually shortened to **AIR**. At the time these events were captured, the portal provided the investigation story, verdicts, evidence, and remediation state. Locally, AIR and operator-driven Live Response used the same Defender incident-response module: `SenseIR.exe`. Its actions left a small but useful trail in the `Microsoft-Windows-SenseIR` event provider.
 
 > This is not a replacement for the Defender portal investigation view. Treat it as endpoint-side visibility: useful for learning, troubleshooting, and correlating what happened locally while AIR was running.
 {: .prompt-info}
 
 ## 🧭 What AIR Does
 
-Automated Investigation and Response is the Defender for Endpoint capability that starts investigations from alerts or operator action, examines evidence, assigns verdicts, and can trigger remediation actions depending on the automation level and approvals in your tenant.
+Before September 1, 2026, Automated Investigation and Response was the separate Defender for Endpoint experience that started investigations from alerts or operator action, examined evidence, assigned verdicts, and could trigger remediation actions depending on the automation level and approvals in your tenant.
 
 Microsoft's own overview is here:
 
 > <https://learn.microsoft.com/en-us/defender-endpoint/automated-investigations>
 {: .prompt-info}
 
-One detail is worth calling out, because it affects how long this exact workflow stays relevant:
-
-> ⚠️ As of September 1, 2026, Automated Investigation and Response (AIR) will no longer run as a separate investigation experience or be available for manual triggering in Microsoft Defender.
+> ⚠️ **Update - September 2026:** Did you notice that **Initiate investigation** is no longer available as an automatic action for custom detections? This aligns with Microsoft's change to Automated Investigation and Response (AIR) in Defender for Endpoint. As of September 1, 2026, AIR no longer runs as a separate investigation experience and cannot be triggered manually. Its detection and response capabilities are now included in Defender for Endpoint's default antivirus protection stack and run automatically; for an on-demand investigation, run a full antivirus scan. Microsoft documents the transition here: <https://learn.microsoft.com/en-us/defender-endpoint/automated-investigations>
 >
-> AIR detection and response capabilities are already included in Microsoft Defender's default antivirus protection stack and run automatically. For on-demand investigations, run a full antivirus scan as needed.
+> The remaining remediation actions for devices in a custom detection are `Isolate device`, `Collect investigation package`, `Run antivirus scan`, and `Restrict app execution`.
+>
+> As a result, you should no longer expect the former AIR workflow to surface through `Microsoft-Windows-SenseIR` events in the same way shown below. The AIR-specific event examples in this post are retained as a historical reference. The observations for **Live Response** and **Device/Network Discovery** are unaffected by this change.
 {: .prompt-warning}
 
-So why look at it now? Because the local event trail is still a good way to understand the type of collection and inspection actions Defender performs on an endpoint.
+The separate AIR experience has since been retired, as explained in the warning above. The historical local event trail remains useful for understanding the collection and inspection actions that the former workflow performed on an endpoint. The Live Response and Device/Network Discovery observations remain relevant.
 
 ## 📡 The Local SenseIR Module
 
@@ -46,7 +46,7 @@ Its corresponding Windows event provider is:
 Microsoft-Windows-SenseIR
 ```
 
-The name already hints at the purpose: Sense incident response. The important point is not merely that AIR and Live Response write to the same local event provider. Both use `SenseIR.exe` as the local Defender module to perform their requested incident-response actions. `Microsoft-Windows-SenseIR` then exposes the execution and result-upload trail from that module.
+The name already hints at the purpose: Sense incident response. In the observations captured for this post, AIR and Live Response wrote to the same local event provider and used `SenseIR.exe` to perform their requested incident-response actions. `Microsoft-Windows-SenseIR` exposed the execution and result-upload trail from that module.
 
 The beginning of an investigation may show a registration event:
 
@@ -186,7 +186,7 @@ The action names are the useful part. They map nicely to the type of triage an a
 | `GetFilesFromDownloadLocationsAction` | Files from common download paths |
 | `GetRecentlyCreatedOrModifiedExecutableFileListAction` | New or modified executable content |
 
-That list is not the full internal playbook, and it may change over time. Still, it is enough to understand the shape of the investigation. AIR is not just "scan the box". It performs targeted evidence collection, uploads the results, and lets the service-side investigation engine reason over that evidence.
+That list is not the full internal playbook, and it may change over time. Still, it is enough to understand the shape of the former standalone investigation. AIR did more than scan the box: it performed targeted evidence collection, uploaded the results, and let the service-side investigation engine reason over that evidence.
 
 ## 🛠️ PowerShell Helper
 
@@ -313,11 +313,11 @@ TimeCreated          Action                                               Source
 
 ## 💡 Why This Is Useful
 
-For me, this is mainly useful in three situations.
+For me, this is mainly useful in two situations.
 
-**Learning how AIR behaves.** Seeing the action names in order makes the investigation less abstract. You get a feeling for the evidence classes Defender collects.
+**Learning how AIR behaved.** Seeing the action names in order makes the former investigation workflow less abstract. You get a feeling for the evidence classes Defender collected.
 
-**Troubleshooting local execution.** If the portal shows an investigation but the endpoint has no matching `Microsoft-Windows-SenseIR` activity, that is a useful clue. It does not automatically identify the root cause, but it tells you where to look next.
+**Troubleshooting local execution.** For Live Response, matching portal activity with `Microsoft-Windows-SenseIR` events can still provide a useful clue. The older AIR examples can also help when reviewing historical activity from before the standalone experience was retired.
 
 There are also a few limits to keep in mind:
 
@@ -330,6 +330,6 @@ That last point matters. Local logs are a supporting signal, not the source of t
 
 ## ✅ Conclusion
 
-`SenseIR.exe` is the common local Defender incident-response module behind both AIR and Live Response in these observations. `Microsoft-Windows-SenseIR` is the useful window into that module: it shows when the endpoint registered as an incident response client and, more importantly, which locally executed actions finished and uploaded their results. In event `11`, the observed `Action ID` format also provides a practical source clue: `iaid_` for AIR, a plain GUID for Live Response, and possibly `eeaid_` for Device/Network Discovery.
+In the observations captured before September 1, 2026, `SenseIR.exe` was the common local Defender incident-response module behind both the standalone AIR workflow and Live Response. `Microsoft-Windows-SenseIR` provided a useful window into that module: it showed when the endpoint registered as an incident response client and, more importantly, which locally executed actions finished and uploaded their results. In event `11`, the observed `Action ID` format also provided a practical source clue: `iaid_` for AIR, a plain GUID for Live Response, and possibly `eeaid_` for Device/Network Discovery.
 
-For anyone interested in how Defender investigation and response works under the hood, this is a simple place to start. You will not get the cloud-side verdict logic or an explicit source field from the local event log, but you can correlate the `Action ID` pattern and see the evidence collection rhythm - processes, services, drivers, connections, autoruns, memory reads, file metadata, and recent execution history. That makes both AIR and operator-driven Live Response a bit less of a black box.
+The AIR-specific examples are now a historical view rather than a current validation method: the former standalone workflow should no longer be expected to reveal itself through these events in the same way. For Live Response and Device/Network Discovery, however, the local trail and the `Action ID` patterns remain useful correlation clues.
