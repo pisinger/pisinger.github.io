@@ -157,29 +157,10 @@ Get-AzRoleDefinition |
 > The permission arrays hang off the `Permissions` collection on each role definition, not off the role object itself - `Select-Object Name, Id, Actions` comes back empty. Property names inside that collection are singular in the newer generated `Az.Resources` cmdlets (`Action`, `NotAction`) and plural in older ones, so both scripts above cover either shape.
 {: .prompt-info}
 
-To do the same for the classic Sentinel roles, run the below:
+To do the same for the classic Sentinel roles, just change the where filter to `Name -Like "Microsoft Sentinel*"`. The seven URBAC definitions are the only ones that carry the `Defender Unified RBAC` prefix, so you can use that to distinguish them from the classic Sentinel roles in your own tenant.
 
 ```shell
-# classic azure rbac sentinel roles
-Get-AzRoleDefinition | Where-Object Name -Like "Microsoft Sentinel*" |
-	ForEach-Object {
-		$role = $_
-		foreach ($set in $role.Permissions) {
-			$set.PSObject.Properties |
-				Where-Object Name -Match '^(Not)?(Data)?Actions?$' |
-				ForEach-Object {
-					$type = $_.Name -replace 's$'
-					foreach ($permission in $_.Value) {
-						[pscustomobject]@{
-							Role       = $role.Name
-							Id         = $role.Id
-							Type       = $type
-							Permission = $permission
-						}
-					}
-				}
-		}
-	} | Sort-Object Role, Type, Permission | Format-Table -AutoSize
+Get-AzRoleDefinition | Where-Object Name -Like "Microsoft Sentinel*"
 ```
 
 Use [`Get-AzRoleAssignment`](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-powershell) to find which of them the MTP application has actually assigned on a workspace:
@@ -362,7 +343,7 @@ The Microsoft-managed roles the Defender portal writes into Azure RBAC when a wo
 | ✅ `Action` | `Microsoft.Resources/subscriptions/resourceGroups/read` |
 | ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
 | ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
-| `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
+| 📑 `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
 
 #### Defender Unified RBAC Responder
 
@@ -449,7 +430,7 @@ The Microsoft-managed roles the Defender portal writes into Azure RBAC when a wo
 | ⛔ `NotAction` | `Microsoft.SecurityInsights/ConfidentialWatchlists/*` |
 | ⛔ `NotAction` | `Microsoft.OperationalInsights/workspaces/query/ConfidentialWatchlist/*` |
 | ⛔ `NotAction` | `Microsoft.SecurityInsights/alertRules/read` |
-| `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
+| 📑 `DataAction` | `Microsoft.OperationalInsights/workspaces/tables/data/read` |
 
 #### Defender Unified RBAC Data Manager
 
