@@ -19,7 +19,7 @@ My first instinct was to add one incident comment after every entity analysis as
 There is one more design detail worth making explicit before adding this to SOAR: **the entity analyzer consumes Security Compute Units (SCUs)**. That usage is attached to the analyzer operation, not to the user interface where somebody happens to invoke it.
 
 > Microsoft Sentinel's MCP Entity Analyzer is powered by the Security Copilot platform behind the scenes and consumes SCUs as part of the Entity Analyzer capability itself. That applies regardless of whether the tool is invoked from a Logic App, GitHub Copilot, Visual Studio Code, or another agent. Existing Security Copilot entitlements may cover the usage; overages are charged according to the applicable terms.
-{: .prompt-warning}
+{: .prompt-info}
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpisinger%2Fscripts-lib%2Fmain%2Fdefender%2Fplaybook-sentinel-entity-analyzer%2Fsentinel-entity-analyzer-agent-summary.template.json)
 
@@ -194,6 +194,8 @@ Two guardrails keep the run predictable: each entity's analysis is trimmed to `m
 > The template is [playbook-entity-analyzer-agent-summary.template.json](playbook-entity-analyzer-agent-summary.template.json). Deploy it disabled first, run it manually against a representative incident, and inspect both the `Summarize_with_agent` output and the final comment before enabling automation.
 {: .prompt-tip}
 
+The same [repository](https://github.com/pisinger/scripts-lib/tree/main/defender/playbook-sentinel-entity-analyzer) also contains `permission-setup.sh` alongside `playbook.json`. Use it to configure the permissions for the playbook's system-assigned managed identity.
+
 ## 🤖 The no-tools summarization agent
 
 > The Agent action is not a Security Copilot connector call. It is a native Consumption Logic Apps autonomous agent action with an Azure OpenAI model chosen by the service in the workflow region - no model connection, no `deploymentId`, and an empty `tools` object.
@@ -252,30 +254,18 @@ What follows is a potential enhancement to my playbook, not part of the current 
 > The current connector documentation shows `entityType: "User"` and `entityType: "Url"`; it does not document `entityType: "Device"`. Treat device analysis as a future connector capability or a separate integration, not as a supported input to the current Entity Analyzer action.
 {: .prompt-warning}
 
-For a device, I would split the decision into two tracks:
+For a device, I would split the decision into two tracks as part of a dedicated playbook or agentic scenario:
 
 **Blast radius and relationships** - If the question is “what could this device reach?” or “what paths lead from this device to important assets?”, the Sentinel graph tooling and blast-radius style analysis are a natural fit. This is a relationship problem rather than an entity-verdict problem.
 
 **Device activity and timeline** - If the question is “what did this device do around the alert?”, use a bounded KQL query over the available device tables, such as process, network, logon, and alert-evidence data. This produces a deterministic evidence package that can be attached to the incident.
 
-That would give a future version of the playbook a deliberately mixed model:
-
-| Entity | Enrichment path | Result |
-| --- | --- | --- |
-| User | Sentinel MCP entity analyzer | Verdict, evidence, and recommendations |
-| URL | Sentinel MCP entity analyzer | Verdict, prevalence, and supporting context |
-| Device | Graph or blast-radius analysis | Relationships and reachable assets |
-| Device | KQL timeline query | Processes, connections, logons, and alerts |
-
-I prefer this split to forcing all entities through a generic AI step. The user and URL analyzer is already a productized workflow. For devices, a clear KQL or graph contract makes the output easier to test, compare, and govern.
 
 ## 🧩 What deployment needs to get right
 
 `Security Copilot Contributor` is the awkward prerequisite. It is neither an Azure RBAC role nor a Microsoft Entra role - Microsoft documents it as a Security Copilot role assigned from the Security Copilot settings under `Role assignment`, and the [authentication guidance](https://learn.microsoft.com/en-us/copilot/security/authentication) describes only the portal flow. Treat it as a manual step after the Logic App identity exists.
 
 For a quick proof of concept, authenticate the connector with your own user account first - that separates workflow problems from identity-configuration problems. Switch to the system-assigned managed identity before production, so the workflow depends on a stable, reviewable identity rather than on a person's account.
-
-I would deploy the workflow as `Disabled`, then let the first manual run confirm three things: the trigger paths match the incident payload in the target tenant, `Account` identifiers resolve to an object ID or usable UPN, and the managed identity can read the data lake.
 
 The parameters I would change for a first deployment are intentionally small:
 
@@ -297,7 +287,7 @@ An incident can contain several users and URLs, and several incidents can trigge
 
 Microsoft gives a specific number for this. The [Sentinel MCP Logic Apps guidance](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-logic-apps) tells you to turn on **Concurrency control** in the `For each` action and start with a degree of parallelism of `5`, then adjust it to how often the playbook is triggered in your organization. That is advice for the entity analyzer loop itself, not generic loop tuning. The [documented tenant limits](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-billing) are 200 runs per hour, 500 runs per day, and around 15 concurrent runs every five minutes based on available service capacity, with results available for one hour.
 
-`entityConcurrency` maps straight to the loop's degree of parallelism. The ARM template declares a fallback default of `5`, while the published deployment-parameters file sets it to `1`. The sequential setting removes two things at once: concurrent analyzer calls competing for Security Copilot capacity, and the documented risk of losing an append to an array variable inside a concurrent loop. The comment footer prints `N of M entities analyzed` so a lost append stays visible when moving to `5`.
+`entityConcurrency` maps straight to the loop's degree of parallelism. Both the ARM template and the published deployment-parameters file now default to `5`, matching Microsoft's guidance to start with a maximum of five concurrent analyses. This setting still needs to be tuned against Security Copilot capacity and the risk of losing an append to an array variable inside a concurrent loop. The comment footer prints `N of M entities analyzed` so incomplete results remain visible if concurrency causes an update to be lost.
 
 I would therefore make the following settings explicit in the playbook:
 
