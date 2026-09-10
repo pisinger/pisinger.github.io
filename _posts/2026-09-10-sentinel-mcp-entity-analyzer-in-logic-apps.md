@@ -123,10 +123,13 @@ Manual run from the incident in Microsoft Defender / Sentinel
         Add one summary or fallback comment
 ```
 
-![High-level Entity Analyzer Agent summary workflow](/assets/img/posts/microsoft-sentinel-mcp-entity-analyzer-soar-scu-billing/entity-analyzer-agent-summary-blog.svg)
-High-level flow with the permissions used by each workflow stage
+![High-level Entity Analyzer Agent summary workflow](/assets/img/posts/sentinel-mcp-entity-analyzer-in-logic-apps/entity-analyzer-agent-summary.svg)
+*High-level flow with the permissions used by each workflow stage.*
 
 The implementation choice I care about most is keeping the entity types separate. The workflow extracts related entities from the incident, normalizes `Account` and `User` to a user analysis, `Url` to a URL analysis, and `DnsResolution`/`Dns` to a URL analysis using the domain value. Each filtered entity produces one normalized finding, including skipped and failed items, so the final counts remain visible.
+
+![Entity Analyzer loop in the Logic App](/assets/img/posts/sentinel-mcp-entity-analyzer-in-logic-apps/logic-app-sentinel-mcp-entity-analyzer-flow.png)
+*The per-entity loop analyzes supported entities and records skipped or failed findings.*
 
 IP entities are deliberately retained as `skipped` findings when `reportIpEntities` is enabled. That makes the comment say “this IP was present but not analyzed” instead of silently changing the incident counts. They are never sent to the analyzer: the service returns `InvalidField` for IP addresses.
 
@@ -157,6 +160,9 @@ This is the main difference from the usual “analyze and comment” pattern. I 
 After the loop completes, the workflow creates a smaller agent payload from that array. It trims long analysis text, keeps the entity identity and verdict visible, and preserves skipped or failed entities as status records. The built-in Logic Apps Agent then receives the incident context and the complete findings payload in one call. I instruct it to emit an overall paragraph followed by one compact block for each entity, in the same order as the input.
 
 Only after that summarization step does the playbook call the Sentinel `Add comment` action. The final comment contains the worst-case traffic light, the agent-generated entity blocks, a risk key, and counts showing how many entities were analyzed, skipped, or returned no usable verdict. This gives the analyst one readable incident update instead of a sequence of partially duplicated comments that has to be pieced together manually.
+
+![Logic Apps Agent summary and fallback flow](/assets/img/posts/sentinel-mcp-entity-analyzer-in-logic-apps/logic-app-agent-summarize-flow.png)
+*The no-tools Agent produces the summary, with a raw-comment fallback if the agent fails or returns no content.*
 
 The workflow also checks the extracted summary length before posting it. If it is over `28000` characters, `Summary_first_part` sends the first 28,000 characters as the first incident update, `Delay_before_second_comment` waits 10 seconds, and `Add_summary_comment_part_2` posts the remainder. That leaves some headroom for the incident-comment wrapper, risk key, and workflow metadata. The normal path still creates one comment. The split is deliberately simple and character-based, so a very long response can break in the middle of an HTML element; the better control is to keep the Agent concise and treat the two-comment path as a size-limit safeguard.
 
@@ -269,7 +275,7 @@ Microsoft documents the data exploration MCP interface as having no additional i
 
 From my own runs, I have seen usage around `0.1 SCU` per analyzed entity. I would treat that as an observation, not a pricing formula. The actual consumption can vary with tenant size, the amount and type of data available, and the analysis being performed. It is useful for rough capacity planning, but the tenant's SCU usage is the number to trust.
 
-The look-back window is another cost and scope control. User analysis supports a maximum of seven days, so the template defaults to `lookBackDays: 7` and constrains the parameter accordingly. A longer retrospective should use separate data-lake queries or another investigation workflow rather than passing a larger value to Entity Analyzer.
+The look-back window is another cost and scope control. Microsoft documents a maximum seven-day window for `analyze_user_entity`, so the template defaults to `lookBackDays: 7`. The template currently permits values up to 30, but user analysis should remain within the documented seven-day maximum. Microsoft does not document an equivalent maximum for URL analysis. A longer user retrospective should use separate data-lake queries or another investigation workflow rather than passing a larger value to Entity Analyzer.
 
 That means these calls belong in the same cost conversation:
 
@@ -333,7 +339,7 @@ Microsoft's Logic Apps guidance recommends enabling concurrency control on the l
 I would therefore make the following settings explicit in the playbook:
 
 - **Concurrency:** start at `5`, then tune from measured incident volume.
-- **Look-back:** keep it within the supported seven-day maximum for user analysis.
+- **Look-back:** keep user analysis within the documented seven-day maximum; URL analysis has no equivalent published limit.
 - **Retries:** retry result retrieval separately from starting a new analysis.
 - **Idempotency:** avoid launching a second analysis for the same entity and incident unless the first result expired or failed.
 - **Comments:** label the entity type and analysis timestamp so stale enrichment is visible.
@@ -341,7 +347,7 @@ I would therefore make the following settings explicit in the playbook:
 > Do not confuse a failed result retrieval with a failed analysis. `get_entity_analysis` may need to be called again if the analysis is still running, while the result itself expires after one hour.
 {: .prompt-tip}
 
-The seven-day limit is especially relevant when an incident playbook is reused for retrospective investigations. A long investigation window may need to be divided into separate queries or handled through another data-exploration workflow.
+The seven-day user-analysis limit is especially relevant when an incident playbook is reused for retrospective investigations. A longer user investigation window may need to be divided into separate queries or handled through another data-exploration workflow.
 
 ## 🔍 A useful boundary for agentic use
 
