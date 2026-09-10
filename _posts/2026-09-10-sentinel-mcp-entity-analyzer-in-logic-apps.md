@@ -1,5 +1,5 @@
 ---
-title: Leveraging Sentinel MCP and Entity Analysis in Logic Apps
+title: Sentinel MCP Entity Analyzer in Logic Apps - Why Security Copilot Is Required
 author: pit
 date: 2026-09-10
 categories: [blogging, tutorial]
@@ -11,9 +11,10 @@ An incident usually arrives with more than one interesting object attached to it
 
 Enriching an incident like this is not new - we have been checking threat intelligence, IoCs, and sign-in activity for years to build a better evidence package. The question for me was whether the existing Sentinel and Logic Apps actions can make that workflow simpler, with part of the summarization moved into an agentic pattern.
 
-My first instinct was to add one incident comment after every entity analysis. That works, but an incident with several accounts and URLs quickly turns into a comment stream that is hard to read. The current workflow runs Microsoft Sentinel's Entity Analyzer for linked accounts, URLs, and DNS entities, then lets the built-in Logic Apps Agent turn the findings into one consolidated update.
+My first instinct was to add one incident comment after every entity analysis as usual. That works, but an incident with several accounts and URLs quickly turns into a comment stream that is hard to read. The current workflow runs Microsoft Sentinel's Entity Analyzer for linked accounts, URLs, and DNS entities, then lets the built-in Logic Apps Agent turn the findings into one consolidated update.
 
-Devices and IP addresses are outside this loop and need separate enrichment paths - for example, a blast-radius or graph query, or a deterministic KQL workflow over device telemetry.
+> Devices and IP addresses are outside this loop and need separate enrichment paths - for example, a blast-radius or graph query, or a deterministic KQL workflow over device telemetry. There is no aquivalent entity analysis tool call for devices, yet.
+{: .prompt-warning}
 
 There is one more design detail worth making explicit before adding this to SOAR: **the entity analyzer consumes Security Compute Units (SCUs)**. That usage is attached to the analyzer operation, not to the user interface where somebody happens to invoke it.
 
@@ -40,9 +41,10 @@ The role assignments and the first-run checks are worth a closer look before ena
 
 The Microsoft Sentinel data exploration collection exposes three relevant operations for entity analysis:
 
-1. `analyze_user_entity` starts an analysis for a Microsoft Entra user.
-2. `analyze_url_entity` starts an analysis for a URL.
-3. `get_entity_analysis` retrieves the result using the analysis identifier returned by the first operation.
+> 1. `analyze_user_entity` starts an analysis for a Microsoft Entra user.
+> 2. `analyze_url_entity` starts an analysis for a URL.
+> 3. `get_entity_analysis` retrieves the result using the analysis identifier returned by the first operation.
+{: .prompt-info}
 
 The analysis reasons over security data in the Microsoft Sentinel data lake and produces a verdict with supporting context. For a user, that can include authentication patterns, anomalous behavior, alerts, suspicious IP addresses, user agents, and remediation recommendations. For a URL, the analysis can combine the organization's activity with threat-intelligence and prevalence context. The [Microsoft Sentinel announcement](https://learn.microsoft.com/en-us/azure/sentinel/whats-new) lists Entity Analyzer as generally available from April 1, 2026, with SCU charging starting on that date. The Logic Apps integration page is still labeled preview and the template pins a preview API version. I would therefore treat the analyzer itself as GA and this deployment surface as subject to preview changes.
 
@@ -180,16 +182,12 @@ For a user, the connector documentation shows a Microsoft Entra object ID or UPN
 }
 ```
 
-The underlying analyzer is asynchronous - the MCP tool starts an analysis and retrieves it with `get_entity_analysis` - but the Logic Apps Entity Analyzer action wraps both phases into a single connector call. The template therefore needs no separate retrieval action: it calls Entity Analyzer once, parses status, classification, analysis text, recommendation, disclaimer, and data sources, and appends one normalized object to the run-scoped `findings` array.
-
-The important part is what does not happen inside the loop. There is no Sentinel comment per iteration - the loop only collects. After it completes, the workflow builds a trimmed agent payload from that array, keeping the entity identity and verdict visible and preserving skipped or failed entities as status records. That payload and the incident context go to one native Logic Apps `Agent` action with no tools, which returns an HTML fragment: an overall verdict, one block per entity in input order, up to four evidence lines, and one action.
-
-Only then does the playbook call the Sentinel `Add comment` action, wrapping the agent output with the worst-case traffic light, a risk key, and counts of analyzed, skipped, and unresolved entities. The analyst gets one readable incident update instead of a sequence of partially duplicated comments.
+The underlying analyzer is asynchronous - the MCP tool starts an analysis and retrieves it with `get_entity_analysis` - but the Logic Apps Entity Analyzer action wraps both phases into one connector call. The loop therefore collects normalized findings instead of writing a Sentinel comment for every entity. After the loop, the workflow sends a trimmed payload and the incident context to one native Logic Apps `Agent` action with no tools, then writes one comment containing the summary, risk key, and counts of analyzed, skipped, and unresolved entities.
 
 ![Logic Apps Agent summary and fallback flow](/assets/img/posts/sentinel-mcp-entity-analyzer-in-logic-apps/logic-app-agent-summarize-flow.png)
 *The no-tools Agent produces the summary, with a raw-comment fallback if the agent fails or returns no content.*
 
-If the Agent fails, times out, or returns empty content, the workflow posts pre-rendered HTML blocks from the same `findings` array instead. The model improves readability; it is not the system of record for the analyzer output.
+If the Agent fails, times out, or returns empty content, the workflow posts pre-rendered HTML blocks from the same `findings` array. The model improves readability; it is not the system of record.
 
 Two guardrails keep the run predictable: each entity's analysis is trimmed to `maxAnalysisCharsPerEntity` (default `4000`) before it enters the prompt, and the traffic-light emoji is computed from the worst finding in the workflow rather than by the model. A run with nothing reportable posts no comment at all.
 
@@ -198,9 +196,9 @@ Two guardrails keep the run predictable: each entity's analysis is trimmed to `m
 
 ## 🤖 The no-tools summarization agent
 
-The Agent action is not a Security Copilot connector call. It is a native Consumption Logic Apps autonomous agent action with an Azure OpenAI model chosen by the service in the workflow region - no model connection, no `deploymentId`, and an empty `tools` object.
-
-That boundary is intentional. Entity analysis is the SCU-backed security operation; the agent only formats findings that have already been collected. It cannot look up more data, run KQL, or take response actions. The model gets a narrow job, and the evidence-gathering path stays deterministic.
+> The Agent action is not a Security Copilot connector call. It is a native Consumption Logic Apps autonomous agent action with an Azure OpenAI model chosen by the service in the workflow region - no model connection, no `deploymentId`, and an empty `tools` object.
+{: .prompt-info} 
+Entity analysis remains the SCU-backed security operation; this agent only formats the findings already collected. It cannot look up more data, run KQL, or take response actions.
 
 One ARM detail is worth knowing before editing the template: the `Agent` action sits at the top level of the workflow definition and cannot be nested inside a `Condition`. The comment actions stay conditional, so an incident with only skipped entities still invokes the agent with an empty payload.
 
@@ -225,7 +223,7 @@ See [Run a playbook on an entity](https://learn.microsoft.com/azure/sentinel/aut
 
 ## 🔗 Use cases beyond an agentic SOC
 
-The entity analyzer does not need an agent in the middle. The Logic App connector is already enough to call it from a deterministic workflow, which is useful when the desired behavior is known in advance and should be easy to audit.
+The entity analyzer does not need an agent in the middle. The Logic App connector is enough for deterministic, auditable workflows where the desired behavior is known in advance.
 
 A few practical patterns beyond the incident-enrichment flow above:
 
@@ -312,10 +310,10 @@ I would therefore make the following settings explicit in the playbook:
 > Do not confuse a failed result retrieval with a failed analysis. `get_entity_analysis` may need to be called again if the analysis is still running, while the result itself expires after one hour.
 {: .prompt-tip}
 
-The seven-day user-analysis limit is especially relevant when an incident playbook is reused for retrospective investigations. A longer user investigation window may need to be divided into separate queries or handled through another data-exploration workflow.
-
 ## 📝 Conclusion
 
-The Sentinel MCP Entity Analyzer is a useful SOAR enrichment action for users and URLs. It turns linked entities into concise, evidence-backed context for the incident, while devices follow a separate graph or KQL investigation path.
+The Sentinel MCP Entity Analyzer is a useful SOAR enrichment action for users and URLs. Use it to turn linked entities into concise, evidence-backed incident context, while devices follow a separate graph or KQL investigation path.
+
+The deployment decision is straightforward: treat Security Copilot access and SCU consumption as prerequisites, then use the analyzer where user and URL enrichment adds value. Keep response authorization and destructive actions in a separate, explicit policy branch.
 
 The cost boundary belongs in the same design. Whether the call originates from a Logic App, GitHub Copilot, Visual Studio Code, or an agent, the Entity Analyzer consumes SCUs. The client changes; the meter does not.
