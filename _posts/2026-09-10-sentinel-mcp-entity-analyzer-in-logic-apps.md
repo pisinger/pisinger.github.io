@@ -1,5 +1,5 @@
 ---
-title: Leveraging Sentinel MCP and Entity Analysis: Logic Apps as a Common Playground
+title: Leveraging Sentinel MCP and Entity Analysis in Logic Apps
 author: pit
 date: 2026-09-10
 categories: [blogging, tutorial]
