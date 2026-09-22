@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic incident response with Microsoft Foundry, Sentinel MCP, and Logic Apps MCP servers</title>
+  <desc id="desc">AI-generated visual. A Foundry routine or SOAR playbook starts an autonomous Foundry agent. The agent has three MCP connections: Microsoft Sentinel data exploration, and two response MCP servers hosted by one Standard Logic App. For approval gated actions, Logic Apps returns approval pending to the agent, then waits for a responder before acting. The agent identity authenticates to the MCP endpoints through Easy Auth. Sentinel incident comments may not appear in Defender case Activities.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071527"/>
+      <stop offset="0.58" stop-color="#0A2032"/>
+      <stop offset="1" stop-color="#081423"/>
+    </linearGradient>
+    <linearGradient id="agent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#174F77"/>
+      <stop offset="1" stop-color="#10375E"/>
+    </linearGradient>
+    <linearGradient id="logic" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#153E47"/>
+      <stop offset="1" stop-color="#123039"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#BCEFFF" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="12" stdDeviation="17" flood-color="#020913" flood-opacity="0.42"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7FD5E5"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#F2BB70"/>
+    </marker>
+    <style>
+      text { font-family: 'Segoe UI', Inter, Arial, sans-serif; }
+      .kicker { font-size: 17px; font-weight: 800; letter-spacing: 3px; fill: #8FE8E4; }
+      .title { font-size: 58px; font-weight: 800; letter-spacing: -1.5px; fill: #F5FBFF; }
+      .subtitle { font-size: 25px; fill: #AFC9D8; }
+      .panelLabel { font-size: 18px; font-weight: 800; letter-spacing: 2px; fill: #8FE8E4; }
+      .eyebrow { font-size: 17px; font-weight: 800; letter-spacing: 1.5px; fill: #90BAD0; }
+      .cardTitle { font-size: 27px; font-weight: 800; fill: #F6FBFF; }
+      .serverTitle { font-size: 23px; font-weight: 800; fill: #F6FBFF; }
+      .body { font-size: 21px; fill: #C4D9E4; }
+      .small { font-size: 18px; fill: #AFC9D8; }
+      .pill { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; }
+      .flowTitle { font-size: 25px; font-weight: 800; fill: #F6FBFF; }
+      .footer { font-size: 20px; fill: #BDCFDA; }
+      .line { stroke: #7FD5E5; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .lineAmber { stroke: #F2BB70; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1200" fill="url(#bg)"/>
+  <rect width="1600" height="1200" fill="url(#grid)"/>
+  <circle cx="1465" cy="135" r="250" fill="#1B88A5" opacity="0.09"/>
+  <circle cx="80" cy="1130" r="240" fill="#26A99A" opacity="0.055"/>
+
+  <!-- Header -->
+  <rect x="64" y="48" width="262" height="38" rx="19" fill="#123D4B" stroke="#2F8B98" stroke-width="1.5"/>
+  <text x="88" y="74" class="kicker" font-size="15">PIT'S LAB NOTES</text>
+  <text x="64" y="157" class="title">Agentic incident response</text>
+  <text x="67" y="199" class="subtitle">Autonomous Foundry agent + Sentinel MCP + Logic Apps + HITL</text>
+  <text x="1536" y="73" text-anchor="end" class="small">pisinger.github.io</text>
+  <rect x="1312" y="90" width="224" height="34" rx="17" fill="#1A3040" stroke="#557284" stroke-width="1"/>
+  <text x="1424" y="113" text-anchor="middle" class="pill" fill="#C8DCE6">AI-GENERATED VISUAL</text>
+
+  <!-- Architecture panel -->
+  <rect x="64" y="236" width="1472" height="548" rx="30" fill="#0E2537" stroke="#2C5365" stroke-width="2" filter="url(#shadow)"/>
+  <text x="95" y="278" class="panelLabel">TWO ENTRY PATHS · ONE AUTONOMOUS AGENT · THREE MCP CONNECTIONS</text>
+
+  <!-- Autonomous trigger -->
+  <rect x="96" y="340" width="218" height="196" rx="22" fill="#172B3D" stroke="#486175" stroke-width="2"/>
+  <rect x="116" y="365" width="47" height="57" rx="12" fill="none" stroke="#9FBCD0" stroke-width="3"/>
+  <path d="M 144 373 L 128 397 H 140 L 133 414 L 153 389 H 141 Z" fill="#9FBCD0"/>
+  <text x="116" y="466" class="cardTitle">Start agent</text>
+  <text x="116" y="500" class="small">Foundry routine</text>
+  <text x="116" y="523" class="small">SOAR playbook</text>
+
+  <!-- Foundry agent -->
+  <rect x="374" y="320" width="305" height="236" rx="24" fill="url(#agent)" stroke="#4DADCE" stroke-width="2.5" filter="url(#shadow)"/>
+  <rect x="397" y="341" width="128" height="30" rx="15" fill="#1B678D"/>
+  <text x="412" y="362" class="pill" fill="#D8F5FF">ORCHESTRATOR</text>
+  <text x="398" y="416" class="cardTitle">Foundry agent</text>
+  <text x="398" y="452" class="body">Investigates, selects</text>
+  <text x="398" y="480" class="body">tools, reports status</text>
+  <text x="398" y="526" class="small">Instructions guide tool use</text>
+
+  <!-- MCP routing, behind destination cards -->
+  <path d="M 314 438 H 365" class="line" marker-end="url(#arrow)"/>
+  <path d="M 679 438 H 716 V 387 H 744" class="line" marker-end="url(#arrow)"/>
+  <path d="M 716 438 V 653 H 744" class="line" marker-end="url(#arrow)"/>
+  <circle cx="716" cy="438" r="7" fill="#8FE8E4"/>
+
+  <!-- Microsoft Sentinel MCP -->
+  <rect x="758" y="305" width="731" height="173" rx="23" fill="#172C47" stroke="#5581B2" stroke-width="2"/>
+  <rect x="785" y="328" width="189" height="31" rx="15.5" fill="#213F6B"/>
+  <text x="802" y="350" class="pill" fill="#BFDFFF">MANAGED MCP</text>
+  <text x="785" y="399" class="cardTitle">Microsoft Sentinel data exploration</text>
+  <text x="786" y="433" class="body">Query the lake · find incident and device context</text>
+  <rect x="1325" y="328" width="137" height="32" rx="16" fill="#234B68"/>
+  <text x="1354" y="350" class="pill" fill="#BFE6FF">INVESTIGATE</text>
+
+  <!-- One Standard Logic App -->
+  <rect x="758" y="508" width="731" height="249" rx="23" fill="url(#logic)" stroke="#4BA799" stroke-width="2"/>
+  <text x="785" y="548" class="eyebrow" fill="#96E4D8">ONE STANDARD LOGIC APP · MCP PREVIEW</text>
+  <text x="785" y="578" class="small">Multiple workflows, grouped into two logical MCP servers</text>
+  <rect x="785" y="605" width="327" height="122" rx="17" fill="#19434D" stroke="#54B8AC" stroke-width="1.5"/>
+  <rect x="1133" y="605" width="327" height="122" rx="17" fill="#19434D" stroke="#54B8AC" stroke-width="1.5"/>
+  <text x="804" y="638" class="eyebrow" font-size="15" fill="#9AE8D9">MCP SERVER 01</text>
+  <text x="804" y="670" class="serverTitle">sentinelResponse</text>
+  <text x="804" y="701" class="small">Get, comment, update incident</text>
+  <text x="1152" y="638" class="eyebrow" font-size="15" fill="#9AE8D9">MCP SERVER 02</text>
+  <text x="1152" y="670" class="serverTitle">defenderDeviceResponse</text>
+  <text x="1152" y="701" class="small">Get, isolate, unisolate device</text>
+  <rect x="1252" y="524" width="207" height="34" rx="17" fill="#1C514D" stroke="#4BA799" stroke-width="1.2"/>
+  <text x="1271" y="547" class="pill" fill="#C7F7E8">ENTRA EASY AUTH</text>
+
+  <!-- Approval strip -->
+  <rect x="64" y="809" width="1472" height="279" rx="30" fill="#102538" stroke="#3A5467" stroke-width="2" filter="url(#shadow)"/>
+  <text x="95" y="852" class="panelLabel" fill="#F2BB70">HUMAN APPROVAL OUTSIDE THE AGENT RUN</text>
+  <text x="1498" y="851" text-anchor="end" class="small">Example: unisolate a device</text>
+
+  <!-- Approval step 1 -->
+  <rect x="95" y="881" width="254" height="164" rx="19" fill="#20354A" stroke="#4A6980" stroke-width="1.6"/>
+  <circle cx="125" cy="912" r="15" fill="#3B6980"/>
+  <text x="120" y="919" class="pill" fill="#F0FCFF">1</text>
+  <text x="117" y="962" class="flowTitle">Tool request</text>
+  <text x="117" y="997" class="small">Agent calls the</text>
+  <text x="117" y="1021" class="small">Logic App MCP tool</text>
+
+  <!-- Approval step 2 -->
+  <rect x="388" y="881" width="270" height="164" rx="19" fill="#1C4651" stroke="#62B6B6" stroke-width="1.6"/>
+  <circle cx="418" cy="912" r="15" fill="#307C7C"/>
+  <text x="413" y="919" class="pill" fill="#F0FCFF">2</text>
+  <text x="410" y="962" class="flowTitle">Reply now</text>
+  <text x="410" y="997" class="small">“Approval pending”</text>
+  <text x="410" y="1021" class="small">returns to the agent</text>
+
+  <!-- Approval step 3 -->
+  <rect x="697" y="881" width="270" height="164" rx="19" fill="#4B382C" stroke="#D8A663" stroke-width="1.6"/>
+  <circle cx="727" cy="912" r="15" fill="#987143"/>
+  <text x="722" y="919" class="pill" fill="#FFF7E7">3</text>
+  <text x="719" y="962" class="flowTitle">Human review</text>
+  <text x="719" y="997" class="small">Logic App continues</text>
+  <text x="719" y="1021" class="small">and waits for approval</text>
+
+  <!-- Approval step 4 -->
+  <rect x="1006" y="881" width="493" height="164" rx="19" fill="#253647" stroke="#5E7587" stroke-width="1.6"/>
+  <circle cx="1036" cy="912" r="15" fill="#536F82"/>
+  <text x="1031" y="919" class="pill" fill="#F0FCFF">4</text>
+  <text x="1028" y="962" class="flowTitle">Only then act</text>
+  <rect x="1029" y="983" width="207" height="37" rx="18.5" fill="#225948"/>
+  <text x="1045" y="1008" class="pill" fill="#BDF5D7">APPROVE → ACTION</text>
+  <rect x="1250" y="983" width="220" height="37" rx="18.5" fill="#5B3D42"/>
+  <text x="1267" y="1008" class="pill" fill="#FFD2CE">REJECT → NO ACTION</text>
+
+  <path d="M 349 963 H 380" class="lineAmber" marker-end="url(#arrowAmber)"/>
+  <path d="M 658 963 H 689" class="lineAmber" marker-end="url(#arrowAmber)"/>
+  <path d="M 967 963 H 998" class="lineAmber" marker-end="url(#arrowAmber)"/>
+
+  <!-- Footer notes -->
+  <circle cx="75" cy="1135" r="6" fill="#8FE8E4"/>
+  <text x="95" y="1142" class="footer">Foundry agent identity authenticates through Easy Auth; connector permissions stay separate.</text>
+  <circle cx="75" cy="1173" r="6" fill="#F2BB70"/>
+  <text x="95" y="1180" class="footer">Lab note: Sentinel incident comments did not appear in Defender case Activities.</text>
+</svg>
