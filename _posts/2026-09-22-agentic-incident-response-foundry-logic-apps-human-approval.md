@@ -9,42 +9,17 @@ render_with_liquid: false
 
 If you work with Microsoft Sentinel and Defender, you probably already have response playbooks: Teams cards, approval emails, incident updates. When I started giving a Foundry agent response tools, I wondered why I would build a custom MCP server for each action when Logic Apps could expose the workflows I already use.
 
-The setup itself was super straightforward and much more simpler than you may expect. The use case I see is an **autonomous agent** started by a Foundry routine, an external scheduler, or a SOAR playbook. I attached the Microsoft Sentinel data exploration MCP server and 2 Logic App MCP servers to the same agent. Sentinel handles investigation; Logic Apps handles response and human approval.
+The setup itself was super straightforward and much more simpler than you may expect. The use case I see is an **autonomous agent** started by a Foundry routine, an external scheduler, or a SOAR playbook. I attached the Microsoft Sentinel data exploration MCP server and 2 Logic App MCP servers to the same agent. Sentinel handles investigation; Logic Apps handles response and human approval. Of course, the same design principle could also apply to interactive agent scenarios.
 
 ![Autonomous Foundry agent connected to Sentinel and two Logic App MCP servers](/assets/img/posts/agentic-incident-response-foundry-logic-apps-human-approval/agentic-incident-response-foundry-logic-apps-linkedin.png)
 *The full path: an autonomous agent investigates through Sentinel MCP and calls response workflows through Logic Apps MCP.*
 
-```text
-┌──────────┐   ┌──────────────────┐   ┌───────────────┐
-│ Routine  │   │ External trigger │   │ SOAR playbook │
-└────┬─────┘   └────────┬─────────┘   └───────┬───────┘
-     └──────────────────┼─────────────────────┘
-                        ▼
-               ┌──────────────────┐
-               │ Foundry agent    │
-               └────────┬─────────┘
-                        │
-                        │    ┌────────────────────────────────┐
-                        ├──► │ Sentinel data exploration MCP  │
-                        │    └────────────────────────────────┘
-                        │    ┌────────────────────────────────┐
-                        ├──► │ sentinelResponse MCP           ├───┐
-                        │    └────────────────────────────────┘   │
-                        │    ┌────────────────────────────────┐   │
-                        └──► │ defenderDeviceResponse MCP     ├───┤
-                             └────────────────────────────────┘   │
-                                                                  ▼
-                                                     ┌──────────────────────────┐
-                                                     │ One Standard Logic App   │
-                                                     └──────────────────────────┘
-```
-
-That is still **one Standard Logic App**. It can host multiple workflows as usual, expose them as MCP tools, and group those tools into several MCP servers. In my lab, the incident and device servers share one Logic App resource. Microsoft documents [multiple MCP server groups in one Standard Logic App](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard).
+Even while the above shows 2 Logic App MCP servers, that is still **one Standard Logic App** deployment. It can host multiple workflows as usual, expose them as MCP tools, and group those tools into several MCP servers. In my lab, the incident and device servers share one Logic App resource. Microsoft documents [multiple MCP server groups in one Standard Logic App](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard).
 
 ![Two MCP servers and their workflow tools in one Standard Logic App](/assets/img/posts/agentic-incident-response-foundry-logic-apps-human-approval/logic-app-mcp-servers.png)
 *My Standard Logic App hosts both `defenderDeviceResponse` and `sentinelResponse`.*
 
-> Microsoft currently documents the Standard Logic Apps MCP server feature as **preview**. I would recheck the setup requirements before promoting this workflow into a production response path. <https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard>
+> Microsoft currently documents the Standard Logic Apps MCP server feature as **preview** as of 2026-09. I would recheck the setup requirements before promoting this workflow into a production response path. <https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard>
 {: .prompt-info}
 
 ## ⏰ How the autonomous agent starts
@@ -72,14 +47,15 @@ The portal itself offers 4 trigger choices. Underneath, these are three types: r
 
 In Sentinel automation, human approval often means a Logic App with a Teams adaptive card or approval email. I kept that familiar step. The agent decides *when* to call the workflow; the workflow still decides whether the action runs. So this offloads the approval gate to existing paradigms.
 
-The Sentinel data exploration collection supplies investigation context, including an incident ARM ID or device name. The Logic App MCP servers supply response actions: 
+> Avoid email-based approvals actions. Email security solutions may interact with approval links during URL inspection, creating a risk of unintended approval processing. For sensitive actions such as device unisolation, prefer Teams Adaptive Card approvals, which require explicit user interaction and provide stronger security and auditability. If email approvals are used, ensure that following the approval link requires authentication and an explicit confirmation step before the action is executed.
+{: .prompt-warning}
 
-- **comment on an incident**
-- **update incident**
-- **isolate a device**
-- **unisolate a device**
+The read-only Sentinel data exploration collection supplies investigation context, including an incident ARM ID or device name. The Logic App MCP servers supply response actions and may need explicit human approval: 
 
-The Sentinel data exploration MCP is read-only. The response actions have separate permissions and may need explicit human approval.
+- `comment on an incident`
+- `update incident`
+- `isolate a device`
+- `unisolate a device`
 
 > The Sentinel data exploration collection is a way to retrieve and analyze data; it does not grant the agent permission to perform response actions. See the [collection's tool list](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-graph-tool) and the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard).
 {: .prompt-info}
@@ -113,15 +89,15 @@ My agent already has an `allowed_tools` list. For the Logic App MCP tools, you c
 
 For an interactive agent, I could put a human approval step in a Foundry workflow. Its visual builder includes a [**Human in the loop** pattern](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow) that asks the user and waits for an answer. Foundry also documents a [long-running hosted-agent HITL pattern in preview](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/add-human-in-the-loop).
 
+In my scenario, the agent runs autonomously, either on a schedule or triggered by a SOAR playbook, while device unisolation is a high-impact action. For that reason, I placed the approval step in the Logic App rather than inside the agent itself. The agent can still execute the investigation and response workflow end-to-end, but the unisolation action is only performed after an explicit approval has been granted.
+
+> Note: Device isolation is typically handled through existing incident response automations, which often follow a "fire first, ask questions later" approach for workstation-based threats.
+{: .prompt-info}
+
 > **Foundry workflow change:** After December 1, 2026, the visual designer and in-portal workflow execution will no longer be supported. Workflow patterns, including human-in-the-loop steps, remain available through code and configuration; Foundry can still run YAML-based workflow definitions deployed as hosted agents. For new work, Microsoft recommends [Agent Framework](https://learn.microsoft.com/en-us/agent-framework/workflows/human-in-the-loop). See the [Foundry migration guide](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow#migration-guide) for the supported paths.
 {: .prompt-warning}
 
-The [migration guide](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow#migration-guide) recommends **Agent Framework** for code-first or YAML orchestration deployed as a hosted agent. It also points to **Azure Logic Apps** for visual orchestration that can call Foundry agents, and **A2A** for a simple agent-to-agent handoff. Logic Apps fits this SOC flow because the approval and response connectors are already there and we do not have to re-invent the wheel.
-
-My agent runs autonomously, started by a routine or a SOAR playbook, and **unisolating** a device is a high-impact action. That's why I put the approval inside the Logic App rather than in the agent. The agent can still run end to end on its own and trigger the response, and the action itself only executes once someone has approved it.
-
-> Note: Device isolation should be part of existing automations, and those playbooks usually follow a "fire first, ask later" logic for workstations.
-{: .prompt-info}
+The [migration guide](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow#migration-guide) recommends **Agent Framework** for code-first or YAML-based orchestration and **Azure Logic Apps** for visual workflow orchestration that invokes Foundry agents. It also points to **A2A** for lightweight agent-to-agent handoffs. For SOC workflows, I currently prefer Logic Apps because approvals, notifications, and connector-based integrations are available out of the box, avoiding the need to reimplement common workflow capabilities.
 
 ## 🛠️ Putting it together
 
@@ -137,7 +113,7 @@ The [Standard Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logi
 - **Authenticate with Microsoft Entra ID:** configure OAuth with Easy Auth on the Standard Logic App, then set the Foundry MCP connection to use the chosen agent or project identity.
 - **Authenticate with an API key:** generate an MCP API key and send it in the `X-API-Key` header.
 
-> The important thing is that MCP servers in Logic Apps requires HTTP trigger actions to receive requests from the agent. Without an HTTP trigger, the Logic App cannot act as an MCP server.
+> The important thing is that MCP servers in Logic Apps requires HTTP trigger actions to receive requests from the agent. Without an HTTP trigger, the Logic App cannot act as an MCP server and you cannot transition exsiting workflow into MCP tools.
 {: .prompt-warning}
 
 ![Registering a Sentinel response MCP server with connector actions](/assets/img/posts/agentic-incident-response-foundry-logic-apps-human-approval/logic-app-mcp-server-overview-sentinel-responses.png)
@@ -145,7 +121,7 @@ The [Standard Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logi
 
 The basic path is short:
 
-1. Create a **new-model agent** in Microsoft Foundry and attach the Sentinel data exploration MCP collection for investigation. New agents receive their own agent identity and stable endpoint without a separate publish step. For autonomous operation, start it from a Foundry routine or external scheduler, or have a SOAR playbook invoke it.
+1. Create a new **agent** in Microsoft Foundry and attach the Sentinel data exploration MCP collection for investigation. New agents receive their own agent identity and stable endpoint without a separate publish step. For autonomous operation, start it from a Foundry routine or external scheduler, or have a SOAR playbook invoke it.
 2. Create a Standard Logic App. Under **Agents > MCP servers**, register the Sentinel and Defender response tools you want the agent to call.
 3. For an existing playbook, make it callable with **When an HTTP request is received**, a useful request schema, and a **Response** action. Give the trigger and its inputs clear descriptions; these become the tool contract the agent sees.
 4. Secure the MCP server, copy its endpoint from the Logic App, and add it to the Foundry agent as a custom MCP tool.
@@ -161,32 +137,32 @@ https://sentinel-incident-response-demo.swedencentral-01.azurewebsites.net/api/m
 https://sentinel-incident-response-demo.swedencentral-01.azurewebsites.net/api/mcpservers/defenderDeviceResponse/mcp
 ```
 
-Copy the actual URL from **MCP servers > Copy URL** in your Logic App and attach it to your Foundry agent as a custom MCP tool or to a toolbox. The workflow's own HTTP trigger URL is a different endpoint.
+Those can you grab from **MCP servers > Copy URL** in your Logic App and attach them to your Foundry agent as custom MCP tools or to a toolbox. The workflow's own HTTP trigger URL is a different endpoint.
 
-Key-based authentication is fine for a quick lab setup: generate an MCP API key in the Logic App and configure the Foundry connection to send it in the `X-API-Key` header. For this autonomous response agent, I would use **Easy Auth** with Microsoft Entra ID on the Standard Logic App.
+Key-based authentication works well for lab environments: generate an MCP API key in the Logic App and send it via the `x-api-key` header from Foundry. For production scenarios, I recommend **Easy Auth** with Microsoft Entra ID on the Standard Logic App to avoid shared secrets and leverage enterprise-grade authentication and authorization.
 
 There are [two distinct Microsoft Entra authentication options in Foundry](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/mcp-authentication#microsoft-entra-authentication)
 
-- **Agent identity** (`agentic-identity`): use it when a particular agent needs its own access to the response MCP server. This is my choice when different autonomous agents should have different permissions and audit identities. The MCP server and its underlying service must support agent identity authentication, and that agent identity needs the required role assignments.
-- **Project managed identity** (`project-managed-identity`): use it when all agents in the Foundry project should share the same access to that MCP server, or when the server requires a managed identity rather than an agent identity. The project's managed identity needs the required roles on the MCP server's underlying service.
+- **Agent identity** (`agentic-identity`): This is the preferred option and aligns with the new Foundry agent model, where each agent has its own identity from the very beginning without the requirement to publish. It enables per-agent permissions, least-privilege access, and clear audit trails. The MCP server and its underlying service must support agent identity authentication, and the agent identity requires the appropriate role assignments.
+- **Project managed identity** (`project-managed-identity`): Use this when multiple agents should share a common identity, when the target service specifically requires a managed identity, or when agent identity authentication is not supported. The project's managed identity must be granted the necessary permissions.
 
-I keep three identities separate in the design: the Foundry agent identity authenticates to the MCP endpoint, the Logic App's system-assigned managed identity performs the Sentinel and Defender response actions, and the human approver identity supplies the HITL decision. 
+In this approval design I keep 3 identities separate in the design: 
+
+- `the Foundry agent identity authenticates to the MCP endpoint`
+- `the Logic App's system-assigned managed identity performs the Sentinel/Defender response actions`
+- `and the human approver identity supplies the HITL decision.`
 
 > To see how to set up Easy Auth for a Logic Apps MCP server, follow the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard#set-up-easy-auth-for-your-mcp-server). 
 {: .prompt-info}
 
 On the Foundry side, set the connection's audience to the application ID URI that Easy Auth accepts, including the trailing slash. Then authorize the identity you chose: if you restrict callers, add its object ID to Easy Auth's allowed identities, and grant any app roles or underlying service access your MCP server needs.
 
-Make sure the Logic App identity is enabled and configure the Microsoft Sentinel connector to use **Connect with managed identity**, then assign the `Microsoft Sentinel Responder` role on the workspace. For Defender actions, configure the proper WindowsATP permissions to the managed identity of the Logic Apps. Also see Microsoft's [Sentinel playbook authentication guidance](https://learn.microsoft.com/en-us/azure/sentinel/automation/authenticate-playbooks-to-sentinel) and [Logic Apps managed identity guidance](https://learn.microsoft.com/en-us/azure/logic-apps/authenticate-with-managed-identity).
+Make sure the Logic App identity is enabled and configure the Microsoft Sentinel connector to use **Connect with managed identity**, then assign the `Microsoft Sentinel Responder` role on the workspace. For Defender actions, configure the proper WindowsDefenderATP permissions to the managed identity of the Logic Apps. Also see Microsoft's [Sentinel playbook authentication guidance](https://learn.microsoft.com/en-us/azure/sentinel/automation/authenticate-playbooks-to-sentinel) and [Logic Apps managed identity guidance](https://learn.microsoft.com/en-us/azure/logic-apps/authenticate-with-managed-identity).
 
-The portal-created connector workflows already have the HTTP request and response shape. For existing workflows, Microsoft documents the required Request/Response pattern and hosting requirements in the [Standard Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard). The exact tool names and descriptions matter: "update incident" is much more useful to an agent when the input says which incident identifier it expects and what fields it changes. For the native Connectors you do not have to provide any thing - the connector itself already defines the request and response schema and thus the proper MCP tool names and descriptions out of the box. Easy one :-)
+Then remember the HTTP request trigger requirement. The portal-created connector workflows already have the HTTP request and response shape. For existing workflows, Microsoft documents the required Request/Response pattern and hosting requirements in the [Standard Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard). The exact tool names and descriptions matter: "update incident" is much more useful to an agent when the input says which incident identifier it expects and what fields it changes. For the native Connectors you do not have to provide any thing - the connector itself already defines the request and response schema and thus the proper MCP tool names and descriptions out of the box. Easy one 😊
 
-> Keep in mind: Only HTTP based Logic App workflows are MCP compatible.
+> Reminder: Only HTTP based Logic App workflows are MCP compatible.
 {: .prompt-warning}
-
-The portal-created connector workflows already have the HTTP request and response shape. For existing workflows, Microsoft documents the required Request/Response pattern and hosting requirements in the [Standard Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard). The exact tool names and descriptions matter: "update incident" is much more useful to an agent when the input says which incident identifier it expects and what fields it changes. 
-
-For native connectors such as the ones we use (Sentinel, Defender) this comes out of the box: the connector already defines the request and response schema, and the tool descriptions are prefilled from it. I would still review them and sharpen the ones your agent relies on most or enhance based on your specific needs. Almost an easy one 😊
 
 ![Logic App workflow with an HTTP Request trigger and described JSON inputs](/assets/img/posts/agentic-incident-response-foundry-logic-apps-human-approval/logic-app-workflow-with-http-trigger-and-json-schema-to-describe-tools.png)
 *The Request schema gives the comment tool an incident ARM ID and message, with descriptions the agent can use.*
@@ -195,13 +171,16 @@ With the tools attached, the agent chooses among them based on their description
 
 ## 🤖 New Agent Object Model
 
-When I started working more heavily with Foundry agents about six months ago, the identity model confused me, especially how it interacts with MCP authentication. When should I use the shared project identity, and when the agent's own identity? I tried the agent identity first, but it didn't work. So I assigned permissions to the shared project identity instead, and later learned that an agent only gets its own identity once it's published. For agents that run as part of SOAR or an agentic SOC, publishing isn't something you'd normally do.
+When I started working extensively with Foundry agents about six months ago, the identity model was one of the areas that caused the most confusion, especially when combined with MCP authentication. When should I use the shared project identity, and when should I use an agent's own identity?
 
-> **Fun fact:** This confused me for quite a while. My main workload was hosted agents, but for quick ad hoc tests I still used prompt agents because they were convenient. When I finally checked, some of the agents I used most were still on the old object model, while newer ones were already on the new one. At one point I simply assigned the permissions to both the per-agent identity and the shared project identity and moved on. Not elegant, but it saved me from chasing the wrong identity again. Now I know what was causing the confusion 😅
+My first instinct was to use the agent identity, but it didn't work all the time this way. After some troubleshooting, I granted permissions to the project's managed identity instead, which resolved the issue. Later, I discovered that some agents only received their own identity after being published. For SOAR and agentic SOC scenarios, publishing agents is not typically part of the deployment model, so this behavior wasn't immediately obvious.
 
-That mix of old and new agents was exactly what I was missing when I started on agentic SOC designs. With the new model, I can keep several autonomous agents in one Foundry project and grant each agent identity only the access its Logic App MCP tools require. I no longer need a separate project just to limit the blast radius of the old shared identity.
+> **Fun fact:** This confused me for quite a while. Most of my work focused on hosted agents, but for quick ad hoc testing I often used prompt agents because they were convenient. Eventually, I realized that some of the agents I was testing still used the legacy agent object model, while newer ones were already based on the new model. At one point, I simply assigned permissions to both the per-agent identity and the project managed identity to avoid chasing authentication issues. Not particularly elegant, but it worked and kept me moving forward until I understood what was happening 😅
+{: .prompt-info}
 
-I do not exactly know when this change in the agent object model was introduced, but it certainly caused confusion for me when I was trying to understand the identity requirements for different types of agents. I have seen something for hosted agents in April 2026 with transition time to the new agent for July 2026 - maybe it finally land in my tenant so even this time. 
+That mix of legacy and new agent models was exactly what I was missing when I started designing agentic SOC architectures. With the new model, each agent receives its own identity from the outset, allowing multiple autonomous agents to coexist within the same Foundry project while maintaining separate permissions. This enables a true least-privilege approach and I no longer need to create separate projects purely to reduce the blast radius of a shared project identity.
+
+I am not entirely sure when Microsoft introduced this change to the agent object model to become the new default. I first noticed references to the new experience around April 2026, along with guidance to transition by July 2026. However, I still encountered agents created in July that were based on the legacy model, which added to the confusion when trying to understand the identity requirements across different agent types. Looking back, many of the authentication issues I experienced were not caused by MCP itself, but by the fact that both identity models coexisted during the transition period and I was not aware that there are 2 different agents object models.
 
 But anyway, the MCP connection types themselves haven't changed. What changed is how an agent gets its identity: a new-model agent gets its own identity at creation, while a legacy agent may keep using the shared project identity until you recreate it. **At the time of writing**, the MCP authentication page still uses the older before/after-publish wording, so check the [migration guidance](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/migrate-agent-applications) to see which identity your agent actually has.
 
@@ -227,7 +206,7 @@ The fix is an early HTTP response. It tells the agent that its request was recei
 > **The early reply addresses the MCP/HTTP deadline, not the full Logic App run.** Once the Logic App sends its Response, the tool call ends and the **same stateful run continues waiting for approval**. Give that approval its own deadline, shorter than both the run limit and the approval action's own timeout. [Logic Apps Request/Response behavior](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-http-endpoint#respond-to-requests) · [run-duration limits](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config#run-duration-and-history-retention-limits)
 {: .prompt-tip}
 
-I return **pending** well inside the 100-second MCP limit. Foundry documents [background mode for long-running MCP tasks](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol#long-running-operations-preview), but it requires MCP tasks support; I have not verified that capability on a Logic App-generated server.
+By this you can return **pending** or whatever response you want back to the agent well inside the 100-second MCP limit. Foundry documents [background mode for long-running MCP tasks](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol#long-running-operations-preview), but it requires MCP tasks support which I have not verified that capability on a Logic App-generated server.
 
 A [long-running hosted agent](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/long-running-agent-resilience) can continue after its initiating request disconnects when configured for resilient background execution. That does not extend the Logic App's [run duration](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config#run-duration-and-history-retention-limits). I would let a later agent run check the outcome instead of keeping one MCP call open for the whole approval.
 
