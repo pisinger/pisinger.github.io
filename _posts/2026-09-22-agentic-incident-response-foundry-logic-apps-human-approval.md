@@ -57,7 +57,7 @@ The read-only Sentinel data exploration collection supplies investigation contex
 - `isolate a device`
 - `unisolate a device`
 
-> The Sentinel data exploration collection is a way to retrieve and analyze data; it does not grant the agent permission to perform response actions. See the [collection's tool list](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-graph-tool) and the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard).
+> The Sentinel data exploration collection is a way to retrieve and analyze data; it does not grant the agent permission to perform response actions. See the [collection's tool list](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-mcp-data-exploration-tool) and the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard).
 {: .prompt-info}
 
 My agent already has an `allowed_tools` list. For the Logic App MCP tools, you can configure Foundry's [`require_approval`](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol#set-up-the-mcp-connection) as a per-tool `{"never": ["tool_name"]}` list so the autonomous run does not pause for Foundry's developer approval. Setting it to `"never"` without a list disables Foundry approval for every tool in that MCP definition as seen in the below sample yaml config for the tools; the default is `"always"`. This is not the response approval: Logic Apps still enforces the human decision before an approval-gated action runs.
@@ -94,7 +94,7 @@ In my scenario, the agent runs autonomously, either on a schedule or triggered b
 > Note: Device isolation is typically handled through existing incident response automations, which often follow a "fire first, ask questions later" approach for workstation-based threats.
 {: .prompt-info}
 
-> **Foundry workflow change:** After December 1, 2026, the visual designer and in-portal workflow execution will no longer be supported. Workflow patterns, including human-in-the-loop steps, remain available through code and configuration; Foundry can still run YAML-based workflow definitions deployed as hosted agents. For new work, Microsoft recommends [Agent Framework](https://learn.microsoft.com/en-us/agent-framework/workflows/human-in-the-loop). See the [Foundry migration guide](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow#migration-guide) for the supported paths.
+> **Foundry workflow change:** After December 1, 2026, the visual designer and in-portal workflow execution will no longer be supported. Workflow patterns, including human-in-the-loop steps, remain available through code and configuration; Foundry can still run YAML-based workflow definitions deployed as hosted agents.
 {: .prompt-warning}
 
 The [migration guide](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow#migration-guide) recommends **Agent Framework** for code-first or YAML-based orchestration and **Azure Logic Apps** for visual workflow orchestration that invokes Foundry agents. It also points to **A2A** for lightweight agent-to-agent handoffs. For SOC workflows, I currently prefer Logic Apps because approvals, notifications, and connector-based integrations are available out of the box, avoiding the need to reimplement common workflow capabilities.
@@ -148,9 +148,9 @@ There are [two distinct Microsoft Entra authentication options in Foundry](https
 
 In this approval design I keep 3 identities separate in the design: 
 
-- `the Foundry agent identity authenticates to the MCP endpoint`
-- `the Logic App's system-assigned managed identity performs the Sentinel/Defender response actions`
-- `and the human approver identity supplies the HITL decision.`
+- the Foundry `agent identity` authenticates to the MCP endpoint
+- the Logic App's `system-assigned managed identity` performs the Sentinel/Defender response actions
+- and the human approver `user identity` supplies the HITL decision.
 
 > To see how to set up Easy Auth for a Logic Apps MCP server, follow the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard#set-up-easy-auth-for-your-mcp-server). 
 {: .prompt-info}
@@ -206,9 +206,9 @@ The fix is an early HTTP response. It tells the agent that its request was recei
 > **The early reply addresses the MCP/HTTP deadline, not the full Logic App run.** Once the Logic App sends its Response, the tool call ends and the **same stateful run continues waiting for approval**. Give that approval its own deadline, shorter than both the run limit and the approval action's own timeout. [Logic Apps Request/Response behavior](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-http-endpoint#respond-to-requests) · [run-duration limits](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config#run-duration-and-history-retention-limits)
 {: .prompt-tip}
 
-By this you can return **pending** or whatever response you want back to the agent well inside the 100-second MCP limit. Foundry documents [background mode for long-running MCP tasks](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol#long-running-operations-preview), but it requires MCP tasks support which I have not verified that capability on a Logic App-generated server.
+By this you can return **pending** or whatever response you want back to the agent well inside the 100-second MCP limit. Foundry documents [background mode for long-running MCP tasks](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol?pivots=python#long-running-operations-preview), but it requires MCP tasks support which I have not verified that capability on a Logic App-generated server.
 
-A [long-running hosted agent](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/long-running-agent-resilience) can continue after its initiating request disconnects when configured for resilient background execution. That does not extend the Logic App's [run duration](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config#run-duration-and-history-retention-limits). I would let a later agent run check the outcome instead of keeping one MCP call open for the whole approval.
+A [long-running hosted agent](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/long-running-agent-resilience) can continue after its initiating request disconnects when configured for resilient background execution. That does not extend the [Logic App's run duration](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config#run-duration-and-history-retention-limits). I would let a later agent run check the outcome instead of keeping one MCP call open for the whole approval.
 
 In my workflow design, I simply moved an HTTP **Response** action *before* the actual approval step. The agent hears that its request was accepted for review, and the workflow continues. An explicit condition must send only **Approve** to the Defender action; a rejection ends without changing the device. Microsoft shows that [condition after an approval email](https://learn.microsoft.com/en-us/azure/logic-apps/tutorial-process-mailing-list-subscriptions-workflow#add-an-action-to-check-approval-response) in its Logic Apps tutorial.
 
