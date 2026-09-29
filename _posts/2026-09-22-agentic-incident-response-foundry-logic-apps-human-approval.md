@@ -3,7 +3,7 @@ title: Agentic Incident Response with Foundry and Logic Apps - Human Approval Wi
 author: pit
 date: 2026-09-22
 categories: [blogging, tutorial]
-tags: [azure, foundry, logic-apps, mcp, sentinel, defender, incident-response, human-in-the-loop, agentic-soc]
+tags: [azure, foundry, logic-apps, apim, mcp, sentinel, defender, incident-response, human-in-the-loop, agentic-soc]
 render_with_liquid: false
 ---
 
@@ -32,16 +32,13 @@ I prefer to trigger this agent from Sentinel automation via SOAR playbook, so th
 - `rationale`
 - `correlation ID`
 
-That context needs to be planned in the agent's instructions, tool schemas, and skills.
+That context needs to be planned in the agent's instructions, tool schemas, and skills. Foundry routines currently support:
 
-The portal itself offers 4 trigger choices. Underneath, these are three types: recurring schedule, one-time timer, and external event.
+- recurring or one-time schedules
+- GitHub issue events
+- Teams channel messages.
 
-| Portal choice | What it does |
-| --- | --- |
-| Recurring (`schedule`) | Runs on a five-field cron expression, with a minimum interval of five minutes. |
-| One-time (`timer`) | Runs once at a future time. The routine guide also describes a duration from now, although its current API examples use an explicit future timestamp. |
-| GitHub issue (`github_issue`) | Runs when an issue opens or closes in a watched repository. |
-| Teams channel message (`custom` with `teams` provider) | Runs when a new message lands in a watched channel. |
+The trigger is secondary here; the important part is that every path supplies the same response context.
 
 ## 🧩 Reuse the response layer you already have
 
@@ -139,18 +136,39 @@ https://sentinel-incident-response-demo.swedencentral-01.azurewebsites.net/api/m
 
 Those can you grab from **MCP servers > Copy URL** in your Logic App and attach them to your Foundry agent as custom MCP tools or to a toolbox. The workflow's own HTTP trigger URL is a different endpoint.
 
-Key-based authentication works well for lab environments: generate an MCP API key in the Logic App and send it via the `x-api-key` header from Foundry. For production scenarios, I recommend **Easy Auth** with Microsoft Entra ID on the Standard Logic App to avoid shared secrets and leverage enterprise-grade authentication and authorization.
+Key-based authentication works well for lab environments: generate an MCP API key in the Logic App and send it via the `x-api-key` header from Foundry. For production scenarios, I recommend **Easy Auth** with Microsoft Entra ID on the Standard Logic App to avoid shared secrets and use enterprise authentication and authorization.
 
-There are [two distinct Microsoft Entra authentication options in Foundry](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/mcp-authentication#microsoft-entra-authentication)
+There are [two distinct Microsoft Entra authentication options in Foundry](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/mcp-authentication#microsoft-entra-authentication):
 
-- **Agent identity** (`agentic-identity`): This is the preferred option and aligns with the new Foundry agent model, where each agent has its own identity from the very beginning without the requirement to publish. It enables per-agent permissions, least-privilege access, and clear audit trails. The MCP server and its underlying service must support agent identity authentication, and the agent identity requires the appropriate role assignments.
+- **Agent identity** (`agentic-identity`): This is the preferred option when you need per-agent permissions and auditability. New-model agents receive a unique identity when they are created, while legacy agents still require the use of the shared project identity.
 - **Project managed identity** (`project-managed-identity`): Use this when multiple agents should share a common identity, when the target service specifically requires a managed identity, or when agent identity authentication is not supported. The project's managed identity must be granted the necessary permissions.
 
-In this approval design I keep 3 identities separate in the design: 
+![Choosing agent identity or project managed identity for MCP authentication in Microsoft Foundry](/assets/img/posts/agentic-incident-response-foundry-logic-apps-human-approval/foundry-agent-identity-or-project-identity-for-mcp-auth.png)
+*The MCP connection authentication setting lets me choose between the agent identity and the project managed identity.*
+
+In this approval design I keep three identities separate:
 
 - the Foundry `agent identity` authenticates to the MCP endpoint
 - the Logic App's `system-assigned managed identity` performs the Sentinel/Defender response actions
 - and the human approver `user identity` supplies the HITL decision.
+
+> ⚠️ When the Logic App identity performs the connector action, Sentinel and Defender record that Logic App identity as the native author or requestor. They do not show by default which Foundry agent triggered the workflow. You can correlate the call through Foundry and Logic App audit data, but that does not give the analyst an immediate answer while looking at the incident.
+{: .prompt-warning}
+
+For immediate analyst visibility, the workflow can add a short incident comment with the requesting agent and version, requested action, workflow run, and a correlation ID. I observed the agent details in the `x-ms-foundry-baggage` header on direct Foundry MCP calls. This gives the incident a useful **requested by the agent, approved by the analyst, executed by the Logic App** trail without changing the native execution identity.
+
+I treat that header as descriptive metadata, not authorization evidence: it is not publicly documented as a security contract and must be sanitized before it is shown in an HTML comment. The authenticated identities and platform audit logs remain the source of truth.
+
+With generalized values, the analyst-facing comment footer looks like this:
+
+```text
+Agent request metadata (informational)
+Agent: incident-response-agent
+Agent version: 3
+Foundry project: contoso-agentic-soc@proj-contoso-agentic-soc@AML
+Workflow run: 08580000000000000000000000000CU00
+Client request ID: 00000000-0000-4000-8000-000000000000
+```
 
 > To see how to set up Easy Auth for a Logic Apps MCP server, follow the [Logic Apps MCP guide](https://learn.microsoft.com/en-us/azure/logic-apps/create-model-context-protocol-server-standard#set-up-easy-auth-for-your-mcp-server). 
 {: .prompt-info}
@@ -169,22 +187,33 @@ Then remember the HTTP request trigger requirement. The portal-created connector
 
 With the tools attached, the agent chooses among them based on their descriptions and its instructions. Now it's up to you to provide the right guidance, context and constraints so the agent uses them correctly. For anything high-impact, back that up with approval inside the Logic App, since instructions guide the agent but only the workflow enforces.
 
-## 🤖 New Agent Object Model
+## 🔐 Optional enterprise pattern: govern MCP tools through APIM
 
-When I started working extensively with Foundry agents about six months ago, the identity model was one of the areas that caused the most confusion, especially when combined with MCP authentication. When should I use the shared project identity, and when should I use an agent's own identity?
+For one agent and two MCP servers, I would keep the direct connection shown above. Once response tools are shared across multiple agents or teams, Azure API Management becomes a useful optional gateway in front of the Logic Apps MCP endpoints. Microsoft documents this pattern for [governing existing MCP servers](https://learn.microsoft.com/en-us/azure/api-management/expose-existing-mcp-server), including Logic Apps-based tools.
 
-My first instinct was to use the agent identity, but it didn't work all the time this way. After some troubleshooting, I granted permissions to the project's managed identity instead, which resolved the issue. Later, I discovered that some agents only received their own identity after being published. For SOAR and agentic SOC scenarios, publishing agents is not typically part of the deployment model, so this behavior wasn't immediately obvious.
+APIM provides one caller-facing authentication boundary, rate limits, selected tool exposure, and central telemetry. The controls still remain layered:
 
-> **Fun fact:** This confused me for quite a while. Most of my work focused on hosted agents, but for quick ad hoc testing I often used prompt agents because they were convenient. Eventually, I realized that some of the agents I was testing still used the legacy agent object model, while newer ones were already based on the new model. At one point, I simply assigned permissions to both the per-agent identity and the project managed identity to avoid chasing authentication issues. Not particularly elegant, but it worked and kept me moving forward until I understood what was happening 😅
+- APIM defines the enterprise-approved MCP surface and ingress policy.
+- Foundry's `allowed_tools` limits what a particular agent may select.
+- Logic Apps owns human approval and decides whether the requested action executes.
+
+APIM can authenticate to the backend with its managed identity, while the Logic App identity continues to perform the Sentinel or Defender action. APIM's [MCP telemetry](https://learn.microsoft.com/en-us/azure/api-management/monitor-mcp-servers) adds tool usage, latency, and failure visibility, but it does not replace Foundry traces or Logic App run history. I see this as an enterprise control plane for shared tools, not a requirement for the smaller design in this post.
+
+> Foundry's automatic [AI Gateway routing for MCP tools](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/governance) is currently preview and applies only to new eligible MCP tools that do not use managed OAuth. Explicit APIM onboarding remains the predictable option for existing Logic Apps MCP endpoints.
 {: .prompt-info}
 
-That mix of legacy and new agent models was exactly what I was missing when I started designing agentic SOC architectures. With the new model, each agent receives its own identity from the outset, allowing multiple autonomous agents to coexist within the same Foundry project while maintaining separate permissions. This enables a true least-privilege approach and I no longer need to create separate projects purely to reduce the blast radius of a shared project identity.
+## 🤖 New Agent Object Model
 
-I am not entirely sure when Microsoft introduced this change to the agent object model to become the new default. I first noticed references to the new experience around April 2026, along with guidance to transition by July 2026. However, I still encountered agents created in July that were based on the legacy model, which added to the confusion when trying to understand the identity requirements across different agent types. Looking back, many of the authentication issues I experienced were not caused by MCP itself, but by the fact that both identity models coexisted during the transition period and I was not aware that there are 2 different agents object models.
+When I started working extensively with Foundry agents about six months ago, the identity model was one of the areas that caused the most confusion, especially together with MCP authentication. When should I use the shared project identity, and when should I use an agent's own identity?
 
-But anyway, the MCP connection types themselves haven't changed. What changed is how an agent gets its identity: a new-model agent gets its own identity at creation, while a legacy agent may keep using the shared project identity until you recreate it. **At the time of writing**, the MCP authentication page still uses the older before/after-publish wording, so check the [migration guidance](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/migrate-agent-applications) to see which identity your agent actually has.
+My first instinct was to use the agent identity, but that did not work consistently. After some troubleshooting, I granted permissions to the project's managed identity instead, which resolved the issue in those tests. Later, I discovered that some of my agents still used the legacy object model, where unpublished agents shared an identity, while newer agents already had their own identity from creation.
 
-This applies to **prompt agents as well as hosted agents** when they are created through the new agent object model. According to the current [agent configuration guidance](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/configure-agent), every agent has a stable endpoint from creation. For how the agent's own identity fits in, see [agent identity concepts](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/agent-identity).
+> **Fun fact:** This confused me for quite a while. Most of my work focused on hosted agents, but for quick ad hoc testing I often used prompt agents because they were convenient. At one point, I simply assigned permissions to both the per-agent identity and the project managed identity to avoid chasing authentication issues. Not particularly elegant, but it worked and kept me moving until I understood that both agent models were present in the same project 😅
+{: .prompt-info}
+
+That mix of legacy and new agents was the missing piece. New-model agents receive a unique Entra agent identity and stable endpoint when they are created, which allows several autonomous agents in one project to have separate permissions. A legacy agent may still use the shared project identity, and Microsoft currently requires recreating it to move to the new model. The [migration guidance](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/migrate-agent-applications) explains how to identify each type.
+
+The MCP authentication choices themselves have not changed: use the agent identity for separate permissions or the project managed identity for shared access. Before assigning roles, verify both the agent model and the authentication type configured on the MCP connection instead of assuming the identity from the agent type or publication state. This applies to prompt and hosted agents; the [agent identity concepts](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/agent-identity) page covers the underlying identity flow.
 
 ## ⏳ The approval timeout trap
 
@@ -280,4 +309,4 @@ There is an API route if you need the flexibility now: [Microsoft Graph case man
 
 ## 📝 Conclusion
 
-Logic Apps gave my Foundry agent a practical response layer without a pile of custom MCP code. I could reuse the Sentinel and Defender connectors, keep human approval in the workflow, and let an autonomous agent focus on investigation and choosing the right tool. The small but crucial design detail was returning **approval pending** before waiting for a human — and treating the final action result as a separate event.
+Logic Apps gave my Foundry agent a practical response layer without a pile of custom MCP code. I reused the existing Sentinel and Defender connectors, kept human approval inside the workflow, and let the autonomous agent focus on what it's good at: investigating and picking the right tool. One small design detail made all the difference: the workflow returns **approval pending** right away, before it waits on a human. That gives the agent immediate confirmation that the action was triggered and tells it nothing more is needed from its side for now.
