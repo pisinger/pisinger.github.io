@@ -11,8 +11,11 @@ Running a Linux container on Windows usually begins with the same instruction: i
 
 Microsoft is now adding a different path directly to WSL. The new **WSL Container** public preview brings a built-in container CLI called `wslc.exe` and an API that allows native Windows applications to run Linux containers. The CLI feels surprisingly familiar - but the API is the real game changer. A Windows application can now treat a Linux-backed service, database or processing engine as part of its own application architecture without using Docker Desktop or docker engine inside your distro as the vehicle to deploy and operate it.
 
-> WSL Container is currently available in the WSL pre-release channel. Microsoft is aiming for general availability in autumn 2026.
+> ~~WSL Container is currently available in the WSL pre-release channel. Microsoft is aiming for general availability in autumn 2026.~~
 {: .prompt-warning}
+
+> Update: WSLC went [GA on 29 Sep 2026](https://blogs.windows.com/windowsdeveloper/2026/09/29/wsl-containers-now-generally-available/).
+{: .prompt-tip}
 
 > The official announcement and documentation are available here: <https://devblogs.microsoft.com/commandline/wsl-container-is-now-available-for-public-preview/> and <https://learn.microsoft.com/en-us/windows/wsl/wsl-container>
 {: .prompt-info}
