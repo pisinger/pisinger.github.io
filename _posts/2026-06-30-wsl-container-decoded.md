@@ -201,8 +201,11 @@ According to Microsoft, the goal is parity: a Linux workload should generate the
 
 It also makes the native application scenario more realistic. If a Windows application quietly starts a Linux database, processing engine or security tool behind its frontend, the security team still needs visibility into what happens inside that container. Extending the existing MDE integration is the logical place to provide it.
 
-> ⚠️ MDE awareness of WSL container events is currently a **private preview**. It should not be described as generally available coverage yet, and I have not validated its telemetry in my own environment. Microsoft provides a [private-preview signup form](https://forms.office.com/r/KFeDkeMpvS) from the announcement: <https://devblogs.microsoft.com/commandline/wsl-container-is-now-available-for-public-preview/>
+> ~~MDE awareness of WSL container events is currently a **private preview**. It should not be described as generally available coverage yet, and I have not validated its telemetry in my own environment. Microsoft provides a [private-preview signup form](https://forms.office.com/r/KFeDkeMpvS) from the announcement: <https://devblogs.microsoft.com/commandline/wsl-container-is-now-available-for-public-preview/>~~
 {: .prompt-warning}
+
+> Update: MDE support for WSL containers went [GA on 29 Sep 2026](https://learn.microsoft.com/en-us/defender-endpoint/linux-whatsnew) alongside [WSLC GA](https://blogs.windows.com/windowsdeveloper/2026/09/29/wsl-containers-now-generally-available/).
+{: .prompt-tip}
 
 ## 🛠️ Installing the preview
 
