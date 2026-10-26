@@ -1,5 +1,5 @@
 ---
-title: MDE EDR Sensor Updates via Microsoft Update - MsSense Moves to ProgramData
+title: Defender EDR Sensor Updates via Microsoft Update - MsSense Moves to ProgramData
 author: pit
 date: 2026-10-26
 categories: [blogging]
