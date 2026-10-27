@@ -58,7 +58,7 @@ The practical approach is to start with the smallest useful list, then add domai
 
 Proxy configuration is only effective if the workload uses it. The bundled agent images receive standard upper- and lowercase proxy variables, and their startup self-test checks that the expected path works and direct egress does not. Arbitrary custom images may ignore proxy variables or use a non-HTTP protocol. The network still blocks direct connections, so those requests fail rather than bypass Squid, but the application may simply stop working. SSH URLs, arbitrary TCP, UDP, and direct sockets are not supported by this HTTP(S) egress design.
 
-One caveat: external DNS may still resolve on some WSLc builds. Use `-StrictDns` when DNS egress must fail closed; the launch-time self-test then fails if external DNS resolution succeeds.
+The startup self-test probes external DNS resolution. With `-StrictDns`, the session fails to start if that probe succeeds. This is a startup check, not DNS filtering.
 
 ## 🧅 Optional Tor changes only the tool path
 
@@ -79,7 +79,8 @@ The launcher checks for WSLc internal-network support and refuses to proceed if 
 
 For an existing repository, pass its path as `-Workspace`. Use `-WorkspaceReadOnly` for tasks that only need to inspect files, or use a disposable worktree when the agent must edit. A writable host workspace is not just a file permission detail: an agent can change scripts, Git hooks, or build configuration that a host-side tool might run later.
 
-The repo also includes `Start-RestrictedContainer.ps1` for wrapping an arbitrary image in the proxy-only network design. That gives custom containers the network boundary, but not the agent-specific image, startup checks, or filesystem hardening. To add another CLI as a first-class agent, adapt its Dockerfile and the launcher configuration as well. Network containment and workload hardening are separate responsibilities.
+> The repo also includes `Start-RestrictedContainer.ps1` for wrapping an arbitrary image in the proxy-only network design. That gives custom containers the network boundary, but not the agent-specific image, startup checks, or filesystem hardening. To add another CLI as a first-class agent, adapt its Dockerfile and the launcher configuration as well. Network containment and workload hardening are separate responsibilities.
+{: .prompt-info}
 
 ## 🧭 What this pattern does and does not claim
 
@@ -91,7 +92,8 @@ The project is not an implementation of Microsoft eXecution Container (MXC). MXC
 
 These boundaries are useful because they keep the claim honest: this design can remove direct network egress, constrain HTTP(S) destinations, keep an Ollama key out of the agent process, and make proxy activity visible. It does not provide per-process filesystem policy, inspect encrypted traffic, or make a writable workspace safe by itself.
 
-The full [repository README](https://github.com/pisinger/wslc-agent-sandbox) includes the scenario matrix, build instructions, and configuration reference. The [security policy](https://github.com/pisinger/wslc-agent-sandbox/blob/main/SECURITY.md) documents the trust assumptions and known limitations.
+> The full [repository README](https://github.com/pisinger/wslc-agent-sandbox) includes the scenario matrix, build instructions, and configuration reference. The [security policy](https://github.com/pisinger/wslc-agent-sandbox/blob/main/SECURITY.md) documents the trust assumptions and known limitations.
+{: .prompt-tip}
 
 ## 📝 Conclusion
 
