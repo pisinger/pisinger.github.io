@@ -16,6 +16,9 @@ Inspired by [Azure Container Apps Sandboxes](https://learn.microsoft.com/azure/c
 > **Disclaimer:** This is a local WSLc proof of concept, not an MXC implementation or an equivalent to Azure Container Apps Sandboxes. See the [source repository](https://github.com/pisinger/wslc-agent-sandbox) for its code, setup, and security scope.
 {: .prompt-info}
 
+> **Use boundary:** Treat this as a single-user experiment. The host, WSLc runtime, container images, and sidecars remain trusted; this design is not a production or hostile multi-tenant security boundary.
+{: .prompt-warning}
+
 ## 🧩 The architecture: one workload, two egress paths
 
 The agent starts on an internal WSLc network with no gateway or NAT, so it has no direct route for ordinary internet traffic. PowerShell creates the per-session networks and containers, wires up the proxies, starts the workload, and removes the resources when the session exits.
@@ -30,6 +33,8 @@ The agent has two outbound paths, each with a different job:
 
 1. **Tool and web traffic** uses the HTTP(S) proxy environment variables and reaches Squid. Squid permits configured destinations, normally over HTTPS on port 443.
 2. **Ollama model traffic** goes to the API proxy on the internal network. The API proxy attaches the real key and makes the HTTPS request to Ollama.
+
+![Diagram showing tool traffic routed through Squid, model traffic through the key-holding API proxy, and direct egress blocked](/assets/img/posts/wslc-sandbox-for-cli-agents/credential-boundary.svg)
 
 That second route is deliberately separate. Squid is a destination filter; it does not need the model credential. The API proxy is a credential boundary; it does not act as a general-purpose web proxy. Keeping the responsibilities apart makes it easier to reason about what each component can see and what happens when a setting changes.
 
@@ -77,6 +82,8 @@ For an existing repository, pass its path as `-Workspace`. Use `-WorkspaceReadOn
 The repo also includes `Start-RestrictedContainer.ps1` for wrapping an arbitrary image in the proxy-only network design. That gives custom containers the network boundary, but not the agent-specific image, startup checks, or filesystem hardening. To add another CLI as a first-class agent, adapt its Dockerfile and the launcher configuration as well. Network containment and workload hardening are separate responsibilities.
 
 ## 🧭 What this pattern does and does not claim
+
+![Diagram summarizing the controls this design provides and the trust assumptions and limits that remain](/assets/img/posts/wslc-sandbox-for-cli-agents/boundary-and-limits.svg)
 
 This is a local, single-user containment pattern for experimenting with OpenCode, GitHub Copilot CLI, or another containerized workload. It is not a hostile multi-tenant boundary. The Windows user, host, WSLc runtime, container images, and sidecars remain trusted; someone with the same user's WSLc access can inspect and reconfigure the session.
 

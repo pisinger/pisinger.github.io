@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="340" viewBox="0 0 1100 340" role="img" aria-labelledby="title desc">
+  <title id="title">What this local sandbox controls and what remains trusted</title>
+  <desc id="desc">The design blocks direct egress, filters HTTP(S) destinations, keeps the Ollama key out of the agent process, and records proxy activity. It trusts the host and runtime, does not decrypt TLS, and does not enforce filesystem policy.</desc>
+  <defs><style>
+    .bg{fill:#101923}.card{fill:#172532;stroke:#33485b;stroke-width:2}.yes{stroke:#31a779}.limit{stroke:#d49c52}.head{font:700 22px system-ui,sans-serif;fill:#f2f6fa}.section{font:700 15px system-ui,sans-serif;letter-spacing:1px}.item{font:15px system-ui,sans-serif;fill:#e4ebf1}.sub{font:13px system-ui,sans-serif;fill:#aebdca}
+  </style></defs>
+  <rect class="bg" width="1100" height="340" rx="18"/>
+  <text class="head" x="36" y="43">Read the boundary before using the sandbox</text>
+  <rect class="card yes" x="36" y="72" width="500" height="230" rx="14"/>
+  <rect class="card limit" x="564" y="72" width="500" height="230" rx="14"/>
+  <text class="section" x="62" y="110" fill="#68d3a4">CONTROLLED BY THE DESIGN</text>
+  <text class="item" x="62" y="151">✓  Direct internet egress from the workload</text>
+  <text class="item" x="62" y="187">✓  HTTP(S) destinations through Squid</text>
+  <text class="item" x="62" y="223">✓  Ollama key exposure to the agent process</text>
+  <text class="item" x="62" y="259">✓  Proxy activity captured for review</text>
+  <text class="section" x="590" y="110" fill="#f0bd70">STILL TRUSTED OR OUT OF SCOPE</text>
+  <text class="item" x="590" y="151">•  Windows host, WSLc runtime, images, sidecars</text>
+  <text class="item" x="590" y="187">•  TLS contents and data sent to allowed hosts</text>
+  <text class="item" x="590" y="223">•  Per-process filesystem policy</text>
+  <text class="item" x="590" y="259">•  Hostile multi-tenant isolation</text>
+  <text class="sub" x="550" y="326" text-anchor="middle">Local, single-user proof of concept · review the repo's security scope before use</text>
+</svg>
