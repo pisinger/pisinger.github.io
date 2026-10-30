@@ -8,6 +8,21 @@
   display: none;
 }
 
+/* Keep article tables inside the reading column and favor word-boundary wraps. */
+.content .table-wrapper > table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+
+  th,
+  td {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    vertical-align: top;
+  }
+}
+
 /* ---------- table expand ---------- */
 
 .table-expand-box {
