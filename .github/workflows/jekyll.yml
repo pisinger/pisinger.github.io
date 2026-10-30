@@ -31,7 +31,7 @@ concurrency:
 jobs:
   # Build job
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       # Needed by the prune step, which commits the removal of orphaned entries.
       contents: write
