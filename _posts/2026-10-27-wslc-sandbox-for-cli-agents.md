@@ -75,6 +75,38 @@ Build the images once, then launch an agent session from PowerShell. For example
 .\Start-AgentSidecar.ps1 -Monitor
 ```
 
+That starts the default OpenCode setup with Ollama key injection and the live monitor. For a review of an existing repository, I would mount it read-only and keep the CLI interactive:
+
+```powershell
+.\Start-AgentSidecar.ps1 `
+    -Workspace C:\src\myrepo `
+    -WorkspaceReadOnly `
+    -NoAuto `
+    -Monitor
+```
+
+The same network and key boundary can be used with Copilot BYOK, or with Copilot's native GitHub authentication when that identity is needed:
+
+```powershell
+# Copilot using Ollama through the API proxy
+.\Start-AgentSidecar.ps1 -Agent copilot -Monitor
+
+# Copilot using GitHub authentication
+.\Start-AgentSidecar.ps1 -Agent copilot -CopilotAuth github -Monitor
+```
+
+For a task that needs source-network privacy on general tool traffic, Tor can replace Squid's direct egress. The model API path remains direct to Ollama:
+
+```powershell
+.\Start-AgentSidecar.ps1 `
+    -Tor `
+    -Monitor `
+    -NoAuto `
+    -AllowDomains "learn.microsoft.com pisinger.tngx-voice.com"
+```
+
+I would start with a narrow allowlist, key injection, a non-root agent, and a new, read-only, or disposable worktree. Copilot GitHub authentication deliberately puts identity in the agent, while writable host mounts let it change files that may run later through hooks or build tools. Those are task-specific choices, not equivalent defaults.
+
 The launcher checks for WSLc internal-network support and refuses to proceed if the required network mode is unavailable. It creates session-scoped networks, starts the API proxy and Squid, optionally starts the monitor or Tor gateway, then starts the agent. The agent-side egress check runs before the CLI. When the workload exits or the launcher is interrupted, resources created for that session are stopped and removed.
 
 For an existing repository, pass its path as `-Workspace`. Use `-WorkspaceReadOnly` for tasks that only need to inspect files, or use a disposable worktree when the agent must edit. A writable host workspace is not just a file permission detail: an agent can change scripts, Git hooks, or build configuration that a host-side tool might run later.
@@ -92,7 +124,7 @@ The project is not an implementation of Microsoft eXecution Container (MXC). MXC
 
 These boundaries are useful because they keep the claim honest: this design can remove direct network egress, constrain HTTP(S) destinations, keep an Ollama key out of the agent process, and make proxy activity visible. It does not provide per-process filesystem policy, inspect encrypted traffic, or make a writable workspace safe by itself.
 
-> The full [repository README](https://github.com/pisinger/wslc-agent-sandbox) includes the scenario matrix, build instructions, and configuration reference. The [security policy](https://github.com/pisinger/wslc-agent-sandbox/blob/main/SECURITY.md) documents the trust assumptions and known limitations.
+> The [repository README](https://github.com/pisinger/wslc-agent-sandbox) includes the scenario matrix and build instructions. See the [configuration reference](https://github.com/pisinger/wslc-agent-sandbox/blob/main/docs/CONFIGURATION.md), [operations guide](https://github.com/pisinger/wslc-agent-sandbox/blob/main/docs/OPERATIONS.md), [Tor guide](https://github.com/pisinger/wslc-agent-sandbox/blob/main/TOR.md), and [security policy](https://github.com/pisinger/wslc-agent-sandbox/blob/main/SECURITY.md) for the full set of switches and trust assumptions.
 {: .prompt-tip}
 
 ## 📝 Conclusion
