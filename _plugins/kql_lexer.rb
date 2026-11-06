@@ -27,6 +27,8 @@ module Rouge
         startswith !startswith endswith !endswith matches regex like !like
         has_any has_all contains_cs startswith_cs endswith_cs
       ].freeze
+      NEGATED_WORD_OPERATORS = WORD_OPERATORS.grep(/\A!/).freeze
+      PLAIN_WORD_OPERATORS = WORD_OPERATORS - NEGATED_WORD_OPERATORS
 
       TYPES = %w[
         bool boolean datetime decimal dynamic guid int long real string timespan
@@ -45,7 +47,8 @@ module Rouge
       ].freeze
 
       KEYWORD_PATTERN = Regexp.union(OPERATORS.sort_by { |word| -word.length })
-      WORD_OPERATOR_PATTERN = Regexp.union(WORD_OPERATORS.sort_by { |word| -word.length })
+      WORD_OPERATOR_PATTERN = Regexp.union(NEGATED_WORD_OPERATORS.sort_by { |word| -word.length })
+      PLAIN_WORD_OPERATOR_PATTERN = Regexp.union(PLAIN_WORD_OPERATORS.sort_by { |word| -word.length })
       TYPE_PATTERN = Regexp.union(TYPES)
       FUNCTION_PATTERN = Regexp.union(FUNCTIONS.sort_by { |word| -word.length })
 
@@ -63,7 +66,10 @@ module Rouge
         rule %r/\b\d+\.\d+(?:[eE][+-]?\d+)?\b/, Num::Float
         rule %r/\b\d+(?:[eE][+-]?\d+)?\b/, Num::Integer
         rule %r/\b(?:#{TYPE_PATTERN})\b/i, Keyword::Type
-        rule %r/\b(?:#{WORD_OPERATOR_PATTERN})\b/i, Operator::Word
+        # Negated operators start with punctuation, so a leading word boundary
+        # would leave `!` unconsumed (Rouge then renders it as an error).
+        rule %r/(?:#{WORD_OPERATOR_PATTERN})\b/i, Operator::Word
+        rule %r/\b(?:#{PLAIN_WORD_OPERATOR_PATTERN})\b/i, Operator::Word
         rule %r/\b(?:#{FUNCTION_PATTERN})\b(?=\s*\()/i, Name::Function
         rule %r/\b(?:#{KEYWORD_PATTERN})\b/i, Keyword
         rule %r/\$[A-Za-z_][A-Za-z0-9_]*/, Name::Variable
