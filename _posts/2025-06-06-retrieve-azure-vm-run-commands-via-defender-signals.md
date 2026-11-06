@@ -14,22 +14,23 @@ Hi there! I was recently asked whether it's possible to retrieve details about t
 > Latest KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-run-commands-hunting.kql).
 {: .prompt-tip}
 
-## Update: why Run Command deserves attention again
+## 🔥 Update: why Run Command deserves attention again
 
 > Below section updated 06-Nov 2026
 {: .prompt-warning}
 
 Azure Run Command is back in focus after Microsoft documented its abuse by **Storm-2949** in a 2026 campaign. The group used Run Command to execute scripts on Azure VMs, including an attempt to request a managed-identity token from the Instance Metadata Service (IMDS) and use it to access Key Vault. In the reported case, that attempt failed because the VM's managed identity did not have the required Key Vault permissions. The actor also used Run Command to deploy remote access software and reduce host security visibility on some VMs. See [Microsoft's Storm-2949 investigation](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/).
 
-This is the gap this hunt is meant to help close: **Azure Activity Logs can tell you that Run Command was invoked; endpoint telemetry may reveal the script or follow-on activity.** The endpoint view depends on the operating system, Defender configuration, retention, and the execution path. Treat it as an investigation signal, not a complete audit record.
+> This is the gap this hunt is meant to help close: **Azure Activity Logs can tell you that Run Command was invoked; endpoint telemetry may reveal the script or follow-on activity.**. Treat it as an investigation signal, not a complete audit record.
+{: .prompt-info}
 
-### A persistent attack vector as agentic attacks grow in importance
+### 🤖 A persistent attack vector as agentic attacks grow in importance
 
 Run Command is a built-in Azure management capability, so its abuse is not unique to one threat actor. Any attacker who gains an identity with the required permissions can potentially use it to execute code on reachable VMs. Agentic tooling could make it easier to chain reconnaissance, permission discovery, and remote execution quickly across a cloud environment. Microsoft has separately reported agentic-driven cloud attacks by Storm-3168, illustrating that this broader shift is already being observed; that reporting does **not** attribute Run Command use to Storm-3168, nor does it say Storm-2949 used agents. The practical takeaway is to monitor the control-plane operation and investigate the resulting endpoint activity regardless of whether the operator is human, automated, or a combination of both. [Microsoft on Storm-3168](https://www.microsoft.com/en-us/security/blog/2026/09/25/storm-3168-agentic-driven-cloud-attacks-using-compromised-service-principals/).
 
 MITRE ATT&CK tracks this broader behavior as [T1651, Cloud Administration Command](https://attack.mitre.org/techniques/T1651/), which explicitly includes Azure Run Command. Its guidance recommends limiting accounts that can run commands on VMs, using temporary privileged access where possible, and correlating cloud control-plane activity with host-level execution. That maps directly to the RBAC controls and Defender hunt in this post.
 
-## Reduce exposure without losing visibility
+## 🛡️ Reduce exposure without losing visibility
 
 - **Restrict the permission.** Running an action Run Command requires `Microsoft.Compute/virtualMachines/runCommand/action`. The built-in **Virtual Machine Contributor** role includes it, as do broader roles. Review role assignments at the VM and inherited scopes; use a narrowly scoped custom role where appropriate. For privileged roles, consider eligible, time-bound assignments through [Microsoft Entra Privileged Identity Management](https://learn.microsoft.com/en-us/azure/active-directory/privileged-identity-management/pim-resource-roles-assign-roles). See [Microsoft's Run Command access guidance](https://learn.microsoft.com/en-us/azure/virtual-machines/windows/run-command).
 - **For Azure Arc servers, block only the Run Command extension where it is not needed.** The Azure Connected Machine agent supports a locally enforced extension allowlist or blocklist. For example, on a Windows Arc server:
@@ -38,13 +39,14 @@ MITRE ATT&CK tracks this broader behavior as [T1651, Cloud Administration Comman
   azcmagent config set extensions.blocklist "Microsoft.CPlat.Core/RunCommandHandlerWindows"
   ```
 
-  Use `Microsoft.CPlat.Core/RunCommandHandlerLinux` for Linux. Microsoft recommends allowlists for sensitive Arc servers when practical. These local Arc controls do not apply to Azure VMs. See [Arc extension security](https://learn.microsoft.com/en-us/azure/azure-arc/servers/security-extensions).
+  > Use `Microsoft.CPlat.Core/RunCommandHandlerLinux` for Linux. Microsoft recommends allowlists for sensitive Arc servers when practical. These local Arc controls do not apply to Azure VMs. See [Arc extension security](https://learn.microsoft.com/en-us/azure/azure-arc/servers/security-extensions).
+  {: .prompt-warning}
 - **Avoid disabling the Arc extension manager as a blanket control.** Extensions can provide monitoring and security capabilities; Microsoft notes that extension-manager-hosted agents such as Azure Monitor Agent do not run when the manager is disabled. Review the extensions and dependencies required in your environment before enforcing an allowlist.
 - **Keep both sides of the investigation.** Alert on the Azure control-plane operation and correlate it with Defender endpoint events. A control-plane event establishes who invoked the action and when; endpoint telemetry can add what was written or executed, when available.
 
 The sections below show where the scripts may be stored locally and how I correlate the related Defender telemetry. The query is useful for hunting, but it does not guarantee full script recovery on every VM.
 
-### Example custom role permission patterns
+### 🔐 Example custom role permission patterns
 
 The following are **starting points, not drop-in role definitions**. Review the required permissions for your environment and test the resulting role at the intended scope. In particular, `NotActions` subtracts permissions only from the wildcard in that role; it is **not a deny** and does not override permissions granted by another role assignment. See [how Azure custom role exclusions work](https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles-portal#exclude-permissions).
 
@@ -93,7 +95,8 @@ For a separate operator role, grant only the Run Command operations the operator
 
 Managed Run Command uses a separate write permission; its [feature-specific access guidance](https://learn.microsoft.com/en-us/azure/virtual-machines/windows/run-command-managed) names `Microsoft.Compute/virtualMachines/runCommand/write`. The Compute permission catalog lists the Managed Run Command child-resource operations under `Microsoft.Compute/virtualMachines/runCommands/*`. Diagnostic Run Command uses `Microsoft.Compute/virtualMachines/diagnosticRunCommand/action`. Add permissions only for features intentionally in scope, and verify the effective permissions in your environment. See the [Compute permission list](https://learn.microsoft.com/en-us/azure/role-based-access-control/permissions/compute).
 
-Keep Azure Arc permissions in a separate role: Arc uses the `Microsoft.HybridCompute` resource provider and has its own local agent controls. Check the current [Compute permission list](https://learn.microsoft.com/en-us/azure/role-based-access-control/permissions/compute) and the [Arc Run Command access guidance](https://learn.microsoft.com/en-us/azure/azure-arc/servers/run-command) before deploying either role.
+> Keep Azure Arc permissions in a separate role: Arc uses the `Microsoft.HybridCompute` resource provider and has its own local agent controls. Check the current [Compute permission list](https://learn.microsoft.com/en-us/azure/role-based-access-control/permissions/compute) and the [Arc Run Command access guidance](https://learn.microsoft.com/en-us/azure/azure-arc/servers/run-command) before deploying either role.
+{: .prompt-info}
 
 See below example result when running above query in Defender Advanced Hunting:
 
@@ -109,7 +112,7 @@ There are two Azure VM Run Command modalities, and they use different control-pl
 - **Action Run Command** is the original one-off operation, such as `az vm run-command invoke` or the portal's Run command experience. Running it requires `Microsoft.Compute/virtualMachines/runCommand/action`. It runs as **System on Windows** or **root on Linux**.
 - **Managed Run Command** represents a command as a VM child resource (`Microsoft.Compute/virtualMachines/runCommands`). It supports longer-running work, multiple commands, sequencing, and a configurable execution user. Microsoft's feature-specific access guidance names `Microsoft.Compute/virtualMachines/runCommand/write` as the permission to run one; the Compute permission catalog lists the child-resource operations as `Microsoft.Compute/virtualMachines/runCommands/*`.
 
-### Action Run Command examples
+### ⚡ Action Run Command examples
 
 Run a shell script on a Linux VM with Azure CLI:
 
@@ -127,7 +130,7 @@ Run a PowerShell command on a Windows VM with Az PowerShell:
 Invoke-AzVMRunCommand -ResourceGroupName "myRG" -Name "myVM" -CommandId "RunPowerShellScript" -ScriptString "Write-Output 'Hello World!'"
 ```
 
-### Managed Run Command examples
+### ⚙️ Managed Run Command examples
 
 Create a Managed Run Command on a Linux VM with Azure CLI:
 
