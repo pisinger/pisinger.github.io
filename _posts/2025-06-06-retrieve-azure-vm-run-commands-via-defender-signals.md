@@ -206,7 +206,7 @@ To identify **Action and Managed Run Command** executions via Defender, you can 
 > Latest KQL query can be found in my [GitHub repo](https://github.com/pisinger/hunting/blob/main/defender-azure-vm-run-commands-hunting.kql).
 {: .prompt-tip}
 
-```shell
+```kql
 let RunCommandsWindows = union DeviceFileEvents, DeviceProcessEvents
     | where InitiatingProcessFileName == "runcommandextension.exe" and (FileName contains ".ps1" and isnotempty(FileSize) or ProcessCommandLine contains '"cmd" /Cpowershell' )
     | extend FileName = iff(isnotempty(ProcessCommandLine), split(ProcessCommandLine, " ")[-1], FileName)
