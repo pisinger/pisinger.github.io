@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+  <title id="title">Service endpoint traffic bypasses the hub firewall</title>
+  <desc id="desc">A workload subnet sends traffic to a route decision. Matching supported Azure PaaS prefixes take an automatically added service endpoint route directly over the Azure backbone, bypassing the hub firewall. Other destinations follow the default route through the hub firewall.</desc>
+  <defs>
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#65d49a"/></marker>
+    <marker id="blueArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#63a9ff"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eaf0f7}.title{font-size:29px;font-weight:700}.sub{font-size:15px;fill:#adbdce}.h{font-size:18px;font-weight:700}.label{font-size:15px;font-weight:600}.small{font-size:13px;fill:#cbd6e3}.tiny{font-size:12px;fill:#a8b7c8}.vnet{fill:#142332;stroke:#47719b;stroke-width:2;stroke-dasharray:8 5}.box{fill:#1c2a3a;stroke:#54718e;stroke-width:1.5}.route{fill:#183025;stroke:#65d49a;stroke-width:2}.firewall{fill:#302331;stroke:#c09aff;stroke-width:2}.paas{fill:#342e1e;stroke:#f3c76b;stroke-width:2}.flowGreen{fill:none;stroke:#65d49a;stroke-width:3;marker-end:url(#greenArrow)}.flowBlue{fill:none;stroke:#63a9ff;stroke-width:3;marker-end:url(#blueArrow)}
+    </style>
+  </defs>
+  <rect width="1400" height="680" rx="18" fill="#0b121a"/>
+  <text x="42" y="48" class="title">Service endpoint traffic can bypass forced-tunnel egress</text>
+  <text x="42" y="77" class="sub">The automatically added service-prefix system route is more specific than the 0.0.0.0/0 UDR, so it takes priority.</text>
+
+  <rect x="50" y="226" width="276" height="162" rx="15" class="vnet"/>
+  <text x="188" y="264" text-anchor="middle" class="label">Workload subnet</text>
+  <text x="188" y="294" text-anchor="middle" class="small">Service endpoint enabled</text>
+  <text x="188" y="320" text-anchor="middle" class="tiny">example: Microsoft.Sql</text>
+  <text x="188" y="357" text-anchor="middle" class="tiny">UDR: 0.0.0.0/0 → hub firewall</text>
+
+  <path d="M326 307H445" class="flowGreen"/>
+  <rect x="455" y="235" width="280" height="144" rx="15" class="route"/>
+  <text x="595" y="273" text-anchor="middle" class="label">Route selection</text>
+  <text x="595" y="303" text-anchor="middle" class="small">Match service prefix?</text>
+  <text x="595" y="334" text-anchor="middle" class="tiny">longest-prefix match selects route</text>
+
+  <!-- Effective routes on this subnet: the longer service prefix wins. -->
+  <rect x="50" y="410" width="685" height="145" rx="13" fill="#111c28" stroke="#526b83" stroke-width="1.5"/>
+  <text x="72" y="438" class="label">Effective routes on the subnet</text>
+  <text x="72" y="466" class="tiny" font-weight="700">DESTINATION</text>
+  <text x="338" y="466" class="tiny" font-weight="700">SOURCE / NEXT HOP</text>
+  <path d="M70 476H715" stroke="#526b83" stroke-width="1"/>
+  <text x="72" y="500" class="small">SQL public prefixes</text>
+  <text x="338" y="500" class="small">System · VirtualNetworkServiceEndpoint</text>
+  <text x="72" y="530" class="small">0.0.0.0/0</text>
+  <text x="338" y="530" class="small">UDR · VirtualAppliance (hub firewall)</text>
+
+  <!-- Matching service endpoint traffic takes the direct upper path. -->
+  <path d="M735 270C820 270 813 164 904 164H1052" class="flowGreen"/>
+  <text x="883" y="143" text-anchor="middle" class="tiny">YES · service endpoint route</text>
+  <rect x="1064" y="119" width="270" height="92" rx="13" class="paas"/>
+  <text x="1199" y="153" text-anchor="middle" class="label">Supported Azure PaaS</text>
+  <text x="1199" y="180" text-anchor="middle" class="small">public service IP · subnet allowed</text>
+  <text x="901" y="195" text-anchor="middle" class="tiny">Azure backbone</text>
+  <rect x="797" y="224" width="217" height="36" rx="9" fill="#38252b" stroke="#ed8796" stroke-width="1.5"/>
+  <text x="905" y="248" text-anchor="middle" class="tiny">BYPASSES HUB FIREWALL</text>
+
+  <!-- Non-matching destinations follow the UDR through the firewall. -->
+  <path d="M735 345C809 345 808 492 895 492" class="flowBlue"/>
+  <text x="824" y="398" text-anchor="middle" class="tiny">NO · default route</text>
+  <rect x="906" y="447" width="188" height="92" rx="13" class="firewall"/>
+  <text x="1000" y="481" text-anchor="middle" class="label">Hub firewall</text>
+  <text x="1000" y="508" text-anchor="middle" class="small">inspection / policy</text>
+  <path d="M1094 493H1170" class="flowBlue"/>
+  <rect x="1180" y="447" width="154" height="92" rx="13" class="box"/>
+  <text x="1257" y="481" text-anchor="middle" class="label">Other</text>
+  <text x="1257" y="508" text-anchor="middle" class="small">destinations</text>
+
+  <rect x="50" y="578" width="1284" height="54" rx="12" fill="#111c28" stroke="#526b83" stroke-width="1.5"/>
+  <text x="692" y="611" text-anchor="middle" class="small">Matching service traffic uses its public endpoint over Azure backbone and bypasses firewall inspection. Verify effective routes for your subnet.</text>
+</svg>

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="690" viewBox="0 0 1400 690" role="img" aria-labelledby="title desc">
+  <title id="title">Private endpoint and service endpoint compared</title>
+  <desc id="desc">Two side-by-side diagrams show a private endpoint using a private IP and private DNS to reach a service, and a service endpoint using the service public address with subnet identity and service firewall rules.</desc>
+  <defs>
+    <marker id="blueArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#63a9ff"/></marker>
+    <marker id="greenArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#65d49a"/></marker>
+    <marker id="goldArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#f3c76b"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eaf0f7}.title{font-size:30px;font-weight:700}.sub{font-size:15px;fill:#adbdce}.h{font-size:19px;font-weight:700}.label{font-size:15px;font-weight:600}.small{font-size:13px;fill:#cbd6e3}.tiny{font-size:12px;fill:#a8b7c8}.panel{fill:#111c28;stroke:#526b83;stroke-width:2}.vnet{fill:#142332;stroke:#47719b;stroke-width:2;stroke-dasharray:8 5}.box{fill:#1c2a3a;stroke:#54718e;stroke-width:1.5}.private{fill:#153328;stroke:#65d49a;stroke-width:2}.public{fill:#342e1e;stroke:#f3c76b;stroke-width:2}.blue{fill:none;stroke:#63a9ff;stroke-width:2.5;marker-end:url(#blueArrow)}.green{fill:none;stroke:#65d49a;stroke-width:2.5;marker-end:url(#greenArrow)}.gold{fill:none;stroke:#f3c76b;stroke-width:2.5;marker-end:url(#goldArrow)}
+    </style>
+  </defs>
+  <rect width="1400" height="690" rx="18" fill="#0b121a"/>
+  <text x="42" y="52" class="title">Two endpoint types, two different network paths</text>
+  <text x="42" y="80" class="sub">The endpoint choice changes addressing, DNS, and how the destination authorizes the subnet.</text>
+
+  <rect x="36" y="112" width="654" height="500" rx="16" class="panel"/>
+  <text x="62" y="151" class="h">Private endpoint · private IP path</text>
+  <text x="62" y="178" class="small">A NIC in your VNet represents a specific Private Link target.</text>
+  <rect x="62" y="213" width="330" height="222" rx="14" class="vnet"/>
+  <text x="82" y="245" class="label">Your VNet</text>
+  <rect x="88" y="274" width="124" height="78" rx="10" class="box"/>
+  <text x="150" y="306" text-anchor="middle" class="label">Client</text>
+  <text x="150" y="330" text-anchor="middle" class="tiny">VM / app</text>
+  <rect x="241" y="267" width="130" height="92" rx="10" class="private"/>
+  <text x="306" y="298" text-anchor="middle" class="label">Private</text>
+  <text x="306" y="319" text-anchor="middle" class="label">endpoint</text>
+  <text x="306" y="344" text-anchor="middle" class="tiny">VNet private IP</text>
+  <path d="M212 313H232" class="green"/>
+  <rect x="88" y="375" width="283" height="42" rx="8" class="box"/>
+  <text x="229" y="402" text-anchor="middle" class="small">Private DNS → endpoint IP</text>
+  <rect x="469" y="266" width="188" height="96" rx="12" class="box"/>
+  <text x="563" y="299" text-anchor="middle" class="label">Azure PaaS</text>
+  <text x="563" y="324" text-anchor="middle" class="small">Private Link target</text>
+  <text x="563" y="347" text-anchor="middle" class="tiny">public access can be disabled</text>
+  <path d="M371 310H459" class="green"/>
+  <text x="415" y="294" text-anchor="middle" class="tiny">Private Link</text>
+  <text x="62" y="482" class="small">✓ Destination resolves to a private IP</text>
+  <text x="62" y="512" class="small">✓ Can be reached over peering or on-premises routing</text>
+  <text x="62" y="542" class="small">• Requires private DNS and endpoint approval/configuration</text>
+  <text x="62" y="578" class="tiny">Use when private addressing or private-only access is required.</text>
+
+  <rect x="710" y="112" width="654" height="500" rx="16" class="panel"/>
+  <text x="736" y="151" class="h">Service endpoint · subnet identity path</text>
+  <text x="736" y="178" class="small">The service keeps its public endpoint; Azure identifies the source subnet.</text>
+  <rect x="736" y="213" width="330" height="222" rx="14" class="vnet"/>
+  <text x="756" y="245" class="label">Your VNet · enabled subnet</text>
+  <rect x="768" y="276" width="126" height="78" rx="10" class="box"/>
+  <text x="831" y="308" text-anchor="middle" class="label">Client</text>
+  <text x="831" y="332" text-anchor="middle" class="tiny">private source IP</text>
+  <rect x="921" y="266" width="117" height="99" rx="10" class="public"/>
+  <text x="979" y="299" text-anchor="middle" class="label">Service</text>
+  <text x="979" y="321" text-anchor="middle" class="label">endpoint</text>
+  <text x="979" y="346" text-anchor="middle" class="tiny">subnet identity</text>
+  <path d="M894 315H911" class="gold"/>
+  <text x="900" y="390" text-anchor="middle" class="tiny">service endpoint route</text>
+  <rect x="1141" y="266" width="188" height="96" rx="12" class="public"/>
+  <text x="1235" y="299" text-anchor="middle" class="label">Azure PaaS</text>
+  <text x="1235" y="324" text-anchor="middle" class="small">public service IP</text>
+  <text x="1235" y="347" text-anchor="middle" class="tiny">firewall allows subnet</text>
+  <path d="M1038 315H1131" class="gold"/>
+  <text x="1084" y="296" text-anchor="middle" class="tiny">Azure backbone</text>
+  <rect x="768" y="375" width="270" height="42" rx="8" class="box"/>
+  <text x="903" y="402" text-anchor="middle" class="small">Normal service DNS → public IP</text>
+  <text x="736" y="482" class="small">✓ Service firewall can allow a VNet/subnet</text>
+  <text x="736" y="512" class="small">✓ Traffic to supported service prefixes uses Azure backbone</text>
+  <text x="736" y="542" class="small">• No private IP; public endpoint remains in use</text>
+  <text x="736" y="578" class="tiny">Use for subnet-scoped access when private addressing isn't needed.</text>
+
+  <path d="M42 644H78" class="green"/><text x="91" y="649" class="tiny">private IP / Private Link</text>
+  <path d="M300 644H336" class="gold"/><text x="349" y="649" class="tiny">public service address, subnet authorized</text>
+</svg>

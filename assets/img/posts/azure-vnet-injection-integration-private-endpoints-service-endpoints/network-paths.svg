@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic Azure architecture with VNet integration, injection, private endpoints, and service endpoints</title>
+  <desc id="desc">An Azure hub contains central private DNS zones and a DNS resolver linked to workload spokes. A Foundry agent, API Management gateway, and Logic Apps workflow use service-specific VNet integration or injection to reach private endpoints and an Azure Storage service endpoint. The Logic App calls Teams for human approval.</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#63a9ff"/></marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#65d49a"/></marker>
+    <marker id="arrow-gold" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#f3c76b"/></marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#c09aff"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eaf0f7}.title{font-size:29px;font-weight:700}.subtitle{font-size:15px;fill:#adbdce}.zoneTitle{font-size:19px;font-weight:700}.head{font-size:16px;font-weight:700}.body{font-size:13px;fill:#cbd6e3}.tiny{font-size:11px;fill:#a8b7c8}.hub{fill:#121f2c;stroke:#8098b1;stroke-width:2;stroke-dasharray:9 6}.spoke{fill:#121e2b;stroke:#47719b;stroke-width:2;stroke-dasharray:9 6}.box{fill:#1c2a3a;stroke:#54718e;stroke-width:1.5}.pe{fill:#153328;stroke:#65d49a;stroke-width:2}.public{fill:#342e1e;stroke:#f3c76b;stroke-width:2}.human{fill:#2a2038;stroke:#c09aff;stroke-width:2}.blue{fill:none;stroke:#63a9ff;stroke-width:3;marker-end:url(#arrow-blue)}.green{fill:none;stroke:#65d49a;stroke-width:3;marker-end:url(#arrow-green)}.gold{fill:none;stroke:#f3c76b;stroke-width:3;marker-end:url(#arrow-gold)}.purple{fill:none;stroke:#c09aff;stroke-width:3;marker-end:url(#arrow-purple)}.dash{stroke-dasharray:7 6}
+    </style>
+  </defs>
+  <rect width="1440" height="900" rx="18" fill="#0b121a"/>
+  <text x="42" y="48" class="title">Agentic workloads with private Azure network paths</text>
+  <text x="42" y="75" class="subtitle">Conceptual hub-and-spoke view · choose integration or injection for the workload, then private connectivity for each destination</text>
+
+  <!-- Central hub: DNS authority and resolution -->
+  <rect x="42" y="112" width="1356" height="155" rx="16" class="hub"/>
+  <text x="64" y="143" class="zoneTitle">Connectivity hub · shared DNS services</text>
+  <rect x="74" y="166" width="280" height="76" rx="10" class="box"/>
+  <text x="214" y="193" text-anchor="middle" class="head">Azure DNS Private Resolver</text>
+  <text x="214" y="217" text-anchor="middle" class="body">inbound endpoint / DNS forwarding</text>
+  <rect x="410" y="166" width="420" height="76" rx="10" class="box"/>
+  <text x="620" y="193" text-anchor="middle" class="head">Central Azure Private DNS zones</text>
+  <text x="620" y="217" text-anchor="middle" class="body">for example, privatelink.blob.core.windows.net</text>
+  <text x="916" y="185" class="body">Link the zone to client VNets,</text>
+  <text x="916" y="207" class="body">or resolve through hub DNS forwarding.</text>
+  <text x="916" y="233" class="tiny">Azure Policy can attach PE DNS zone groups to central zones.</text>
+  <path d="M354 204H402" class="blue"/>
+
+  <!-- Workload spokes -->
+  <rect x="42" y="305" width="432" height="420" rx="16" class="spoke"/>
+  <text x="64" y="338" class="zoneTitle">Agent spoke</text>
+  <rect x="74" y="365" width="365" height="88" rx="10" class="box"/>
+  <text x="256" y="394" text-anchor="middle" class="head">Microsoft Foundry Agent Service</text>
+  <text x="256" y="419" text-anchor="middle" class="body">BYO VNet · delegated subnet</text>
+  <text x="256" y="440" text-anchor="middle" class="tiny">Microsoft.App/environments</text>
+  <rect x="74" y="485" width="365" height="70" rx="10" class="pe"/>
+  <text x="256" y="514" text-anchor="middle" class="head">Private endpoint subnet</text>
+  <text x="256" y="538" text-anchor="middle" class="body">private IPs for approved service targets</text>
+  <rect x="74" y="590" width="365" height="90" rx="10" class="box"/>
+  <text x="256" y="619" text-anchor="middle" class="head">PE network policy</text>
+  <text x="256" y="644" text-anchor="middle" class="body">NSG policies disabled by default</text>
+  <text x="256" y="666" text-anchor="middle" class="tiny">enable per subnet when PE NSG filtering is needed</text>
+
+  <rect x="504" y="305" width="432" height="420" rx="16" class="spoke"/>
+  <text x="526" y="338" class="zoneTitle">API and orchestration spoke</text>
+  <rect x="536" y="365" width="170" height="98" rx="10" class="box"/>
+  <text x="621" y="393" text-anchor="middle" class="head">APIM</text>
+  <text x="621" y="417" text-anchor="middle" class="body">Premium v2 injection</text>
+  <text x="621" y="435" text-anchor="middle" class="tiny" style="font-size:9px">Microsoft.ApiManagement</text>
+  <text x="621" y="450" text-anchor="middle" class="tiny" style="font-size:10px">/service</text>
+  <rect x="734" y="365" width="170" height="98" rx="10" class="box"/>
+  <text x="819" y="393" text-anchor="middle" class="head">Standard Logic App</text>
+  <text x="819" y="417" text-anchor="middle" class="body">VNet integration</text>
+  <text x="819" y="441" text-anchor="middle" class="tiny">Microsoft.Web/serverFarms</text>
+  <rect x="536" y="500" width="368" height="80" rx="10" class="pe"/>
+  <text x="720" y="530" text-anchor="middle" class="head">Inbound private endpoint</text>
+  <text x="720" y="555" text-anchor="middle" class="body">optional private access to Logic App / APIM where supported</text>
+  <rect x="536" y="615" width="368" height="64" rx="10" class="human"/>
+  <text x="720" y="642" text-anchor="middle" class="head">Teams approval · human in the loop</text>
+  <text x="720" y="665" text-anchor="middle" class="body">workflow waits before sensitive response action</text>
+
+  <rect x="966" y="305" width="432" height="420" rx="16" class="spoke"/>
+  <text x="988" y="338" class="zoneTitle">Data spoke</text>
+  <rect x="998" y="365" width="368" height="70" rx="10" class="pe"/>
+  <text x="1182" y="393" text-anchor="middle" class="head">Private endpoints in PE subnet</text>
+  <text x="1182" y="417" text-anchor="middle" class="body">private IPs for approved service targets</text>
+  <rect x="998" y="465" width="368" height="64" rx="10" class="box"/>
+  <text x="1182" y="492" text-anchor="middle" class="head">Private Link resource</text>
+  <text x="1182" y="515" text-anchor="middle" class="body">Storage · SQL · AI Search · Key Vault</text>
+  <rect x="998" y="555" width="368" height="64" rx="10" class="public"/>
+  <text x="1182" y="582" text-anchor="middle" class="head">Service endpoint path</text>
+  <text x="1182" y="605" text-anchor="middle" class="body">subnet identity → service public endpoint</text>
+  <rect x="998" y="645" width="368" height="58" rx="10" class="box"/>
+  <text x="1182" y="670" text-anchor="middle" class="head">Azure PaaS resource</text>
+  <text x="1182" y="691" text-anchor="middle" class="tiny">disable public access for private-only access</text>
+
+  <!-- Data and application paths; keep the approval route around the PE card. -->
+  <path d="M439 407C478 407 492 405 528 405" class="blue"/>
+  <path d="M706 414H726" class="blue"/>
+  <path d="M904 406C944 406 956 405 990 405" class="green"/>
+  <path d="M1182 435V457" class="green"/>
+  <path d="M904 440C946 440 958 586 990 586" class="gold"/>
+  <path d="M1182 619V637" class="gold"/>
+  <path d="M819 463L920 480V596L819 606" class="purple"/>
+  <!-- Central DNS is linked or forwarded to each client VNet -->
+  <path d="M510 242L258 305" class="blue dash"/>
+  <path d="M620 242V305" class="blue dash"/>
+  <path d="M730 242L1182 305" class="blue dash"/>
+  <!-- Connector labels are above the lines for legibility. -->
+  <text x="482" y="389" text-anchor="middle" class="tiny">private API call</text>
+  <text x="948" y="387" text-anchor="middle" class="tiny">Private Link</text>
+  <text x="950" y="505" class="tiny">service endpoint</text>
+  <text x="833" y="586" class="tiny">human approval</text>
+
+  <!-- Legend and operational note -->
+  <path d="M54 782H105" class="blue"/><text x="118" y="787" class="body">Application/API and DNS resolver paths</text>
+  <path d="M422 782H473" class="green"/><text x="486" y="787" class="body">Private endpoint / Private Link</text>
+  <path d="M760 782H811" class="gold"/><text x="824" y="787" class="body">Service endpoint to public service address</text>
+  <path d="M1130 782H1181" class="purple"/><text x="1194" y="787" class="body">HITL</text>
+  <text x="54" y="838" class="subtitle">Illustrative only: exact tier support, subnet delegation, routing, DNS links, and public access settings vary by Azure service.</text>
+  <text x="54" y="863" class="tiny">VNet flow logs observe supported traffic at VNet/source scope; PE NSG policies are a filtering control, not a logging prerequisite.</text>
+</svg>
