@@ -2,6 +2,7 @@
 title: Detect Azure VM Run Command activity through Defender telemetry
 author: pit
 date: 2025-06-06
+last_modified_at: 2026-11-07
 categories: [Blogging, Tutorial, PoC]
 tags: [defender, detection, hunting, azure, runcommands]
 render_with_liquid: false

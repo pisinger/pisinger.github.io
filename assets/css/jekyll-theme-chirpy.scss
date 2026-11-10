@@ -4,6 +4,11 @@
 /* prettier-ignore */
 @use 'main {%- if jekyll.environment == 'production' -%} .bundle {%- endif -%} ';
 
+/* Rouge marks some valid PowerShell syntax as an error; don't show its red block. */
+.highlight .err {
+  background-color: transparent;
+}
+
 #sidebar .nav-item:has(> a[href$="/categories/"]) {
   display: none;
 }

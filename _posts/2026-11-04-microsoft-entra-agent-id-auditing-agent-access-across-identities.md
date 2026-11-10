@@ -12,7 +12,7 @@ Giving an AI agent an application registration or a shared user account can get 
 
 I find the most useful way to understand it is to keep those objects separate. They have different jobs, different IDs, and can hold different access.
 
-> **TL;DR:** An agent's access can sit on its **agent identity**, on its paired **agent user**, or on both, across four layers: API permissions, Entra roles and groups, Azure RBAC, and Defender URBAC. Check both principals in every layer. In my test tenant one agent held everything on its identity and another held everything on its agent user, so checking only the service principal would have missed it. Conditional Access can block an agent's access to target resources such as Microsoft Graph or Azure Resource Manager, and it has gaps for agent users and blueprints.
+> An agent's access can sit on its **agent identity**, on its paired **agent user**, or on both, across four layers: API permissions, Entra roles and groups, Azure RBAC, and Defender URBAC. Check both principals in every layer. In my test tenant one agent held everything on its identity and another held everything on its agent user, so checking only the service principal would have missed it. Conditional Access can block an agent's access to target resources such as Microsoft Graph or Azure Resource Manager, and it has gaps for agent users and blueprints.
 {: .prompt-tip}
 
 ![Check agent permissions via API in five steps: inventory, pair, four layers, Conditional Access, report](/assets/img/posts/entra-agent-id-auditing-agent-access-across-identities/microsoft-entra-agent-identities-audit-workflow.svg)
@@ -44,14 +44,14 @@ For an interactive agent, the user remains the subject when the agent acts on th
 Add an agent user only when the agent must interact with something that expects a user object. Examples include a mailbox, calendar, Teams resource, or a product-specific role model built around users. That user has separate group membership and permissions, so it expands the access review. Microsoft’s current agent-user documentation describes restrictions on credentials and administrative roles, and notes that creating the user directly through Graph does not provision Microsoft 365 capabilities such as a mailbox.
 
 > **Default:** I would not create agent users by default. The agent identity is the primary identity; the paired user is an additional access surface with a concrete workload reason to exist.
-{: .prompt-tip}
+{: .prompt-info}
 
 ## 👥 Owners, sponsors, and managers
 
 Owners are the technical operators. They can change configuration and credentials within the scope of the object they own. Sponsors provide business accountability and make lifecycle decisions; a sponsor is required for an agent identity and a blueprint. Managers apply to agent users and represent the user-account relationship in the organization. These relationships are metadata and scoped capabilities, not substitutes for directory roles or resource permissions.
 
 > **Sponsor vs owner:** that separation is useful in practice: the engineer who rotates a credential does not have to be the person who decides whether the business still needs the agent. Assign a sponsor who can explain the agent’s purpose and an owner who can operate it, then review both when the agent changes teams.
-{: .prompt-tip}
+{: .prompt-info}
 
 ## 🔍 Inventory the objects with Microsoft Graph
 
@@ -79,10 +79,9 @@ az rest --method get \
   --query 'reverse(sort_by(value, &createdDateTime))[].{name:displayName,objectId:id,blueprintAppId:appId,created:createdDateTime}' \
   -o table
 
-# Agent users and their parent agent identity IDs
+# All agent users and their parent agent identity IDs (no date filter, so pairing stays complete)
 az rest --method get \
-  --headers "ConsistencyLevel=eventual" \
-  --url "https://graph.microsoft.com/v1.0/users/microsoft.graph.agentUser?\$filter=createdDateTime ge 2026-11-01T00:00:00Z&\$count=true&\$select=id,displayName,identityParentId,accountEnabled,assignedLicenses" \
+  --url "https://graph.microsoft.com/v1.0/users/microsoft.graph.agentUser?\$select=id,displayName,identityParentId,accountEnabled,assignedLicenses" \
   --query 'value[].{name:displayName,id:id,parent:identityParentId,enabled:accountEnabled,licenses:assignedLicenses}' \
   -o json
 ```
@@ -286,10 +285,10 @@ az rest --method get \
   --url "$graphEndpoint/roleManagement/directory/roleAssignments?\$filter=principalId eq '$userId'&\$expand=roleDefinition" \
   --query 'value[].{role:roleDefinition.displayName,scope:directoryScopeId}' -o json
 
-# Azure RBAC for the agent identity, including parent-scope assignments
+# Azure RBAC for the agent identity, including parent-scope and group assignments
 for sub in $(az account list --query "[?state=='Enabled'].id" -o tsv); do
   az role assignment list --subscription "$sub" --all --include-inherited \
-    --assignee "$agentId" \
+    --include-groups --assignee "$agentId" \
     --query '[].{role:roleDefinitionName,scope:scope}' -o json
 done
 
@@ -341,7 +340,8 @@ The commands above are easier to run as a single script. It takes an agent ident
 
 The two agents are mirror images. Auditing only the agent identity would show the Inventory Agent as broadly privileged and the Helpdesk Agent as harmless, which gets the second one wrong.
 
-The full scripts are published in my [pisinger/scripts-lib](https://github.com/pisinger/scripts-lib/tree/main/agentic) repository (`agentic` folder), so they are not pasted here:
+> The full scripts are published in my [pisinger/scripts-lib](https://github.com/pisinger/scripts-lib/tree/main/agentic) repository (`agentic` folder), so they are not pasted here:
+{: .prompt-tip}
 
 ```powershell
 ./audit-AgentAccess.ps1 -AgentId "<agent identity object ID>"
@@ -364,8 +364,13 @@ The scripts check subscriptions visible to the signed-in Azure CLI account. `--a
 This check can also help audit Defender workload permissions assigned to Microsoft Security Copilot agents or Project Perception agents when they use an agent identity. Match both the agent identity and its paired agent user ID, because the principal receiving the assignment can vary:
 
 ```powershell
-Disconnect-MgGraph
-Connect-MgGraph -Scopes 'RoleManagement.Read.Defender' -NoWelcome
+$agentId     = '<agent identity object ID>'
+$agentUserId = '<agent user object ID, or empty if none>'
+
+# Reconnect only if the current session lacks the Defender scope (this replaces an existing Graph session)
+if ('RoleManagement.Read.Defender' -notin (Get-MgContext).Scopes) {
+  Connect-MgGraph -Scopes 'RoleManagement.Read.Defender' -NoWelcome
+}
 
 if ('RoleManagement.Read.Defender' -notin (Get-MgContext).Scopes) {
   throw 'The current Graph session does not have RoleManagement.Read.Defender.'
@@ -432,13 +437,16 @@ For a full report, page through `@odata.nextLink`, resolve each `roleDefinitionI
 
 For example, Microsoft documents assigning a Defender role to the Security Alert Triage Agent's agent identity. Security Copilot's own platform roles (Copilot owner and Copilot contributor) are not Microsoft Entra roles and are separate from URBAC. [Security Alert Triage Agent permissions](https://learn.microsoft.com/en-us/defender-xdr/security-alert-triage-agent); [Triage Agent setup and required permissions](https://learn.microsoft.com/security/agentic-security/triage-agent); [Security Copilot authentication and authorization](https://learn.microsoft.com/copilot/security/authentication).
 
-For a complete access picture, also look upstream at the blueprint: its credentials, its publisher and its inheritable permissions. Datadog Security Labs explains why in its [blast radius](https://securitylabs.datadoghq.com/articles/agent-id-blueprint-blast-radius/) and [cross-tenant](https://securitylabs.datadoghq.com/articles/agent-id-inside-agent-compromise/) articles: credentials live only on the blueprint, and a credential on a blueprint can authenticate every agent identity created from it, including in consuming tenants. In their scripted scenario, an attacker who added a secret to a publisher's blueprint obtained tokens as an agent identity in another tenant, provided the blueprint principal and that agent identity already existed there, and then used the identity's permissions. This is research, not a Microsoft-confirmed vulnerability, and the articles report no Microsoft response. Treat blueprint credential custody and the publisher relationship as part of the access review, especially for third-party and multitenant blueprints. The scripts below list the blueprint's secrets and certificates when the blueprint application is in your tenant, and flag a blueprint published by another tenant, whose credentials you cannot see. Permissions declared on a blueprint do not grant consent by themselves; keep inherited and direct assignments visible as separate sources in the report.
+> Blueprints deserve their own security and access review. A credential configured on a blueprint can be used through the agent token-exchange flow to obtain tokens for associated agent identities, including identities in consuming tenants. Datadog Security Labs demonstrated this in a scripted cross-tenant scenario in its [blueprint blast-radius analysis](https://securitylabs.datadoghq.com/articles/agent-id-blueprint-blast-radius/) and [cross-tenant compromise analysis](https://securitylabs.datadoghq.com/articles/agent-id-inside-agent-compromise/): after adding a secret to a publisher's blueprint, the researchers obtained a token for an existing agent identity in another tenant and exercised that identity's permissions. This is independent security research demonstrating the implications of the documented authentication model, not a Microsoft-confirmed vulnerability.
+{: .prompt-warning}
+
+Review who controls each blueprint, how its credentials are protected, and what permissions its agents can inherit or receive directly, especially for third-party and multitenant blueprints. The scripts in this post show secrets and certificates only when the blueprint application is in your tenant; for blueprints published elsewhere, they flag that credentials are not visible to you. Configured or declared permissions do not by themselves prove that access has been granted, so report inherited permissions and direct assignments separately.
 
 ## 🛡️ Conditional Access: what it covers and what it does not
 
 Conditional Access runs when Entra issues or refreshes a token. It decides whether an agent gets a token for a **target resource**; it does not read the agent's roles. Agent policies can target Microsoft Graph and any resource that has an enterprise application in your tenant, and **All resources** covers everything Entra protects. For Azure management, Microsoft documents the *Windows Azure Service Management API* target as covering Azure Resource Manager. See Microsoft's [Conditional Access for agents](https://learn.microsoft.com/en-us/entra/identity/conditional-access/agent-id) and [agent targeting guidance](https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-target-agent-identities).
 
-![Conditional Access policy types for agents: one policy per token subject, with targets, conditions and grant controls](/assets/img/posts/entra-agent-id-auditing-agent-access-across-identitiesmicrosoft-entra-agent-identities-conditional-access.svg)
+![Conditional Access policy types for agents: one policy per token subject, with targets, conditions and grant controls](/assets/img/posts/entra-agent-id-auditing-agent-access-across-identities/microsoft-entra-agent-identities-conditional-access.svg)
 
 **Where the token fits.** Conditional Access is the gate before the token is issued. If it allows the request, Entra issues a token whose claims reflect the agent's access at that moment: `roles` for application permissions, `scp` for delegated scopes, and group membership. The resource then validates the token and makes its own authorization decision from those claims. Azure RBAC works differently: the Azure Resource Manager token carries identity and group membership, and Azure Resource Manager looks up the role assignments itself when each request arrives. Two practical effects follow. A change that is expressed as a claim (an app role, a group) reaches the resource only when the agent gets a new token, and an access token lives 60 to 90 minutes by default. An Azure role assignment change can take up to 10 minutes to apply.
 
