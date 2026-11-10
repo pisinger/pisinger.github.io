@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Conditional Access policy types for Microsoft Entra agents</title>
+  <desc id="desc">Conditional Access uses one policy per token subject. An agent identity policy targets agent identities, blueprint principals or custom attributes, supports the agent risk condition and the block control only. An agent user policy, in preview, targets agent users and also supports execution environment, device platform, device filter and network conditions, with block or require compliant device. A signed-in user in an on-behalf-of flow is covered by normal user policies. Conditional Access is evaluated before a token is issued, then the resource authorizes from the token claims or, for Azure RBAC, from its own role assignments. It does not apply to blueprint token requests that create agents, the intermediate token exchange, when security defaults are enabled, or to resources not secured by Entra.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#131d31"/></linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#164d55"/><stop offset="1" stop-color="#15343d"/></linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#49316d"/><stop offset="1" stop-color="#30254d"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#183e72"/><stop offset="1" stop-color="#142a4c"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a4217"/><stop offset="1" stop-color="#3a2b12"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".28"/></filter>
+    <marker id="arrowAmber" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#f0c36a"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eef4ff}.muted{fill:#a9b8ce}.small{font-size:17px}.body{font-size:20px}.heading{font-size:24px;font-weight:700}.card{filter:url(#shadow);stroke-width:1.5}.label{font-size:14px;font-weight:700;letter-spacing:1.3px}.note{font-size:16px;fill:#a9b8ce}
+    </style>
+  </defs>
+  <rect width="1600" height="1080" rx="28" fill="url(#bg)"/>
+  <text x="72" y="76" font-size="18" font-weight="700" letter-spacing="2" fill="#81aef5">MICROSOFT ENTRA AGENT ID</text>
+  <text x="72" y="126" font-size="42" font-weight="750">Conditional Access: one policy per token subject</text>
+  <text x="72" y="164" font-size="21" class="muted">An identity policy never covers the agent user, and an agent user policy never covers the identity.</text>
+
+  <!-- policy type 1: agent identity -->
+  <g class="card">
+    <rect x="72" y="200" width="468" height="420" rx="18" fill="url(#teal)" stroke="#45b9ad"/>
+    <text x="100" y="236" class="label" fill="#9af1e5">TOKEN SUBJECT · AGENT IDENTITY</text>
+    <text x="100" y="274" class="heading">Autonomous access</text>
+    <text x="100" y="316" class="label" fill="#9af1e5">POLICY TARGETS</text>
+    <text x="100" y="342" class="small muted">All or selected agent identities,</text>
+    <text x="100" y="366" class="small muted">blueprint principals, custom attributes</text>
+    <text x="100" y="406" class="label" fill="#9af1e5">CONDITIONS</text>
+    <text x="100" y="432" class="small muted">Agent risk (preview)</text>
+    <text x="100" y="472" class="label" fill="#9af1e5">GRANT CONTROL</text>
+    <text x="100" y="498" class="small">Block only</text>
+    <text x="100" y="606" class="note">A blueprint principal covers identities only.</text>
+  </g>
+
+  <!-- policy type 2: agent user -->
+  <g class="card">
+    <rect x="566" y="200" width="468" height="420" rx="18" fill="url(#purple)" stroke="#a88ae8"/>
+    <text x="594" y="236" class="label" fill="#d8c7ff">TOKEN SUBJECT · AGENT USER</text>
+    <rect x="900" y="216" width="106" height="28" rx="14" fill="#3a2b12" stroke="#d9a441"/>
+    <text x="953" y="236" text-anchor="middle" font-size="13" font-weight="700" letter-spacing="1.2" fill="#f6d58f">PREVIEW</text>
+    <text x="594" y="274" class="heading">Acts as its user account</text>
+    <text x="594" y="316" class="label" fill="#d8c7ff">POLICY TARGETS</text>
+    <text x="594" y="342" class="small muted">All or selected agent users,</text>
+    <text x="594" y="366" class="small muted">or custom attributes</text>
+    <text x="594" y="406" class="label" fill="#d8c7ff">CONDITIONS</text>
+    <text x="594" y="432" class="small muted">Agent risk</text>
+    <text x="594" y="456" class="small muted">Agent execution environment</text>
+    <text x="594" y="480" class="small" fill="#d8c7ff" font-weight="700">Devices: platform and device filter</text>
+    <text x="594" y="504" class="small" fill="#d8c7ff" font-weight="700">Network: compliant network location</text>
+    <text x="594" y="546" class="label" fill="#d8c7ff">GRANT CONTROL</text>
+    <text x="594" y="572" class="small">Block, or require a compliant device</text>
+    <text x="594" y="606" class="note">Devices and network: managed endpoints only.</text>
+  </g>
+
+  <!-- policy type 3: signed-in user -->
+  <g class="card">
+    <rect x="1060" y="200" width="468" height="420" rx="18" fill="url(#blue)" stroke="#4c83d7"/>
+    <text x="1088" y="236" class="label" fill="#a7c8ff">TOKEN SUBJECT · SIGNED-IN USER</text>
+    <text x="1088" y="274" class="heading">On-behalf-of flow</text>
+    <text x="1088" y="316" class="label" fill="#a7c8ff">POLICY TARGETS</text>
+    <text x="1088" y="342" class="small muted">The user, through users and groups</text>
+    <text x="1088" y="406" class="label" fill="#a7c8ff">CONDITIONS</text>
+    <text x="1088" y="432" class="small muted">Normal user conditions</text>
+    <text x="1088" y="472" class="label" fill="#a7c8ff">GRANT CONTROL</text>
+    <text x="1088" y="498" class="small muted">Normal user controls</text>
+    <text x="1088" y="606" class="note">The agent identity is only the actor here.</text>
+  </g>
+
+  <!-- flow strip -->
+  <g class="card">
+    <rect x="72" y="660" width="400" height="104" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="100" y="694" class="label" fill="#a7c8ff">1 · TOKEN REQUEST</text>
+    <text x="100" y="726" class="body" font-weight="700">Agent asks for a token</text>
+    <text x="100" y="750" class="small muted">for one target resource</text>
+  </g>
+  <g class="card">
+    <rect x="520" y="660" width="520" height="104" rx="16" fill="url(#amber)" stroke="#d9a441"/>
+    <text x="548" y="694" class="label" fill="#f6d58f">2 · CONDITIONAL ACCESS</text>
+    <text x="548" y="726" class="body" font-weight="700">The matching policy allows or blocks</text>
+    <text x="548" y="750" class="small muted">Evaluated before a token is issued</text>
+  </g>
+  <g class="card">
+    <rect x="1088" y="660" width="440" height="104" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="1116" y="694" class="label" fill="#a7c8ff">3 · RESOURCE AUTHORIZES</text>
+    <text x="1116" y="726" class="body" font-weight="700">Token claims, or RBAC lookup</text>
+    <text x="1116" y="750" class="small muted">Policies never read the roles</text>
+  </g>
+  <path d="M472 712 L510 712" fill="none" stroke="#f0c36a" stroke-width="4" marker-end="url(#arrowAmber)"/>
+  <path d="M1040 712 L1078 712" fill="none" stroke="#f0c36a" stroke-width="4" marker-end="url(#arrowAmber)"/>
+
+  <!-- bottom panels -->
+  <rect x="72" y="804" width="700" height="200" rx="18" fill="#111d2e" stroke="#34445d"/>
+  <text x="104" y="842" class="label" fill="#f6d58f">CONDITIONAL ACCESS DOES NOT APPLY WHEN</text>
+  <text x="104" y="876" class="small">1  A blueprint requests a token to create agents or users</text>
+  <text x="104" y="908" class="small">2  The intermediate AAD token exchange takes place</text>
+  <text x="104" y="940" class="small">3  Security defaults are enabled</text>
+  <text x="104" y="972" class="small">4  The resource is not secured by Entra, for example an API key</text>
+
+  <rect x="828" y="804" width="700" height="200" rx="18" fill="#111d2e" stroke="#34445d"/>
+  <text x="860" y="842" class="label" fill="#d8c7ff">COVERAGE GAPS</text>
+  <text x="860" y="876" class="small">1  An identity or blueprint principal policy skips the agent user</text>
+  <text x="860" y="908" class="small">2  Policies on all users, groups or roles skip agent users</text>
+  <text x="860" y="940" class="small">3  No group-based include or exclude for agent users</text>
+  <text x="860" y="972" class="small">4  Agent users and agent risk are in preview</text>
+
+  <text x="72" y="1046" font-size="15" class="muted">AI generated illustration.</text>
+  <text x="1528" y="1046" text-anchor="end" font-size="15" class="muted">Source: Microsoft Learn, Conditional Access for agents.</text>
+</svg>

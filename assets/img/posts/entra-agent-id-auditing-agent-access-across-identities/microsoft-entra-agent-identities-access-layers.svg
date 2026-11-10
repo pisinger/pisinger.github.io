@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1010" viewBox="0 0 1600 1010" role="img" aria-labelledby="title desc">
+  <title id="title">Access layers of a Microsoft Entra agent identity and its agent user</title>
+  <desc id="desc">An agent identity and its optional agent user can each hold access in four separate layers: API permissions, Entra roles and groups, Azure RBAC, and Defender unified RBAC. The agent identity typically holds API permissions, Entra roles, Azure RBAC and, per Microsoft's Triage Agent setup, Defender URBAC. The agent user commonly holds groups, Azure RBAC and, in the tested tenant, Defender URBAC. Auditing one principal does not show the other's access.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#131d31"/></linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#164d55"/><stop offset="1" stop-color="#15343d"/></linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#49316d"/><stop offset="1" stop-color="#30254d"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".28"/></filter>
+    <marker id="arrowTeal" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#57d4c4"/></marker>
+    <marker id="arrowPurple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#c2a3ff"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eef4ff}.muted{fill:#a9b8ce}.small{font-size:17px}.body{font-size:20px}.heading{font-size:26px;font-weight:700}.card{filter:url(#shadow);stroke-width:1.5}.label{font-size:15px;font-weight:700;letter-spacing:1.3px}.mono{font-family:Consolas,monospace;font-size:15px;fill:#d2e4ff}.chip{font-size:15px;font-weight:700}
+    </style>
+  </defs>
+  <rect width="1600" height="1010" rx="28" fill="url(#bg)"/>
+  <text x="72" y="76" font-size="18" font-weight="700" letter-spacing="2" fill="#81aef5">MICROSOFT ENTRA AGENT ID</text>
+  <text x="72" y="126" font-size="42" font-weight="750">One agent, four places access can live</text>
+  <text x="72" y="164" font-size="21" class="muted">Each principal can hold roles in every layer. Audit both principals across all four.</text>
+
+  <!-- principals -->
+  <g class="card">
+    <rect x="72" y="230" width="380" height="250" rx="18" fill="url(#teal)" stroke="#45b9ad"/>
+    <text x="104" y="270" class="label" fill="#9af1e5">PRINCIPAL 1</text>
+    <text x="104" y="312" class="heading">Agent identity</text>
+    <text x="104" y="346" class="small muted">Service principal of the agent.</text>
+    <text x="104" y="372" class="small muted">Typical home of API permissions.</text>
+    <rect x="104" y="400" width="316" height="42" rx="10" fill="#0d1c33" opacity=".68"/>
+    <text x="120" y="427" class="mono">servicePrincipal · agentIdentity</text>
+  </g>
+  <g class="card">
+    <rect x="72" y="540" width="380" height="250" rx="18" fill="url(#purple)" stroke="#a88ae8"/>
+    <text x="104" y="580" class="label" fill="#d8c7ff">PRINCIPAL 2 · OPTIONAL</text>
+    <text x="104" y="622" class="heading">Agent user</text>
+    <text x="104" y="656" class="small muted">User object paired 1:1 with the identity.</text>
+    <text x="104" y="682" class="small muted">Often holds groups, RBAC and URBAC.</text>
+    <rect x="104" y="710" width="316" height="42" rx="10" fill="#1d1535" opacity=".68"/>
+    <text x="120" y="737" class="mono">user · agentUser</text>
+  </g>
+
+  <!-- connectors: identity (teal) -->
+  <path d="M452 355 C600 355 620 295 748 295" fill="none" stroke="#57d4c4" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <path d="M452 355 C600 355 620 455 748 455" fill="none" stroke="#57d4c4" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <path d="M452 355 C600 355 620 615 748 615" fill="none" stroke="#57d4c4" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <path d="M452 355 C600 355 620 775 748 775" fill="none" stroke="#57d4c4" stroke-width="4" marker-end="url(#arrowTeal)"/>
+  <!-- connectors: agent user (purple) -->
+  <path d="M452 665 C600 665 620 305 748 305" fill="none" stroke="#c2a3ff" stroke-width="3" stroke-dasharray="3 9" stroke-linecap="round" marker-end="url(#arrowPurple)"/>
+  <path d="M452 665 C600 665 620 465 748 465" fill="none" stroke="#c2a3ff" stroke-width="4" marker-end="url(#arrowPurple)"/>
+  <path d="M452 665 C600 665 620 625 748 625" fill="none" stroke="#c2a3ff" stroke-width="4" marker-end="url(#arrowPurple)"/>
+  <path d="M452 665 C600 665 620 785 748 785" fill="none" stroke="#c2a3ff" stroke-width="4" marker-end="url(#arrowPurple)"/>
+
+  <!-- layer cards -->
+  <g class="card">
+    <rect x="760" y="230" width="770" height="130" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="792" y="264" class="label" fill="#a7c8ff">LAYER 1 · API PERMISSIONS</text>
+    <text x="792" y="296" class="body" font-weight="700">App roles and delegated grants</text>
+    <text x="792" y="322" class="small muted">Graph application roles, tenant-wide delegated grants, inherited from blueprint (beta)</text>
+    <text x="792" y="346" class="mono">appRoleAssignments · oauth2PermissionGrants · inherited*</text>
+  </g>
+  <g class="card">
+    <rect x="760" y="390" width="770" height="130" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="792" y="424" class="label" fill="#a7c8ff">LAYER 2 · ENTRA ROLES AND GROUPS</text>
+    <text x="792" y="456" class="body" font-weight="700">Directory roles and group membership</text>
+    <text x="792" y="482" class="small muted">Lower-privileged Entra roles only; groups such as All Users (not role-assignable groups)</text>
+    <text x="792" y="506" class="mono">transitiveMemberOf · roleManagement/directory</text>
+  </g>
+  <g class="card">
+    <rect x="760" y="550" width="770" height="130" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="792" y="584" class="label" fill="#a7c8ff">LAYER 3 · AZURE RBAC</text>
+    <text x="792" y="616" class="body" font-weight="700">Azure role assignments by scope</text>
+    <text x="792" y="642" class="small muted">Subscription, resource group and resource scopes, including inherited and group-based</text>
+    <text x="792" y="666" class="mono">az role assignment list --include-inherited --include-groups</text>
+  </g>
+  <g class="card">
+    <rect x="760" y="710" width="770" height="130" rx="16" fill="#172235" stroke="#455975"/>
+    <text x="792" y="744" class="label" fill="#a7c8ff">LAYER 4 · DEFENDER UNIFIED RBAC</text>
+    <text x="792" y="776" class="body" font-weight="700">URBAC role, scopes and allowed actions</text>
+    <text x="792" y="802" class="small muted">Custom roles with one or more appScopeIds; the assigned principal can be either one</text>
+    <text x="792" y="826" class="mono">beta/roleManagement/defender · RoleManagement.Read.Defender</text>
+  </g>
+
+  <!-- legend and takeaway -->
+  <rect x="72" y="872" width="1458" height="100" rx="18" fill="#111d2e" stroke="#34445d"/>
+  <line x1="104" y1="906" x2="164" y2="906" stroke="#9fb4d0" stroke-width="4"/>
+  <text x="176" y="912" class="small muted">common / expected</text>
+  <line x1="372" y1="906" x2="432" y2="906" stroke="#9fb4d0" stroke-width="3" stroke-dasharray="3 9" stroke-linecap="round"/>
+  <text x="444" y="912" class="small muted">possible, check anyway</text>
+  <text x="104" y="950" class="small" font-weight="700">An agent identity with no roles can still sit next to an agent user that has Azure RBAC and Defender URBAC.</text>
+  <text x="1500" y="912" text-anchor="end" class="small muted">*beta endpoint</text>
+  <text x="72" y="996" font-size="15" class="muted">AI generated illustration.</text>
+</svg>

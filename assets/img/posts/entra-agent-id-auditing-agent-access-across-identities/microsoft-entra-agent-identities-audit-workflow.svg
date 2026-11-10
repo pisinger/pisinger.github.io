@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Check agent permissions via API in five steps</title>
+  <desc id="desc">Five audit steps: inventory the Agent ID objects, pair each agent identity with its agent user, check four access layers for each principal, check Conditional Access coverage, and report both principals side by side. An example result for two generalized agents shows that one holds its access on the agent identity while the other holds it on the agent user.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#131d31"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".28"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#74a9ff"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eef4ff}.muted{fill:#a9b8ce}.small{font-size:17px}.body{font-size:20px}.heading{font-size:22px;font-weight:700}.card{filter:url(#shadow);stroke-width:1.5}.label{font-size:15px;font-weight:700;letter-spacing:1.3px}.mono{font-family:Consolas,monospace;font-size:14px;fill:#d2e4ff}.cell{font-size:16px}.none{font-size:16px;fill:#6f819c}
+    </style>
+  </defs>
+  <rect width="1600" height="1050" rx="28" fill="url(#bg)"/>
+  <text x="72" y="76" font-size="18" font-weight="700" letter-spacing="2" fill="#81aef5">MICROSOFT ENTRA AGENT ID</text>
+  <text x="72" y="126" font-size="42" font-weight="750">Check agent permissions via API in five steps</text>
+  <text x="72" y="164" font-size="21" class="muted">Map the objects first, then check every layer on both principals.</text>
+
+  <!-- steps -->
+  <g class="card">
+    <rect x="72" y="205" width="272" height="200" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="106" cy="240" r="16" fill="#183e72" stroke="#74a9ff"/><text x="106" y="246" text-anchor="middle" font-size="16" font-weight="700">1</text>
+    <text x="134" y="247" class="heading">Inventory</text>
+    <text x="96" y="285" class="small muted">List agent identities,</text>
+    <text x="96" y="308" class="small muted">blueprints, principals</text>
+    <text x="96" y="331" class="small muted">and agent users.</text>
+    <text x="96" y="378" class="mono">v1.0 typed collections</text>
+  </g>
+  <g class="card">
+    <rect x="368" y="205" width="272" height="200" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="402" cy="240" r="16" fill="#183e72" stroke="#74a9ff"/><text x="402" y="246" text-anchor="middle" font-size="16" font-weight="700">2</text>
+    <text x="430" y="247" class="heading">Pair</text>
+    <text x="392" y="285" class="small muted">Join each agent user to</text>
+    <text x="392" y="308" class="small muted">its identity. Report</text>
+    <text x="392" y="331" class="small muted">identities with no user.</text>
+    <text x="392" y="378" class="mono">identityParentId</text>
+  </g>
+  <g class="card">
+    <rect x="664" y="205" width="272" height="200" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="698" cy="240" r="16" fill="#183e72" stroke="#74a9ff"/><text x="698" y="246" text-anchor="middle" font-size="16" font-weight="700">3</text>
+    <text x="726" y="247" class="heading">Four layers</text>
+    <text x="688" y="285" class="small muted">Per principal: API,</text>
+    <text x="688" y="308" class="small muted">Entra roles, Azure RBAC,</text>
+    <text x="688" y="331" class="small muted">Defender URBAC.</text>
+    <text x="688" y="378" class="mono">Graph · az · MgGraph</text>
+  </g>
+  <g class="card">
+    <rect x="960" y="205" width="272" height="200" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="994" cy="240" r="16" fill="#183e72" stroke="#74a9ff"/><text x="994" y="246" text-anchor="middle" font-size="16" font-weight="700">4</text>
+    <text x="1022" y="247" class="heading">Conditional Access</text>
+    <text x="984" y="285" class="small muted">Check policy coverage</text>
+    <text x="984" y="308" class="small muted">for identity and user,</text>
+    <text x="984" y="331" class="small muted">separately.</text>
+    <text x="984" y="378" class="mono">admin center · sign-ins</text>
+  </g>
+  <g class="card">
+    <rect x="1256" y="205" width="272" height="200" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="1290" cy="240" r="16" fill="#183e72" stroke="#74a9ff"/><text x="1290" y="246" text-anchor="middle" font-size="16" font-weight="700">5</text>
+    <text x="1318" y="247" class="heading">Report</text>
+    <text x="1280" y="285" class="small muted">Both principals side by</text>
+    <text x="1280" y="308" class="small muted">side. Write "none found"</text>
+    <text x="1280" y="331" class="small muted">and list what you skipped.</text>
+    <text x="1280" y="378" class="mono">flag broad and write</text>
+  </g>
+  <path d="M344 305 L360 305" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M640 305 L656 305" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M936 305 L952 305" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M1232 305 L1248 305" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <!-- result matrix -->
+  <rect x="72" y="440" width="1456" height="520" rx="20" fill="#111d2e" stroke="#34445d"/>
+  <text x="104" y="480" class="label" fill="#c5d2e4">EXAMPLE RESULT · SAME CHECKS, TWO GENERALIZED AGENTS</text>
+
+  <text x="645" y="522" text-anchor="middle" class="body" font-weight="700">Contoso Inventory Agent</text>
+  <text x="1215" y="522" text-anchor="middle" class="body" font-weight="700">Contoso Helpdesk Agent</text>
+  <rect x="360" y="536" width="285" height="30" rx="8" fill="#164d55"/><text x="502" y="557" text-anchor="middle" class="small">Agent identity</text>
+  <rect x="645" y="536" width="285" height="30" rx="8" fill="#49316d"/><text x="787" y="557" text-anchor="middle" class="small">Agent user</text>
+  <rect x="930" y="536" width="285" height="30" rx="8" fill="#164d55"/><text x="1072" y="557" text-anchor="middle" class="small">Agent identity</text>
+  <rect x="1215" y="536" width="285" height="30" rx="8" fill="#49316d"/><text x="1357" y="557" text-anchor="middle" class="small">Agent user</text>
+
+  <!-- row labels -->
+  <text x="104" y="615" class="small" font-weight="700">API permissions</text>
+  <text x="104" y="695" class="small" font-weight="700">Entra roles and groups</text>
+  <text x="104" y="775" class="small" font-weight="700">Azure RBAC</text>
+  <text x="104" y="855" class="small" font-weight="700">Defender URBAC</text>
+
+  <!-- row 1 -->
+  <rect x="360" y="582" width="277" height="62" rx="10" fill="#15343d" stroke="#45b9ad"/><text x="498" y="619" text-anchor="middle" class="cell">8 Graph read roles</text>
+  <rect x="645" y="582" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="783" y="619" text-anchor="middle" class="none">none</text>
+  <rect x="930" y="582" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="1068" y="619" text-anchor="middle" class="none">none</text>
+  <rect x="1215" y="582" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="1353" y="619" text-anchor="middle" class="none">none</text>
+  <!-- row 2 -->
+  <rect x="360" y="662" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="498" y="699" text-anchor="middle" class="none">none</text>
+  <rect x="645" y="662" width="277" height="62" rx="10" fill="#30254d" stroke="#a88ae8"/><text x="783" y="699" text-anchor="middle" class="cell">group: All Users</text>
+  <rect x="930" y="662" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="1068" y="699" text-anchor="middle" class="none">none</text>
+  <rect x="1215" y="662" width="277" height="62" rx="10" fill="#30254d" stroke="#a88ae8"/><text x="1353" y="699" text-anchor="middle" class="cell">group: All Users</text>
+  <!-- row 3 -->
+  <rect x="360" y="742" width="277" height="62" rx="10" fill="#15343d" stroke="#45b9ad"/><text x="498" y="779" text-anchor="middle" class="cell">4 reader roles, subscription</text>
+  <rect x="645" y="742" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="783" y="779" text-anchor="middle" class="none">none</text>
+  <rect x="930" y="742" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="1068" y="779" text-anchor="middle" class="none">none</text>
+  <rect x="1215" y="742" width="277" height="62" rx="10" fill="#30254d" stroke="#a88ae8"/><text x="1353" y="779" text-anchor="middle" class="cell">workspace roles, 2 subs</text>
+  <!-- row 4 -->
+  <rect x="360" y="822" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="498" y="859" text-anchor="middle" class="none">none</text>
+  <rect x="645" y="822" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="783" y="859" text-anchor="middle" class="none">none</text>
+  <rect x="930" y="822" width="277" height="62" rx="10" fill="#0d1726" stroke="#2a3a52"/><text x="1068" y="859" text-anchor="middle" class="none">none</text>
+  <rect x="1215" y="822" width="277" height="62" rx="10" fill="#30254d" stroke="#a88ae8"/><text x="1353" y="852" text-anchor="middle" class="cell">alerts manage,</text><text x="1353" y="873" text-anchor="middle" class="cell">raw email read</text>
+
+  <text x="104" y="925" class="small" font-weight="700">One agent holds its access on the identity, the other on the agent user. Checking one principal misses the other.</text>
+
+  <text x="72" y="1010" font-size="15" class="muted">AI generated illustration.</text>
+</svg>
