@@ -37,11 +37,11 @@ For a multitenant publisher, the blueprint can be present in multiple customer t
 
 ## 🎯 When to use each identity pattern
 
-For an autonomous worker that runs on a schedule or responds to events, start with an agent identity. It gives the workload its own identity and makes its access reviewable without pretending the agent is a person.
+For an **autonomous worker** that runs on a schedule or responds to events, start with an agent identity. It gives the workload its own identity and makes its access reviewable without pretending the agent is a person.
 
-For an interactive agent, the user remains the subject when the agent acts on that user’s behalf through delegated access and an on-behalf-of flow. The agent identity still identifies the agent as the actor. This distinction gives investigators a way to see both who initiated the work and which agent performed it.
+For an **interactive agent**, the user remains the subject when the agent acts on that user’s behalf through delegated access and an on-behalf-of flow. The agent identity still identifies the agent as the actor. This distinction gives investigators a way to see both who initiated the work and which agent performed it.
 
-Add an agent user only when the agent must interact with something that expects a user object. Examples include a mailbox, calendar, Teams resource, or a product-specific role model built around users. That user has separate group membership and permissions, so it expands the access review. Microsoft’s current agent-user documentation describes restrictions on credentials and administrative roles, and notes that creating the user directly through Graph does not provision Microsoft 365 capabilities such as a mailbox.
+Add an **agent user** only when the agent must interact with something that expects a user object. Examples include a mailbox, calendar, Teams resource, or a product-specific role model built around users. That user has separate group membership and permissions, so it expands the access review. Microsoft’s current agent-user documentation describes restrictions on credentials and administrative roles, and notes that creating the user directly through Graph does not provision Microsoft 365 capabilities such as a mailbox.
 
 > **Default:** I would not create agent users by default. The agent identity is the primary identity; the paired user is an additional access surface with a concrete workload reason to exist.
 {: .prompt-info}
@@ -351,7 +351,7 @@ The two agents are mirror images. Auditing only the agent identity would show th
 ./audit-AgentAccess.sh "<agent identity object ID>"
 ```
 
-Both print colored, grouped output with a flags summary at the end. This is an inventory of assignments visible to the current Graph and Azure CLI sessions, not a complete evaluator of every resource's effective access. Three details are easy to get wrong when you adapt the PowerShell version. Splatting a single argument such as `--include-groups` into `az` needs a forced string array (`[string[]]`), otherwise PowerShell unrolls it and passes it one character at a time. And call `Connect-MgGraph` in the same process as the queries, because a fresh `pwsh` process does not report an earlier session through `Get-MgContext`. Third, do not name your own sign-in helper `Connect-Graph`: it is a built-in alias of `Connect-MgGraph` once the module is loaded, and an alias wins over a function, so your helper is silently skipped. The scripts do not cover PIM-eligible roles, access packages, or Conditional Access, and the Azure RBAC part only sees subscriptions the signed-in account can see.
+The scripts do not cover PIM-eligible roles, access packages, or Conditional Access, and the Azure RBAC part only sees subscriptions the signed-in account can see.
 
 > **Disclaimer: the scripts are provided as is.** They only read data, but read the code before you run it in your tenant. They need broad read scopes, call Graph `beta` endpoints that can change, and print tenant data such as object IDs, role names and scopes, so handle the output as sensitive. The result is an inventory of what the signed-in sessions can see, not proof of effective access: PIM-eligible roles, access packages and Conditional Access are not covered. Test them in a non-production tenant first.
 {: .prompt-warning}
@@ -389,7 +389,7 @@ $targetPrincipalIds = @($agentId, $agentUserId) | Where-Object { $_ }
 $assignments |
   Where-Object {
     $targetPrincipalIds -contains $_.principalId -or
-    (@($_.principalIds | Where-Object { $targetPrincipalIds -contains $_ })).Count -gt 0
+    ($_.principalIds | Where-Object { $targetPrincipalIds -contains $_ } | Select-Object -First 1)
   } |
   Select-Object roleDefinitionId, appScopeIds, principalIds
 ```
@@ -474,10 +474,12 @@ Three consequences:
 - Policies on the *Users* assignment (all users, selected users, groups, directory roles) skip agent users. Including or excluding agent users by group membership is not supported. Use all agent users, individual agent users or custom security attributes.
 - For on-behalf-of access the signed-in user is the subject, so user policies apply and agent identity policies do not.
 
-> Microsoft's pages are not fully consistent on blueprints. The agent user policy walkthrough says to assign the policy to "agents or their agent identity blueprint", while the Conditional Access overview lists a blueprint-scoped policy as not covering the agent user. I follow the overview's explicit limitation. Verify it in your tenant with a report-only policy and the CA tab of the agent user's sign-in log.
-{: .prompt-info}
+To block a high-risk agent from Microsoft Graph, create a policy for the agent subject, target Graph or **All resources**, set agent risk to High and the grant control to Block, then repeat it for the agent user. Start in report-only mode. 
 
-To block a high-risk agent from Microsoft Graph, create a policy for the agent subject, target Graph or **All resources**, set agent risk to High and the grant control to Block, then repeat it for the agent user. Start in report-only mode. Agent-user targeting and agent risk are in preview, and licensing needs Microsoft 365 E7, or a Microsoft Agent 365 license paired with at least Entra ID P1 or Microsoft 365 E3. ID Protection for agents, which provides agent risk, requires an Agent 365 license as well. Check Microsoft's current requirements. Agent risk detections are currently offline, and in on-behalf-of flows the risk is attributed to the signed-in user, not the agent, so an agent-risk policy only reacts to autonomous agent activity.
+> Agent-user targeting and agent risk are in preview, and licensing needs Microsoft 365 E7, or a Microsoft Agent 365 license paired with at least Entra ID P1 or Microsoft 365 E3. ID Protection for agents, which provides agent risk, requires an Agent 365 license as well. 
+{: .prompt-warning}
+
+Check Microsoft's current requirements. Agent risk detections are currently offline, and in on-behalf-of flows the risk is attributed to the signed-in user, not the agent, so an agent-risk policy only reacts to autonomous agent activity.
 
 **Where it does not apply:**
 - A blueprint requests a token to create agent identities or agent users.
