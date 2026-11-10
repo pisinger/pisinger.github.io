@@ -8,7 +8,9 @@ tags: [microsoft-entra, agent-id, ai-agents, identity, governance, conditional-a
 render_with_liquid: false
 ---
 
-Giving an AI agent an application registration or a shared user account can get it running quickly. It also makes it harder to answer a basic question later: which agent acted, what identity did it use, and where did its access come from? Microsoft Entra Agent ID adds identity objects for that job. The underlying pattern will be familiar to Entra administrators: a blueprint is an application object, and its blueprint principal is the tenant-local service principal, much like an app registration and its service principal. Agent ID extends that model so one blueprint can create multiple agent identities in a tenant, with an optional agent user for each when the workload needs a user-shaped account.
+Giving an AI agent an application registration or a shared user account can get it running quickly. It also makes it harder to answer a basic question later: which agent acted, what identity did it use, and where did its access come from? 
+
+Microsoft Entra Agent ID adds identity objects for that job. The underlying pattern will be familiar to Entra administrators: a blueprint is an application object, and its blueprint principal is the tenant-local service principal, much like an app registration and its service principal. Agent ID extends that model so one blueprint can create multiple agent identities in a tenant, with an optional agent user for each when the workload needs a user-shaped account.
 
 I find the most useful way to understand it is to keep those objects separate. They have different jobs, different IDs, and can hold different access.
 
@@ -39,7 +41,7 @@ For a multitenant publisher, the blueprint can be present in multiple customer t
 
 For an **autonomous worker** that runs on a schedule or responds to events, start with an agent identity. It gives the workload its own identity and makes its access reviewable without pretending the agent is a person.
 
-For an **interactive agent**, the user remains the subject when the agent acts on that user’s behalf through delegated access and an on-behalf-of flow. The agent identity still identifies the agent as the actor. This distinction gives investigators a way to see both who initiated the work and which agent performed it.
+For an **interactive agent**, the user remains the subject when the agent acts on that user’s behalf through delegated access and an on-behalf-of flow. The agent identity still identifies the agent as the actor. But an interactive agent does not always access resources on a user’s behalf; it can also use its own identity to access resources directly. This distinction gives investigators a way to see both who initiated the work and which agent performed it, while accounting for access performed solely under the agent identity.
 
 Add an **agent user** only when the agent must interact with something that expects a user object. Examples include a mailbox, calendar, Teams resource, or a product-specific role model built around users. That user has separate group membership and permissions, so it expands the access review. Microsoft’s current agent-user documentation describes restrictions on credentials and administrative roles, and notes that creating the user directly through Graph does not provision Microsoft 365 capabilities such as a mailbox.
 
