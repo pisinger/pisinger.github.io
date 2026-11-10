@@ -6,7 +6,7 @@
 
 /* Rouge marks some valid PowerShell syntax as an error; don't show its red block. */
 .highlight .err {
-  background-color: transparent;
+  background: transparent !important;
 }
 
 #sidebar .nav-item:has(> a[href$="/categories/"]) {
