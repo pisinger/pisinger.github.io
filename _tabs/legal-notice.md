@@ -1,7 +1,7 @@
 ---
 title: Imprint
 icon: fas fa-scale-balanced
-order: 10
+order: 11
 ---
 
 ## Information pursuant to § 5 DDG

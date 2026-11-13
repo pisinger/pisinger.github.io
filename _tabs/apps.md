@@ -1,7 +1,7 @@
 ---
 title: Apps
 icon: fas fa-rocket
-order: 7
+order: 8
 ---
 
 > Apps I build and host. Feel free to explore.

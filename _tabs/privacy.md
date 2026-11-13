@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 icon: fas fa-user-shield
-order: 11
+order: 12
 ---
 
 > This privacy policy explains what personal data is processed when you visit this site, on what legal basis, and what rights you have. This is a personal blog; data processing is kept to the technical minimum.
