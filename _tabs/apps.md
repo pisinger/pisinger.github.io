@@ -82,63 +82,70 @@ order: 7
   <a class="app-tile app-tile--featured" href="https://pisinger.tngx-voice.com/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-grip" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">My Apps <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🧭</span> My Apps <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Landing page for all my hosted apps.</span>
+    </span>
+  </a>
+  <a class="app-tile" href="https://pisinger.tngx-voice.com/ms-graph-security-reference/" target="_blank" rel="noopener">
+    <span class="app-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></span>
+    <span class="app-text">
+      <span class="app-title"><span aria-hidden="true">🛡️</span> Microsoft Graph Security API Reference <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-desc">Reference for Microsoft Graph Security API endpoints, permissions, and catalog changes.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/ms-release-radar/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-satellite-dish" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">Microsoft Security Release Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🛰️</span> Microsoft Security Release Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Curated product updates across the Microsoft security and cloud stack.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/wiz-release-radar/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">Wiz Release Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🪄</span> Wiz Release Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Curated product announcements and release updates from public Wiz sources.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/kev-radar/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">CISA KEV Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🚨</span> CISA KEV Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Known Exploited Vulnerabilities catalog with traffic-light indicators and Microsoft/Windows/Azure filters.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/k8s-cve-radar/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-dharmachakra" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">K8s CVE Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">☸️</span> K8s CVE Radar <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Kubernetes official CVE feed — vulnerabilities published by the K8s Security Response Committee.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/defender-cloud-alerts/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-bell" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">Defender Cloud Alerts <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🔔</span> Defender Cloud Alerts <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Searchable reference of Microsoft Defender for Cloud security alerts with severity indicators and MITRE tactics.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/defender-cloud-mitre/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-table-cells" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">Defender Cloud MITRE Coverage <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">🎯</span> Defender Cloud MITRE Coverage <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">MITRE ATT&amp;CK coverage matrix showing which Defender plans cover which tactics.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/defender-containers-overview/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-cubes" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">Defender for Containers Overview <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">📦</span> Defender for Containers Overview <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Feature support, access patterns, registries, images, network requirements, and permissions across AKS, EKS, GKE, and Arc.</span>
     </span>
   </a>
   <a class="app-tile" href="https://pisinger.tngx-voice.com/ms-tech-news/" target="_blank" rel="noopener">
     <span class="app-icon"><i class="fas fa-newspaper" aria-hidden="true"></i></span>
     <span class="app-text">
-      <span class="app-title">MS Tech News <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
+      <span class="app-title"><span aria-hidden="true">📰</span> MS Tech News <i class="fas fa-arrow-right arrow" aria-hidden="true"></i></span>
       <span class="app-desc">Weekly curated digest of Microsoft Tech Community blog posts, security blogs, and engineering updates.</span>
     </span>
   </a>

@@ -5,29 +5,7 @@ order: 6
 title: MS Tech News
 ---
 
-Curated roundups of posts published on [techcommunity.microsoft.com](https://techcommunity.microsoft.com) for the products I track. The latest 20 roundups are listed here — the full history, plus filtering and drill-down, is served via the dedicated [ms-tech-news-app](https://pisinger.tngx-voice.com/ms-tech-news/).
-{% if site.ms_tech_news.size > 0 %}
-<a href="/feed/ms_tech_news.xml" class="btn btn-sm btn-outline-secondary mt-1 mb-3">
-  <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
-</a>
-{% endif %}
+<meta http-equiv="refresh" content="0; url=https://pisinger.tngx-voice.com/ms-tech-news">
+<script>window.location.replace("https://pisinger.tngx-voice.com/ms-tech-news");</script>
 
-{% assign MAX_ENTRIES = 20 %}
-{% assign entries = site.ms_tech_news | sort: 'date' | reverse %}
-
-{% if entries.size == 0 %}
-*First roundup coming soon.*
-{% else %}
-<ul style="list-style: none; padding: 0;">
-{% for entry in entries limit: MAX_ENTRIES %}
-  <li style="margin-bottom: 1.5rem;">
-    <h3 style="margin-bottom: 0.25rem;">
-      <a href="{{ entry.url | relative_url }}">{{ entry.title }}</a>
-    </h3>
-    <time datetime="{{ entry.date | date_to_xmlschema }}" style="font-size: 0.875rem; opacity: 0.75;">
-      {{ entry.date | date: "%Y-%m-%d" }}
-    </time>
-  </li>
-{% endfor %}
-</ul>
-{% endif %}
+Redirecting to [MS Tech News](https://pisinger.tngx-voice.com/ms-tech-news).
