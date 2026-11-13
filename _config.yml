@@ -182,6 +182,10 @@ collections:
     output: true
     sort_by: date
     permalink: /ms-tech-news/:path/
+  ms_feature_brief:
+    output: true
+    sort_by: date
+    permalink: /ms-feature-brief/:path/
 
 defaults:
   - scope:
