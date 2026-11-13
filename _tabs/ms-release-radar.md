@@ -7,6 +7,12 @@ title: MS Release Radar
 
 MS Release Radar is hosted separately as an Azure Static Web App and embedded here.
 
+<p>
+  <a class="btn btn-primary" href="https://pisinger.tngx-voice.com/ms-release-radar" target="_blank" rel="noopener noreferrer">
+    Open MS Release Radar in a new tab <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+  </a>
+</p>
+
 <iframe
   src="https://pisinger.tngx-voice.com/ms-release-radar"
   title="Microsoft Security Release Radar"
