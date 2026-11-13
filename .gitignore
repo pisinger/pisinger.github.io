@@ -29,4 +29,9 @@ assets/js/dist
 # claude
 .claude/settings.local.json
 
+# other
 samples
+_posts/.agents
+_posts/.git
+_posts/.claude
+_posts/.codex
