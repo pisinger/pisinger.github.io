@@ -3,11 +3,10 @@
 <footer
   aria-label="Site Info"
   class="
-    d-flex flex-column justify-content-center text-muted
-    flex-lg-row justify-content-lg-between align-items-lg-center pb-lg-3
+    d-flex flex-column align-items-center justify-content-center text-center text-muted pb-3
   "
 >
-  <p>
+  <p class="mb-1">
     {{- '©' }}
     <time>{{ 'now' | date: '%Y' }}</time>
 
@@ -28,8 +27,6 @@
     {% endif %}
 
     <span aria-hidden="true"> · </span>
-    <span>Some content on this blog is created with the help of AI.</span>
-    <span aria-hidden="true"> · </span>
     <a href="{{ '/about/' | relative_url }}">About</a>
     <span aria-hidden="true"> · </span>
     <a href="{{ '/contact/' | relative_url }}">Contact</a>
@@ -39,7 +36,9 @@
     <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
   </p>
 
-  <p>
+  <p class="mb-1">Some content on this blog is created with the help of AI</p>
+
+  <p class="mb-0">
     {%- capture _platform -%}
       <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a>
     {%- endcapture -%}
