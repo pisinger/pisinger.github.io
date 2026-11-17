@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1552" viewBox="0 0 1600 1552" role="img" aria-labelledby="title desc">
+  <title id="title">Where to spot Defender admin changes without the unified audit log</title>
+  <desc id="desc">Defender admin changes mapped to their Advanced Hunting audit tables and operations. Most CloudAppEvents hunts use the DefenderAdmin function; Sentinel and Intune audit tables have separate queries.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#131d31"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".28"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1L11 6L1 11Z" fill="#74a9ff"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eef4ff}.muted{fill:#a9b8ce}.small{font-size:16px}.heading{font-size:21px;font-weight:700}.card{filter:url(#shadow);stroke-width:1.5}.label{font-size:14px;font-weight:700;letter-spacing:1.3px;fill:#81aef5}.mono{font-family:Consolas,monospace;font-size:15px;fill:#d2e4ff}.q{font-size:20px;font-weight:700}
+    </style>
+  </defs>
+  <rect width="1600" height="1552" rx="28" fill="url(#bg)"/>
+  <text x="72" y="76" font-size="18" font-weight="700" letter-spacing="2" fill="#81aef5">MICROSOFT DEFENDER XDR</text>
+  <text x="72" y="126" font-size="42" font-weight="750">Where to spot Defender admin changes</text>
+  <text x="72" y="164" font-size="21" class="muted">Advanced Hunting and connected Sentinel tables. No Purview unified audit log search.</text>
+  <g class="card"><rect x="72" y="200" width="332" height="112" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="102" cy="232" r="14" fill="#183e72" stroke="#74a9ff"/><text x="102" y="238" text-anchor="middle" font-size="15" font-weight="700">1</text>
+    <text x="126" y="239" class="heading" font-size="19">Defender portal change</text>
+    <text x="96" y="272" class="small muted">Admin edits a policy,</text><text x="96" y="294" class="small muted">setting, role or incident</text></g>
+  <path d="M408 256H424" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <g class="card"><rect x="440" y="200" width="332" height="112" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="470" cy="232" r="14" fill="#183e72" stroke="#74a9ff"/><text x="470" y="238" text-anchor="middle" font-size="15" font-weight="700">2</text>
+    <text x="494" y="239" class="heading" font-size="19">Four audit tables</text>
+    <text x="464" y="272" class="small muted">CloudAppEvents, CloudAuditEvents,</text><text x="464" y="294" class="small muted">SentinelAudit, IntuneAuditLogs</text></g>
+  <path d="M776 256H792" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <g class="card"><rect x="808" y="200" width="332" height="112" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="838" cy="232" r="14" fill="#183e72" stroke="#74a9ff"/><text x="838" y="238" text-anchor="middle" font-size="15" font-weight="700">3</text>
+    <text x="862" y="239" class="heading" font-size="19">DefenderAdmin() preamble</text>
+    <text x="832" y="272" class="small muted">Normalizes actor, operation,</text><text x="832" y="294" class="small muted">details; resolves the UPN</text></g>
+  <path d="M1144 256H1160" stroke="#74a9ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <g class="card"><rect x="1176" y="200" width="332" height="112" rx="16" fill="#172235" stroke="#455975"/>
+    <circle cx="1206" cy="232" r="14" fill="#183e72" stroke="#74a9ff"/><text x="1206" y="238" text-anchor="middle" font-size="15" font-weight="700">4</text>
+    <text x="1230" y="239" class="heading" font-size="19">Hunt or alert</text>
+    <text x="1200" y="272" class="small muted">Query per area, or turn it</text><text x="1200" y="294" class="small muted">into a custom detection</text></g>
+  <text x="72" y="350" class="label">WHAT CHANGED</text><text x="560" y="350" class="label">WHERE IT IS LOGGED</text><text x="1000" y="350" class="label">WHAT TO LOOK FOR</text>
+  <g class="card"><rect x="72" y="366" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="366" width="8" height="84" rx="4" fill="#74a9ff"/>
+    <text x="100" y="402" class="heading">Detection rules</text><text x="100" y="428" class="small muted">Custom detections, suppression</text>
+    <text x="560" y="416" class="mono">Workload = Microsoft365Defender</text>
+    <text x="1000" y="406" class="small">Create / Edit / DeleteCustomDetection,</text><text x="1000" y="428" class="small">ChangeCustomDetectionRuleStatus</text></g>
+  <g class="card"><rect x="72" y="462" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="462" width="8" height="84" rx="4" fill="#74a9ff"/>
+    <text x="100" y="498" class="heading">Sentinel rules</text><text x="100" y="524" class="small muted">Analytics and automation changes</text>
+    <text x="560" y="506" class="mono">SentinelAudit: analytics rules</text><text x="560" y="530" class="mono">CloudAuditEvents: automation rules</text>
+    <text x="1000" y="506" class="small">Automation filter: DataSource = "Azure Logs"</text><text x="1000" y="530" class="small">AzureResourceId identifies the rule resource</text></g>
+  <g class="card"><rect x="72" y="558" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="558" width="8" height="84" rx="4" fill="#5fd0b0"/>
+    <text x="100" y="594" class="heading">Endpoint settings</text><text x="100" y="620" class="small muted">Features, retention, indicators</text>
+    <text x="560" y="608" class="mono">Workload = MicrosoftDefenderForEndpoint</text>
+    <text x="1000" y="598" class="small">Feature toggles, onboarding package download, indicator add</text><text x="1000" y="620" class="small">/ delete</text></g>
+  <g class="card"><rect x="72" y="654" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="654" width="8" height="84" rx="4" fill="#5fd0b0"/>
+    <text x="100" y="690" class="heading">Endpoint security policies</text><text x="100" y="716" class="small muted">ASR, antivirus, EDR, Windows and Linux</text>
+    <text x="560" y="704" class="mono">Table IntuneAuditLogs, not CloudAppEvents</text>
+    <text x="1000" y="694" class="small">Patch / Create / Delete DeviceManagementConfigurationPolicy.</text><text x="1000" y="716" class="small">Actor.UPN, ApplicationName: WindowsDefenderATP = Defender</text><text x="1000" y="738" class="small">portal</text></g>
+  <g class="card"><rect x="72" y="750" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="750" width="8" height="84" rx="4" fill="#5fd0b0"/>
+    <text x="100" y="786" class="heading">Defender roles (URBAC)</text><text x="100" y="812" class="small muted">Who gets which permission</text>
+    <text x="560" y="800" class="mono">Workload = URBAC, MDE roles, MDE Experts</text>
+    <text x="1000" y="800" class="small">CreateRole, CreateAssignment, role and assignment changes</text></g>
+  <g class="card"><rect x="72" y="846" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="846" width="8" height="84" rx="4" fill="#5fd0b0"/>
+    <text x="100" y="882" class="heading">Identity and AI settings</text><text x="100" y="908" class="small muted">Sensor mode, AI policy rules</text>
+    <text x="560" y="886" class="mono">Workload = MicrosoftDefenderForIdentity</text><text x="560" y="908" class="mono">/ MicrosoftSecurityForAI</text>
+    <text x="1000" y="896" class="small">Defender for Identity and Security for AI setting changes</text></g>
+  <g class="card"><rect x="72" y="942" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="942" width="8" height="84" rx="4" fill="#f2b35e"/>
+    <text x="100" y="978" class="heading">Device response actions</text><text x="100" y="1004" class="small muted">Isolate, live response, AV scan</text>
+    <text x="560" y="992" class="mono">Workload = MicrosoftDefenderForEndpoint</text>
+    <text x="1000" y="982" class="small">IsolateDevice, ReleaseFromIsolation, RunLiveResponseSession</text><text x="1000" y="1004" class="small">(CommandsString), CollectInvestigationPackage,</text><text x="1000" y="1026" class="small">RunAntiVirusScan</text></g>
+  <g class="card"><rect x="72" y="1038" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="1038" width="8" height="84" rx="4" fill="#f2b35e"/>
+    <text x="100" y="1074" class="heading">Incident handling</text><text x="100" y="1100" class="small muted">Status, owner, tags, bulk close</text>
+    <text x="560" y="1088" class="mono">Workload = Microsoft365Defender</text>
+    <text x="1000" y="1088" class="small">UpdateIncidentStatus, AssignUser, AddTags, closed per actor</text></g>
+  <g class="card"><rect x="72" y="1134" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="1134" width="8" height="84" rx="4" fill="#c79bff"/>
+    <text x="100" y="1170" class="heading">Email policies</text><text x="100" y="1196" class="small muted">Anti-phish, Safe Links, TABL</text>
+    <text x="560" y="1184" class="mono">Application = Microsoft Exchange Online</text>
+    <text x="1000" y="1174" class="small">Set-AntiPhishPolicy, Set-SafeLinksPolicy, Tenant Allow/Block</text><text x="1000" y="1196" class="small">List cmdlets</text></g>
+  <g class="card"><rect x="72" y="1230" width="1456" height="84" rx="14" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="1230" width="8" height="84" rx="4" fill="#c79bff"/>
+    <text x="100" y="1266" class="heading">Entra roles for access</text><text x="100" y="1292" class="small muted">Global and Security Admin</text>
+    <text x="560" y="1280" class="mono">Workload = AzureActiveDirectory</text>
+    <text x="1000" y="1280" class="small">Add member to role. / Remove member from role.</text></g>
+  <g class="card"><rect x="72" y="1334" width="1456" height="196" rx="16" fill="#1d2a1f" stroke="#4d7a52"/>
+    <text x="100" y="1370" class="heading" style="fill:#9be3a4">Watch out</text>
+    <text x="100" y="1402" class="small">IsAdminOperation is 0 for Defender events, so filter on the workload, not on that flag.</text>
+    <text x="100" y="1428" class="small">The actor can be an object ID only (Exchange portal) or an app name (Sentinel, SOAR): resolve through IdentityInfo.</text>
+    <text x="100" y="1452" class="small muted">Audit lag is minutes up to about 40 minutes. Policy events show the new settings, never the old value.</text>
+    <text x="100" y="1502" class="small" style="fill:#f2b35e">ASR and antivirus policy edits are not in CloudAppEvents. IntuneAuditLogs only exists if Intune sends its audit log to the workspace.</text>
+    <text x="100" y="1478" class="small" style="fill:#f2b35e">Isolation, live response and AV scans are response actions, not config changes. They show who acted, so hunt them for misuse, not for drift.</text></g>
+</svg>
