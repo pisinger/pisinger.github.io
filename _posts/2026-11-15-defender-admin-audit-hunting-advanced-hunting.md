@@ -12,7 +12,8 @@ When someone changes a Defender setting, disables a detection, runs live respons
 
 Hunting Defender administration through Advanced Hunting is not a new idea. I wanted to take another look at the events and fields available in my test tenant, and collect the queries into one practical reference. This pass is not exhaustive; I may have missed operations or settings that are audited in other environments. I’m sharing what I have so far as a useful starting point, and I expect the query set to grow as I validate more activity.
 
-I put the full query set in [my GitHub repository](https://github.com/pisinger/hunting/blob/main/defender-admin-audit-hunting.md). This post explains the design choices that matter and the signals I would start with; it does not reproduce all 18 queries.
+> I put the full query set in [my GitHub repository](https://github.com/pisinger/hunting/blob/main/defender-admin-audit-hunting.md). This post explains the design choices that matter and the signals I would start with; it does not reproduce all 18 queries.
+{: .prompt-tip}
 
 ## 🔍 The data is there, but it is spread out
 
