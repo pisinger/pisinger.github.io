@@ -31,7 +31,9 @@ The most consequential finding in my test tenant was that `IsAdminOperation` was
 
 Actor attribution needs care. An incident update made by Sentinel or a SOAR integration may not have an account ID or display name at all; the client application name can be in `AppAccessContext`. `UserType` is not consistent enough to identify a human administrator by itself either. In the examples I tested, the same admin appeared with different user types across workloads. The function classifies obvious application names first, then uses `UserType` as a hint. That makes `ActorKind` useful for triage, not an authoritative identity verdict.
 
-Here is the common preamble used by the focused hunts. It resolves object IDs against `IdentityInfo`, exposes a consistent actor view, and leaves operation-specific fields in `Details` for the query that follows.
+Here is the common preamble used by the focused hunts which can be saved as a function in Defender XDR for more easy reuse. It resolves object IDs against `IdentityInfo`, exposes a consistent actor view, and leaves operation-specific fields in `Details` for the query that follows.
+
+> Keep in mind to only save the query itself, not the `let DefenderAdmin = (lookback: timespan) {...}` wrapper, when creating the function in Defender XDR.
 
 ```shell
 let DefenderAdmin = (lookback: timespan) {
@@ -67,6 +69,7 @@ let DefenderAdmin = (lookback: timespan) {
     | project Timestamp, ReportId, Workload, Operation = ActionType, Actor, ActorUpn, ActorName, ActorKind,
         ActorObjectId, IPAddress, CountryCode, Details
 };
+DefenderAdmin(30d)
 ```
 
 The same principle applies to event details. The shared function keeps the raw operation-specific properties in `Details` instead of pretending that every workload has a neat, stable schema. That lets a first pass show what the event contains; then a tenant-specific detection can extract the fields it actually needs.
