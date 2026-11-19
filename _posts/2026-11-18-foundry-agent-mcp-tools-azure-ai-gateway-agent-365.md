@@ -1,5 +1,5 @@
 ---
-title: Govern Foundry Agent MCP Tools with Azure AI Gateway - Agent 365 Tool Blocking, Policies and Drift
+title: Govern Foundry Agent MCP Tools with Azure AI Gateway - Agent 365 Tool Blocking
 author: pit
 date: 2026-11-18
 categories: [blogging, tutorial]
@@ -40,7 +40,7 @@ For Agent 365, the difference is not cosmetic:
 
 APIM v1 tiers aren't supported at all. If you want to switch off a single tool rather than the whole server, AI Gateway is the only option today.
 
-> Check the current region list before you plan: Learn lists sixteen regions for AI Gateway, including **Sweden Central**, **West Europe** and **East US 2**. The Agent 365 integration is still in preview. For pricing, see the [API Management pricing page](https://azure.microsoft.com/en-us/pricing/details/api-management).
+> **Update (November 2026):** Microsoft announced the Agent 365 integration with Azure API Management and Azure AI Gateway as generally available in November 2026. Check the current [AI Gateway region list](https://learn.microsoft.com/azure/ai-gateway/region-availability) before you plan; the list I checked included **Sweden Central**, **West Europe** and **East US 2**. For pricing, see the [API Management pricing page](https://azure.microsoft.com/en-us/pricing/details/api-management). ([GA announcement](https://azure.microsoft.com/en-us/updates?id=580055))
 > <https://learn.microsoft.com/azure/ai-gateway/region-availability>
 > <https://learn.microsoft.com/azure/api-management/agent-365>
 > <https://learn.microsoft.com/azure/ai-gateway/overview>
@@ -56,7 +56,7 @@ Prerequisites before you start:
 - `Contributor` on the target resource group.
 - `Reader` and `User Access Administrator` on the Foundry account, so the gateway's managed identity can be granted access to model deployments.
 
-In `ai.gateway.azure.com` it's **All gateways → Create gateway**, pick subscription, existing resource group and a supported region. There is no SKU picker - the resource comes back with `sku.name: Standard` - not to be confused with the classic APIM Standard tier.
+In <https://ai.gateway.azure.com> it's **All gateways → Create gateway**, pick subscription, existing resource group and a supported region. There is no SKU picker - the resource comes back with `sku.name: Standard` - not to be confused with the classic APIM Standard tier.
 
 ```bash
 az provider register -n Microsoft.ApiManagement
@@ -226,6 +226,12 @@ Without that list, the **Tools** tab says *"This server doesn't support tool dis
 3. **Allowed tool name patterns** → **Add pattern** once per tool, with the **exact** tool name. **Save**.
 4. In the admin center: **Agents** → **Tools** → **Registry** → **MCP servers** → server → **Tools** tab → toggle a tool off → **Save**.
 
+![Microsoft 365 admin center showing the MCP server's tools and their enable toggles](/assets/img/posts/foundry-agent-mcp-tools-azure-ai-gateway-agent-365/ai-gateway-block-tools-in-m365.png)
+_The Agent 365 Tools tab lists the discovered MCP tools and lets an admin block individual tools._
+
+![Azure AI Gateway MCP server configuration showing exact tool name patterns in the allow list](/assets/img/posts/foundry-agent-mcp-tools-azure-ai-gateway-agent-365/ai-gateway-mcp-tool-names.png)
+_The gateway's static allow list defines which tool names Agent 365 can discover and govern._
+
 > **One wildcard disables all tool toggles.** My first list had eleven exact names and one `list_*`. M365 kept saying the server doesn't support tool discovery. With the two exact names instead, the toggles appeared within minutes and blocking a single tool worked straight away. `*`, `?` or **Allow all tools** count as dynamic - check for them before you suspect the tool-level rollout Learn mentions.
 {: .prompt-warning}
 
@@ -321,6 +327,9 @@ The first row is my CLI unblock, three minutes after the tool block; the others 
 
 Agent 365 blocks are one kind of control. The gateway has its own policy engine on top: in `ai.gateway.azure.com`, **Policies** → **Add policy**, pick what the policy protects, set the values, review the scope, then check the effect under **Monitoring**. Policies are managed in the gateway, never in Foundry.
 
+![Azure AI Gateway policy type selection screen](/assets/img/posts/foundry-agent-mcp-tools-azure-ai-gateway-agent-365/ai-gateway-policies.png)
+_The gateway policy picker includes tool threat protection alongside model rate and cost controls._
+
 What the Microsoft Learn pages currently confirm for AI Gateway:
 
 | Policy                                | Applies to          | What it does                                                                                         |
@@ -377,9 +386,9 @@ The gateway logs showed `AuthorizationDenied` for the **Foundry project's manage
 
 The second comes with the model import; the first you assign yourself (`AI Gateway Tools User` would cover MCP servers, `AI Gateway User` both). Minutes later model calls showed up next to the tool calls - tokens and cost are in the [telemetry post](/posts/azure-ai-gateway-telemetry-kql-otelspans-tokens-client-ip/).
 
-> Connected models currently don't support Foundry **Guardrails**, agent memory or Foundry IQ - for a security agent, a trade-off to replace with gateway-side controls first. And the direct path still exists: any agent version that references the deployment by name bypasses the gateway, so routing model traffic is a per-version decision.
+> Connected models (AI gateway / BYOM) currently don't support Foundry **Guardrails** - and in testing that also means an explicitly assigned agent guardrail. The agent runs, Prompt Shields doesn't screen user input at the agent boundary, and **Defender (Security for AI) creates no behaviors** - no `BehaviorPromptShieldJailbreakBlock` in `BehaviorInfo`, which the same prompts produce on the direct route. If the gateway backend is a Foundry deployment, its own Prompt Shields still blocks the prompt, but because the agent streams the model call, it returns HTTP 200 with `status: incomplete` instead of HTTP 400. A gateway alias to a model without a content filter leaves the agent unfiltered. Agent memory and Foundry IQ aren't supported either. For a security agent, put content safety on the backend deployment - or on an API Management gateway with the `llm-content-safety` policy - before switching. And the direct path still exists: any agent version that references the deployment by name bypasses the gateway - and gets the guardrail and Defender behaviors back - so routing model traffic is a per-version decision.
 > <https://learn.microsoft.com/azure/foundry/agents/how-to/ai-gateway>
-{: .prompt-warning}
+{: .prompt-danger}
 
 ## 📡 Gateway Logs for Policies and Blocks
 
@@ -495,7 +504,6 @@ az rest -m get -u "$GW_ID/toolServers/<name>?$API" \
 
 ## ⚠️ Limitations and Open Questions
 
-- **Preview** - Agent 365 integration, `az aig` and parts of the portal; the server block doesn't match the docs.
 - **Private endpoints in preview** - inbound private access needs approval; VNet and subnet can't be changed after they're set.
 - **No content inspection for autonomous agents** - tool threat protection needs a delegated user token.
 - **Model traffic is routed per agent version** - and needs `AI Gateway Models User` for the project identity.
