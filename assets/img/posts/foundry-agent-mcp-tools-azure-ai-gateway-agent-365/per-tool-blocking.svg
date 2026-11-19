@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Per-tool blocking with Agent 365 and Azure AI Gateway</title>
+  <desc id="d">Step 1: the gateway owner edits the MCP server in the AI Gateway portal and sets Tool availability to Match tools by name pattern with the exact tool names. Step 2: Agent 365 reads this allow list from the gateway configuration through the control plane, not through tools/list. Step 3: the M365 admin opens Agents, Tools, Registry, MCP servers, the server and its Tools tab and toggles a tool off. Step 4: Agent 365 adds the tool to the MCP server block list, so tools/call for that tool is rejected with ToolNotAvailable. Step 5: when the Foundry agent calls the blocked tool, the gateway answers HTTP 200 with JSON-RPC isError true, and the Azure Function never sees the call. Without an allow list, M365 shows that the server doesn't support tool discovery and only server-level blocking is possible. The block only holds for callers that use the gateway.</desc>
+  <defs>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/></marker>
+    <marker id="ay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+  <style>
+    .card { fill: #1b1b1e; stroke: #2c2d2d; stroke-width: 1.5; }
+    .h { font-size: 12px; font-weight: 700; fill: #9ca3af; letter-spacing: 1px; }
+    .role { font-size: 11.5px; fill: #6b7280; }
+    .n { font-size: 15px; font-weight: 600; fill: #e5e7eb; }
+    .s { font-size: 11.5px; fill: #9ca3af; }
+    .m { font-size: 12px; fill: #e5e7eb; font-family: Consolas, "Cascadia Mono", monospace; }
+    .ms { font-size: 11px; fill: #e5e7eb; font-family: Consolas, "Cascadia Mono", monospace; }
+    .lp { font-size: 12px; fill: #c4b5fd; }
+    .lb { font-size: 12px; fill: #93c5fd; }
+    .ly { font-size: 12px; fill: #fcd34d; }
+    .lr { font-size: 12px; font-weight: 600; fill: #f87171; }
+    .gov { fill: #2e1065; stroke: #8b5cf6; stroke-width: 1.5; }
+    .gw { fill: #172554; stroke: #3b82f6; stroke-width: 2; }
+    .fn { fill: #052e16; stroke: #22c55e; stroke-width: 1.5; }
+    .box { fill: #26272b; stroke: #4b5563; stroke-width: 1.5; }
+    .pol { fill: #3b0764; stroke: #a78bfa; stroke-width: 1.3; }
+    .al { fill: #2a2210; stroke: #fbbf24; stroke-width: 1.3; }
+    .row { fill: #1f1f23; stroke: #3f3f46; stroke-width: 1; }
+    .chip { fill: #1f1f23; stroke: #fbbf24; stroke-width: 1; }
+    .num { font-size: 12px; font-weight: 700; fill: #1b1b1e; }
+  </style>
+
+  <rect class="card" x="1" y="1" width="958" height="598" rx="14"/>
+
+  <text class="h" x="30" y="32">M365 ADMIN CENTER</text><text class="role" x="30" y="48">M365 admin · Agent 365</text>
+  <text class="h" x="350" y="32">AZURE AI GATEWAY</text><text class="role" x="350" y="48">gateway owner · ai.gateway.azure.com</text>
+  <text class="h" x="700" y="32">AZURE FUNCTION</text><text class="role" x="700" y="48">backend owner</text>
+
+  <!-- M365 -->
+  <rect class="gov" x="30" y="60" width="260" height="215" rx="10"/>
+  <circle cx="52" cy="84" r="11" fill="#a78bfa"/><text class="num" x="52" y="88" text-anchor="middle">3</text>
+  <text class="n" x="72" y="89">Toggle a tool off</text>
+  <text class="s" x="50" y="110">Agents → Tools → Registry → MCP servers</text>
+  <text class="s" x="50" y="126">→ server → Tools tab → Save</text>
+  <rect class="row" x="46" y="140" width="228" height="32" rx="6"/>
+  <text class="m" x="58" y="161">investigate_email</text>
+  <rect x="226" y="147" width="36" height="18" rx="9" fill="#22c55e"/><circle cx="253" cy="156" r="7" fill="#ffffff"/>
+  <rect class="row" x="46" y="180" width="228" height="32" rx="6"/>
+  <text class="m" x="58" y="201">run_hunting_query</text>
+  <rect x="226" y="187" width="36" height="18" rx="9" fill="#4b5563"/><circle cx="235" cy="196" r="7" fill="#d1d5db"/>
+  <rect class="row" x="46" y="220" width="228" height="32" rx="6"/>
+  <text class="m" x="58" y="241">lookup_threat_intel</text>
+  <rect x="226" y="227" width="36" height="18" rx="9" fill="#22c55e"/><circle cx="253" cy="236" r="7" fill="#ffffff"/>
+
+  <!-- Gateway -->
+  <rect class="gw" x="350" y="60" width="290" height="275" rx="10"/>
+  <text class="n" x="370" y="86">MCP server func-mcp-phish</text>
+
+  <rect class="al" x="364" y="98" width="262" height="120" rx="8"/>
+  <circle cx="384" cy="118" r="11" fill="#fbbf24"/><text class="num" x="384" y="122" text-anchor="middle">1</text>
+  <text class="ly" x="402" y="122" font-weight="600">Allow list (static)</text>
+  <text class="s" x="378" y="142">Edit → Tools → Tool availability:</text>
+  <text class="s" x="378" y="158">Match tools by name pattern, exact names</text>
+  <rect class="chip" x="378" y="168" width="118" height="20" rx="4"/><text class="ms" x="386" y="182">investigate_email</text>
+  <rect class="chip" x="502" y="168" width="118" height="20" rx="4"/><text class="ms" x="510" y="182">run_hunting_query</text>
+  <rect class="chip" x="378" y="192" width="126" height="20" rx="4"/><text class="ms" x="386" y="206">lookup_threat_intel</text>
+  <text class="ms" x="512" y="206" fill="#9ca3af">… no * patterns</text>
+
+  <rect class="pol" x="364" y="230" width="262" height="58" rx="8"/>
+  <circle cx="384" cy="250" r="11" fill="#a78bfa"/><text class="num" x="384" y="254" text-anchor="middle">4</text>
+  <text class="lp" x="402" y="254" font-weight="600">blockList entry, set by Agent 365</text>
+  <text class="s" x="378" y="276">tools/call → isError · ToolNotAvailable</text>
+  <text class="s" x="370" y="320">other listed tools pass through as before</text>
+
+  <!-- Function -->
+  <rect class="fn" x="700" y="60" width="230" height="275" rx="10"/>
+  <text class="n" x="720" y="86">Function MCP server</text>
+  <text class="s" x="720" y="106">unchanged - no redeploy,</text>
+  <text class="s" x="720" y="122">same twelve tools</text>
+  <rect class="row" x="716" y="230" width="198" height="58" rx="6"/>
+  <text class="lr" x="730" y="254">never sees the</text>
+  <text class="lr" x="730" y="273">blocked call</text>
+
+  <!-- 2: Agent 365 reads allow list -->
+  <path d="M362,150 C330,150 320,104 292,104" stroke="#fbbf24" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#ay)"/>
+  <circle cx="318" cy="128" r="11" fill="#fbbf24"/><text class="num" x="318" y="132" text-anchor="middle">2</text>
+  <circle cx="44" cy="301" r="9" fill="#fbbf24"/><text class="num" x="44" y="305" text-anchor="middle" font-size="11">2</text>
+  <text class="ly" x="60" y="305" font-weight="600">Agent 365 reads the allow list</text>
+  <text class="s" x="60" y="323">from the gateway configuration (control</text>
+  <text class="s" x="60" y="339">plane) - not via tools/list on the server</text>
+
+  <!-- 4: M365 writes policy -->
+  <path d="M290,196 C330,196 330,258 362,258" stroke="#a78bfa" stroke-width="2" fill="none" marker-end="url(#ap)"/>
+
+  <!-- gateway -> function blocked -->
+  <line x1="640" y1="259" x2="698" y2="259" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+  <circle cx="669" cy="259" r="9" fill="#1b1b1e" stroke="#f87171" stroke-width="1.6"/>
+  <text x="669" y="263" text-anchor="middle" font-size="11" font-weight="700" fill="#f87171">✗</text>
+
+  <!-- 5: agent call -->
+  <rect class="box" x="350" y="420" width="290" height="56" rx="10"/>
+  <circle cx="372" cy="448" r="11" fill="#60a5fa"/><text class="num" x="372" y="452" text-anchor="middle">5</text>
+  <text class="n" x="392" y="445">Foundry agent</text>
+  <text class="s" x="392" y="463">calls the gateway endpoint</text>
+  <path d="M460,418 L460,338" stroke="#60a5fa" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+  <text class="lb" x="450" y="372" text-anchor="end">tools/call</text>
+  <text class="lb" x="450" y="388" text-anchor="end">run_hunting_query</text>
+  <path d="M540,338 L540,418" stroke="#60a5fa" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ab)"/>
+  <text class="lb" x="550" y="372">HTTP 200 · JSON-RPC</text>
+  <text class="lb" x="550" y="388">isError: true - no retry</text>
+
+  <!-- no allow list -->
+  <rect x="30" y="400" width="290" height="104" rx="10" fill="#2a1414" stroke="#f87171" stroke-width="1.3"/>
+  <text x="46" y="424" font-size="12.5" font-weight="600" fill="#fca5a5">No allow list = no tool toggles</text>
+  <text class="s" x="46" y="446">"Allow all tools" or * patterns: M365 shows</text>
+  <text class="s" x="46" y="462">"doesn't support tool discovery". The M365</text>
+  <text class="s" x="46" y="478">admin can only block the whole server, or the</text>
+  <text class="s" x="46" y="494">gateway owner blocks tools in the gateway.</text>
+
+  <!-- bypass -->
+  <rect x="670" y="400" width="260" height="104" rx="10" fill="#2a1414" stroke="#f87171" stroke-width="1.3"/>
+  <text x="686" y="424" font-size="12.5" font-weight="600" fill="#fca5a5">Only holds for gateway callers</text>
+  <text class="s" x="686" y="446">Anyone calling the function directly</text>
+  <text class="s" x="686" y="462">with its key bypasses the block -</text>
+  <text class="s" x="686" y="478">lock the backend to the gateway.</text>
+
+  <line x1="30" y1="530" x2="930" y2="530" stroke="#2c2d2d" stroke-width="1.5"/>
+  <text class="s" x="30" y="556">The gateway owner sets the upper limit (allow list); the M365 admin can only narrow it per tool, never widen it.</text>
+  <text class="s" x="30" y="576">Blocking the whole server works without an allow list: accessState = blocked, every request gets HTTP 200 with JSON-RPC error AccessBlockedByGateway.</text>
+</svg>

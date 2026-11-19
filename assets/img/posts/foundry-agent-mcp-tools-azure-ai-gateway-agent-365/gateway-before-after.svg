@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Foundry agent tool and model traffic before and after Azure AI Gateway</title>
+  <desc id="d">Before: the Foundry agent calls the Function MCP server directly with the function key, and Agent Service calls the model deployment directly. After: both MCP tool calls and model calls go through Azure AI Gateway. Tool calls use an api-key and the gateway holds the function key. Model calls use a connected model authenticated with the project managed identity, which needs the AI Gateway Models User role; the gateway reaches the model deployment with its own managed identity. Agent 365 writes block policies into the gateway. Agent, gateway and function telemetry land in Application Insights and reach the Sentinel workspace through the backing workspace or a cross-workspace query.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f97316"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#22c55e"/></marker>
+    <style>
+      .card { fill: #1b1b1e; stroke: #2c2d2d; stroke-width: 1.5; }
+      .box { fill: #26272b; stroke: #4b5563; stroke-width: 1.5; }
+      .gw { fill: #172554; stroke: #3b82f6; stroke-width: 2; }
+      .gov { fill: #2e1065; stroke: #8b5cf6; stroke-width: 1.5; }
+      .mon { fill: #052e16; stroke: #22c55e; stroke-width: 1.5; }
+      .h { font-size: 13px; font-weight: 700; fill: #9ca3af; letter-spacing: 1px; }
+      .n { font-size: 15px; font-weight: 600; fill: #e5e7eb; }
+      .s { font-size: 12px; fill: #9ca3af; }
+      .l { font-size: 12px; fill: #cbd5e1; }
+      .lb { font-size: 12px; fill: #60a5fa; font-weight: 600; }
+      .lo { font-size: 12px; fill: #fb923c; font-weight: 600; }
+      .lp { font-size: 12px; fill: #a78bfa; }
+      .lg { font-size: 12px; fill: #4ade80; }
+      .tag { font-size: 11px; fill: #9ca3af; }
+      .line { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
+      .lineb { stroke: #3b82f6; stroke-width: 2; fill: none; }
+      .lineo { stroke: #f97316; stroke-width: 2; fill: none; }
+      .lineod { stroke: #f97316; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; }
+      .linep { stroke: #8b5cf6; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+      .lineg { stroke: #22c55e; stroke-width: 1.6; fill: none; }
+    </style>
+  </defs>
+
+  <rect class="card" x="1" y="1" width="958" height="598" rx="14"/>
+
+  <!-- legend -->
+  <line class="lineb" x1="610" y1="30" x2="640" y2="30"/><text class="l" x="646" y="34">MCP tool calls</text>
+  <line class="lineo" x1="752" y1="30" x2="782" y2="30"/><text class="l" x="788" y="34">model calls</text>
+
+  <!-- BEFORE -->
+  <text class="h" x="40" y="34">BEFORE - DEFAULT AGENT SETUP</text>
+  <rect class="box" x="40" y="54" width="190" height="96" rx="8"/>
+  <text class="n" x="135" y="96" text-anchor="middle">Foundry agent</text>
+  <text class="s" x="135" y="115" text-anchor="middle">prompt agent · v7</text>
+
+  <rect class="box" x="720" y="50" width="200" height="46" rx="8"/>
+  <text class="n" x="820" y="78" text-anchor="middle">Function MCP server</text>
+  <rect class="box" x="720" y="108" width="200" height="46" rx="8"/>
+  <text class="n" x="820" y="128" text-anchor="middle">Model deployment</text>
+  <text class="tag" x="820" y="145" text-anchor="middle">gpt-5.6-luna · Foundry account</text>
+
+  <line class="lineb" x1="230" y1="73" x2="718" y2="73" marker-end="url(#ab)"/>
+  <text class="l" x="474" y="66" text-anchor="middle">x-functions-key stored in the Foundry connection</text>
+  <line class="lineo" x1="230" y1="131" x2="718" y2="131" marker-end="url(#ao)"/>
+  <text class="l" x="474" y="124" text-anchor="middle">called directly by Agent Service - no gateway, no gateway policies</text>
+
+  <line x1="40" y1="176" x2="920" y2="176" stroke="#2c2d2d" stroke-width="1.5"/>
+
+  <!-- AFTER -->
+  <text class="h" x="40" y="206">AFTER - TOOLS AND MODEL THROUGH AI GATEWAY</text>
+  <rect class="box" x="40" y="226" width="190" height="118" rx="8"/>
+  <text class="n" x="135" y="266" text-anchor="middle">Foundry agent</text>
+  <text class="s" x="135" y="285" text-anchor="middle">new version, old kept</text>
+  <text class="tag" x="135" y="304" text-anchor="middle">model:</text>
+  <text class="tag" x="135" y="319" text-anchor="middle">&lt;connection&gt;/&lt;alias&gt;</text>
+
+  <rect class="gw" x="370" y="220" width="220" height="130" rx="8"/>
+  <text class="n" x="480" y="246" text-anchor="middle">Azure AI Gateway</text>
+  <text class="s" x="480" y="270" text-anchor="middle">tool server · static tool list</text>
+  <text class="s" x="480" y="290" text-anchor="middle">model alias · gpt-5-6-luna</text>
+  <text class="s" x="480" y="310" text-anchor="middle">policies · rate / token limits</text>
+  <text class="s" x="480" y="330" text-anchor="middle">Agent 365 managed blocks</text>
+
+  <rect class="box" x="720" y="222" width="200" height="46" rx="8"/>
+  <text class="n" x="820" y="250" text-anchor="middle">Function MCP server</text>
+  <rect class="box" x="720" y="302" width="200" height="46" rx="8"/>
+  <text class="n" x="820" y="322" text-anchor="middle">Model deployment</text>
+  <text class="tag" x="820" y="339" text-anchor="middle">gpt-5.6-luna · Foundry account</text>
+
+  <!-- agent -> gateway -->
+  <line class="lineb" x1="230" y1="252" x2="368" y2="252" marker-end="url(#ab)"/>
+  <text class="lb" x="299" y="244" text-anchor="middle">api-key</text>
+  <line class="lineo" x1="230" y1="320" x2="368" y2="320" marker-end="url(#ao)"/>
+  <text class="lo" x="299" y="312" text-anchor="middle">project MI</text>
+  <text class="tag" x="299" y="337" text-anchor="middle">AI Gateway</text>
+  <text class="tag" x="299" y="350" text-anchor="middle">Models User</text>
+
+  <!-- gateway -> backends -->
+  <line class="lineb" x1="590" y1="245" x2="718" y2="245" marker-end="url(#ab)"/>
+  <text class="lb" x="654" y="237" text-anchor="middle">x-functions-key</text>
+  <text class="tag" x="654" y="261" text-anchor="middle">held by the gateway</text>
+  <line class="lineo" x1="590" y1="325" x2="718" y2="325" marker-end="url(#ao)"/>
+  <text class="lo" x="654" y="317" text-anchor="middle">gateway MI</text>
+  <text class="tag" x="654" y="341" text-anchor="middle">Foundry User</text>
+
+  <!-- old direct path, now unused -->
+  <path class="lineod" d="M135,344 L135,372 L820,372 L820,350" marker-end="url(#ao)" opacity="0.45"/>
+  <text class="tag" x="478" y="388" text-anchor="middle" opacity="0.8">direct path only for agent versions that still reference the deployment</text>
+
+  <!-- bottom row -->
+  <rect class="gov" x="40" y="490" width="220" height="60" rx="8"/>
+  <text class="n" x="150" y="516" text-anchor="middle">Agent 365</text>
+  <text class="s" x="150" y="535" text-anchor="middle">M365 admin center</text>
+  <path class="linep" d="M260,510 C330,505 400,450 440,352" marker-end="url(#ap)"/>
+  <text class="lp" x="150" y="448" text-anchor="middle">block server / tool</text>
+  <text class="lp" x="150" y="464" text-anchor="middle">(managed policy)</text>
+
+  <rect class="mon" x="440" y="490" width="230" height="60" rx="8"/>
+  <text class="n" x="555" y="516" text-anchor="middle">Application Insights</text>
+  <text class="s" x="555" y="535" text-anchor="middle">agent · gateway · function spans</text>
+
+  <rect class="mon" x="722" y="490" width="210" height="60" rx="8"/>
+  <text class="n" x="827" y="516" text-anchor="middle">Sentinel workspace</text>
+  <text class="s" x="827" y="535" text-anchor="middle">OTelSpans · App* tables</text>
+
+  <line class="lineg" x1="520" y1="350" x2="535" y2="488" marker-end="url(#ag)"/>
+  <text class="lg" x="535" y="432">OTLP traces</text>
+  <path class="lineg" d="M860,268 C900,300 940,400 905,430 C860,465 700,450 640,488" marker-end="url(#ag)"/>
+  <text class="lg" x="760" y="430">function requests</text>
+  <line class="lineg" x1="670" y1="520" x2="720" y2="520" marker-end="url(#ag)"/>
+  <text class="tag" x="695" y="575" text-anchor="middle">backing workspace or workspace() query - diagnostic settings don't carry OTelSpans</text>
+  <line x1="695" y1="524" x2="695" y2="562" stroke="#22c55e" stroke-width="1" stroke-dasharray="2 3"/>
+</svg>
