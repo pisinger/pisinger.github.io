@@ -99,7 +99,8 @@ az rest -m get -u "$GW_ID/toolServers?api-version=2026-11-01" \
 ]
 ```
 
-Note what the tool server does *not* contain: a list of tools. Registered like this, it is a pass-through - the gateway forwards whatever the function returns from `tools/list`. That's fine for routing, but it matters later for per-tool blocking in the M365 admin center, which I come back to below.
+> Note what the tool server does *not* contain: a list of tools. Registered like this, it is a pass-through - the gateway forwards whatever the function returns from `tools/list`. That's fine for routing, but it matters later for per-tool blocking in the M365 admin center, which I come back to below.
+{: .prompt-info}
 
 ## 🔐 Runtime Auth - the Two Details That Bit Me
 
@@ -283,7 +284,7 @@ Under 30 seconds later the tool answered normally again, and the M365 admin cent
 
 Those writes are visible in Defender XDR's **`CloudAuditEvents`**. Every block and unblock is a `toolServers/write`, and Agent 365's writes are easy to tell apart by the role in `RawEventData.authorization`. This query flags any other identity writing to - or deleting - the same MCP server within an hour after Agent 365, and keeps the `OperationName` so you see which of the two it was:
 
-```shell
+```kql
 let window = 7d;
 let maxGap = 60m;   // writes this soon after an Agent 365 block are the interesting ones
 let writes = CloudAuditEvents
@@ -398,7 +399,7 @@ AI Gateway doesn't support diagnostic settings; telemetry goes out through its *
 
 The gateway writes a log record with `azure.ai_gateway.denial.code` for every denied tool call:
 
-```shell
+```kql
 OTelLogs
 | where RoleName == "[api-management]/apim-gateway"
 | extend Denial = tostring(Attributes["azure.ai_gateway.denial.code"])
@@ -425,7 +426,7 @@ Each active policy also leaves a `policy <type>` span with its configuration and
 
 A blocked tool shows up in the denials above. A blocked *server* doesn't: the request is logged as `POST … /mcp` with `200`, then `inbound` and `response transfer` - no `backend` phase, no denial code, no `AccessBlockedByGateway` anywhere. The only signal is the missing hop:
 
-```shell
+```kql
 let gw = OTelSpans | where RoleName == "[api-management]/apim-gateway";
 gw
 | where Kind == "Server" and Name startswith "POST /default/toolservers/" and ResultCode == "200"
@@ -502,7 +503,7 @@ az rest -m get -u "$GW_ID/toolServers/<name>?$API" \
 
 </details>
 
-## ⚠️ Limitations and Open Questions
+## ⚠️ Limitations and Observations
 
 - **Private endpoints in preview** - inbound private access needs approval; VNet and subnet can't be changed after they're set.
 - **No content inspection for autonomous agents** - tool threat protection needs a delegated user token.
