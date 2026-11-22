@@ -10,7 +10,7 @@ render_with_liquid: false
 
 An agent identity can look quiet while the agent user it represents is busy. That distinction changes how I hunt Microsoft Entra agents: I want to know which agents are active, what they reach, what they change, and whether their activity fits the job they were built to do.
 
-I put the full set of tested queries in [my GitHub repository](https://github.com/pisinger/dev-private-demo/blob/main/blog/agent-hunting.md). It covers sign-ins, Microsoft Graph calls, lifecycle and permission events, alerts, risk, behavioral baselines, the agent runtime (Foundry agents, models, tools, and content safety), agent traffic through an AI gateway, and Copilot interactions. This post focuses on the hunting model and the signals I would start with rather than reproducing all 65 queries.
+I put the full set of tested queries in [my GitHub repository](https://github.com/pisinger/scripts-lib/blob/main/agentic/defender-agent-activity-hunting.md). It covers sign-ins, Microsoft Graph calls, lifecycle and permission events, alerts, risk, behavioral baselines, the agent runtime (Foundry agents, models, tools, and content safety), agent traffic through an AI gateway, and Copilot interactions. This post focuses on the hunting model and the signals I would start with rather than reproducing all 65 queries.
 
 > **In short:** Follow every principal an agent can act as: the agent identity, the agent user, and for Foundry agents the shared project identity. Start from the Defender XDR tables, add the Sentinel tables for status and baselines, and treat new behavior on an established agent as a lead, not a verdict.
 {: .prompt-tip}
@@ -45,7 +45,7 @@ There is no single agent activity table. This map covers the tables I queried in
 
 Two results are worth knowing in advance. `AADRiskyServicePrincipals` and `AADServicePrincipalRiskEvents` returned no agent rows: agent risk lives in `AADRiskyAgents` and `AADAgentRiskEvents` instead. `CopilotActivity` was present but completely empty, as its connector was not sending data; the same Copilot interactions were already in `CloudAppEvents` as `CopilotInteraction`, another case where the Defender XDR table is the better first look. For live Entra agent risk data, the query set also refers to Microsoft Graph `riskyAgents` and `agentRiskDetections` endpoints; those are API calls, not hunting tables, and the available test token lacked the required permission.
 
-![Map of the tables used to hunt Microsoft Entra agent activity](/assets/images/img/posts/microsoft-entra-agent-activity-hunting-via-defender/defender-agent-hunting-where-to-look.svg)
+![Map of the tables used to hunt Microsoft Entra agent activity](/assets/img/posts/microsoft-entra-agent-activity-hunting-via-defender/defender-agent-hunting-where-to-look.svg)
 
 ## 🧭 Follow both parts of the agent
 
@@ -291,4 +291,7 @@ Use an appropriate longer-term collection path when you need retention beyond th
 
 ## 📝 Conclusion
 
-Agent hunting works best when it follows the identity, the agent user, and, for Foundry agents, the shared project identity, then joins their activity to the resources, tools, models, permissions, and tasks they are expected to use. Start from the Defender XDR tables and add the Sentinel ones for status and baselines. Start with an inventory, learn the event shapes in your tenant, and baseline established agents before treating novelty as risk. The [complete query set](https://github.com/pisinger/dev-private-demo/blob/main/blog/agent-hunting.md) is the working reference, including the deeper hunts and caveats behind this overview.
+Agent hunting works best when it follows the identity, the agent user, and, for Foundry agents, the shared project identity, then joins their activity to the resources, tools, models, permissions, and tasks they are expected to use. Start from the Defender XDR tables and add the Sentinel ones for status and baselines. Start with an inventory, learn the event shapes in your tenant, and baseline established agents before treating novelty as risk. 
+
+> The [complete query set](https://github.com/pisinger/scripts-lib/blob/main/agentic/defender-agent-activity-hunting.md) is the working reference, including the deeper hunts and caveats behind this overview.
+{: .prompt-tip}
