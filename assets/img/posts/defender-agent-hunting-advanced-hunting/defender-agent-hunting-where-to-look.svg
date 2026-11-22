@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1580" viewBox="0 0 1600 1580" role="img" aria-labelledby="title desc">
+  <title id="title">Where to hunt Defender agent activity</title>
+  <desc id="desc">A map of Defender XDR and Sentinel workspace tables for hunting AI agents. Three principals to follow: agent identity, agent user, and the Foundry project managed identity used by agents that never sign in. Activity tables start with Defender XDR: GraphAPIAuditEvents for Graph, CloudAppEvents for lifecycle and runtime events, AlertInfo and AlertEvidence for alerts. Sentinel tables add alert status and UEBA baselines. An AI gateway row shows agent traffic through the gateway from model routes, gateway identities and Defender for AI alerts.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#131d31"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity=".25"/></filter>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#eef4ff}.muted{fill:#a9b8ce}.small{font-size:17px}.heading{font-size:23px;font-weight:700}.label{font-size:14px;font-weight:700;letter-spacing:1.4px;fill:#81aef5}.xdr{font-size:14px;font-weight:700;letter-spacing:1.4px;fill:#5fd0b0}.mono{font-family:Consolas,monospace;font-size:16px;fill:#d2e4ff}.card{filter:url(#shadow);stroke-width:1.5}
+    </style>
+  </defs>
+  <rect width="1600" height="1580" rx="28" fill="url(#bg)"/>
+  <text x="72" y="74" font-size="18" font-weight="700" letter-spacing="2" fill="#81aef5">DEFENDER AGENT HUNTING</text>
+  <text x="72" y="126" font-size="42" font-weight="750">Where to look for agent activity</text>
+  <text x="72" y="164" font-size="21" class="muted">Follow every principal, start from Defender XDR tables, then connect what the agent reaches, runs and triggers.</text>
+
+  <!-- Principals -->
+  <g class="card"><rect x="72" y="198" width="456" height="184" rx="18" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="198" width="9" height="184" rx="4" fill="#74a9ff"/>
+    <text x="104" y="236" class="label">SENTINEL WORKSPACE</text>
+    <text x="104" y="274" class="heading">Agent identity</text>
+    <text x="104" y="307" class="mono">AADServicePrincipalSignInLogs</text>
+    <text x="104" y="337" class="small muted">Marker: agenticAppInstance</text>
+    <text x="104" y="362" class="small muted">parentAppId = blueprint</text>
+  </g>
+  <g class="card"><rect x="572" y="198" width="456" height="184" rx="18" fill="#172235" stroke="#455975"/>
+    <rect x="572" y="198" width="9" height="184" rx="4" fill="#5fd0b0"/>
+    <text x="604" y="236" class="label">SENTINEL WORKSPACE</text>
+    <text x="604" y="274" class="heading">Agent user</text>
+    <text x="604" y="307" class="mono">AADNonInteractiveUserSignInLogs</text>
+    <text x="604" y="337" class="small muted">Marker: agentIDuser</text>
+    <text x="604" y="362" class="small muted">agentSubjectParentId = identity</text>
+  </g>
+  <g class="card"><rect x="1072" y="198" width="456" height="184" rx="18" fill="#172235" stroke="#455975" stroke-dasharray="8 6"/>
+    <rect x="1072" y="198" width="9" height="184" rx="4" fill="#c79bff"/>
+    <text x="1104" y="236" class="label">SENTINEL WORKSPACE</text>
+    <text x="1104" y="274" class="heading">Foundry project identity</text>
+    <text x="1104" y="307" class="mono">AADManagedIdentitySignInLogs</text>
+    <text x="1104" y="337" class="small muted">&lt;account&gt;/projects/&lt;project&gt;</text>
+    <text x="1104" y="362" class="small muted">Shared by agents with no own sign-in</text>
+  </g>
+  <path d="M528 274H572" stroke="#74a9ff" stroke-width="3"/>
+  <text x="550" y="259" text-anchor="middle" class="small muted">parent</text>
+  <path d="M1028 274H1072" stroke="#c79bff" stroke-width="3" stroke-dasharray="6 5"/>
+  <text x="1050" y="259" text-anchor="middle" class="small muted">or</text>
+
+  <!-- Activity -->
+  <text x="72" y="425" class="label">FOLLOW THE ACTIVITY INTO THESE TABLES · DEFENDER XDR FIRST</text>
+  <g class="card"><rect x="72" y="446" width="456" height="268" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="446" width="8" height="268" rx="4" fill="#74a9ff"/>
+    <text x="100" y="480" class="xdr">DEFENDER XDR</text>
+    <text x="100" y="512" class="heading">Reach and calls</text>
+    <text x="100" y="550" class="mono">GraphAPIAuditEvents</text>
+    <text x="100" y="577" class="small muted">Graph method, URI, status, caller</text>
+    <text x="100" y="614" class="mono">EntraIdSpnSignInEvents</text>
+    <text x="100" y="639" class="mono">EntraIdSignInEvents</text>
+    <text x="100" y="666" class="small muted">No agent marker; scope by known IDs</text>
+    <text x="100" y="696" class="small muted">Fallback: MicrosoftGraphActivityLogs</text>
+  </g>
+  <g class="card"><rect x="572" y="446" width="456" height="268" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="572" y="446" width="8" height="268" rx="4" fill="#c79bff"/>
+    <text x="600" y="480" class="xdr">DEFENDER XDR</text>
+    <text x="600" y="512" class="heading">Changes and runtime</text>
+    <text x="600" y="550" class="mono">CloudAppEvents</text>
+    <text x="600" y="577" class="small muted">Lifecycle, grants, role writes</text>
+    <text x="600" y="614" class="small">InvokeAgent · tool runs · InferenceCall</text>
+    <text x="600" y="641" class="small">Foundry · Copilot Studio · Security Copilot</text>
+    <text x="600" y="668" class="small muted">CopilotInteraction: files agents read</text>
+    <text x="600" y="696" class="small muted">Only source for agents that never sign in</text>
+  </g>
+  <g class="card"><rect x="1072" y="446" width="456" height="268" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="1072" y="446" width="8" height="268" rx="4" fill="#f2b35e"/>
+    <text x="1100" y="480" class="xdr">DEFENDER XDR</text>
+    <text x="1100" y="512" class="heading">Alerts and response</text>
+    <text x="1100" y="550" class="mono">AlertInfo · AlertEvidence</text>
+    <text x="1100" y="577" class="small muted">Start here: AIAgent evidence per agent</text>
+    <text x="1100" y="604" class="small muted">Users, IPs, MITRE ATLAS techniques</text>
+    <text x="1100" y="642" class="mono">SecurityAlert · SecurityIncident</text>
+    <text x="1100" y="669" class="small muted">Then (Sentinel): status and closure</text>
+    <text x="1100" y="696" class="small muted">SecurityCaseEvent: who changed what</text>
+  </g>
+
+  <!-- AI gateway -->
+  <g class="card"><rect x="72" y="748" width="1456" height="124" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="748" width="8" height="124" rx="4" fill="#74a9ff"/>
+    <text x="100" y="782" class="xdr">DEFENDER XDR · AGENT TRAFFIC ONLY</text>
+    <text x="440" y="782" class="heading">AI gateway path</text>
+    <text x="100" y="822" class="mono">CloudAppEvents · InferenceCall</text>
+    <text x="100" y="850" class="small muted">model = &lt;gateway&gt;/&lt;backend&gt;/&lt;deployment&gt;</text>
+    <text x="600" y="822" class="mono">EntraIdSpnSignInEvents</text>
+    <text x="600" y="850" class="small muted">caller to Azure AI Gateway to model backend</text>
+    <text x="1100" y="822" class="mono">AlertInfo · AlertEvidence</text>
+    <text x="1100" y="850" class="small muted">Defender for AI alerts on the backend</text>
+  </g>
+
+  <!-- Context -->
+  <g class="card"><rect x="72" y="906" width="700" height="240" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="72" y="906" width="8" height="240" rx="4" fill="#5fd0b0"/>
+    <text x="100" y="946" class="heading">Behavior and risk context</text>
+    <text x="100" y="986" class="mono">BehaviorInfo · BehaviorEntities</text>
+    <text x="100" y="1013" class="small muted">XDR: Prompt Shield jailbreak blocks, agent in AdditionalFields</text>
+    <text x="100" y="1049" class="mono">BehaviorAnalytics · Anomalies</text>
+    <text x="100" y="1076" class="small muted">Sentinel UEBA: the only per-agent baseline</text>
+    <text x="100" y="1112" class="mono">AADRiskyAgents · AADAgentRiskEvents · AgentsInfo · IdentityInfo</text>
+    <text x="100" y="1135" class="small muted">Entra risk, Defender risk indicators, inventory</text>
+  </g>
+  <g class="card"><rect x="828" y="906" width="700" height="240" rx="16" fill="#172235" stroke="#455975"/>
+    <rect x="828" y="906" width="8" height="240" rx="4" fill="#f2b35e"/>
+    <text x="856" y="946" class="heading">Other tables checked</text>
+    <text x="856" y="986" class="mono">CopilotActivity</text>
+    <text x="856" y="1013" class="small muted">Empty: connector not sending data</text>
+    <text x="856" y="1038" class="small muted">The same interactions are in CloudAppEvents</text>
+    <text x="856" y="1078" class="mono">AADRiskyServicePrincipals</text>
+    <text x="856" y="1103" class="mono">AADServicePrincipalRiskEvents</text>
+    <text x="856" y="1130" class="small muted">No agent rows: agent risk is in AADRiskyAgents</text>
+  </g>
+
+  <!-- Notes -->
+  <g class="card"><rect x="72" y="1180" width="1456" height="352" rx="18" fill="#1d2a1f" stroke="#4d7a52"/>
+    <text x="104" y="1224" class="heading" style="fill:#9be3a4">How to read this map</text>
+    <text x="104" y="1266" class="small">Start with both sign-in tables. The agent user can generate far more sign-ins than its parent identity.</text>
+    <text x="104" y="1298" class="small">Foundry and most Copilot Studio agents never sign in as themselves: find them in CloudAppEvents, and their access under the project identity.</text>
+    <text x="104" y="1330" class="small">First look: Defender XDR tables, AlertInfo and AlertEvidence for alerts, not SecurityAlert. Then Sentinel tables for status and UEBA baselines.</text>
+    <text x="104" y="1362" class="small">Graph tables cover Graph only, not Azure Resource Manager or Defender APIs. Sentinel tables need the workspace connected to Defender.</text>
+    <text x="104" y="1394" class="small">Agent risk tables need the Entra risk diagnostic setting. Empty results are not a clean bill of health.</text>
+    <text x="104" y="1426" class="small">Behind an AI gateway, check what share of each agent's model calls actually goes through it; the rest bypasses its policies.</text>
+    <text x="104" y="1468" class="small muted">The Entra riskyAgents and agentRiskDetections Graph endpoints are API sources, not Advanced Hunting tables.</text>
+    <text x="104" y="1504" class="small" style="fill:#f2b35e">Every result depends on collection, schema and lookback. Validate the event shape in your tenant before alerting.</text>
+  </g>
+</svg>
