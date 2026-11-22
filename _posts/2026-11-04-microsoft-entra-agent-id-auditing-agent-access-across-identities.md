@@ -48,6 +48,15 @@ Add an **agent user** only when the agent must interact with something that expe
 > **Default:** I would not create agent users by default. The agent identity is the primary identity; the paired user is an additional access surface with a concrete workload reason to exist.
 {: .prompt-info}
 
+### Foundry: agent identity or project managed identity
+
+Microsoft Foundry agents add one more choice when they call tools and downstream services. I covered this in more detail in [Agentic incident response with Foundry, Logic Apps and human approval](https://pisinger.github.io/posts/agentic-incident-response-foundry-logic-apps-human-approval/); in short, there are two authentication options:
+
+- **Agent identity (`agentic-identity`):** the preferred option when you need per-agent permissions and auditability. New-model agents receive a unique identity when they are created, while legacy agents still require the use of the shared project identity.
+- **Project managed identity (`project-managed-identity`):** use this when multiple agents should share a common identity, when the target service specifically requires a managed identity, or when agent identity authentication is not supported. The project's managed identity must be granted the necessary permissions.
+
+For an access review, that difference matters: access granted to the project managed identity is shared by every agent in the project that uses it, so it cannot be attributed to a single agent the way an agent identity's assignments can. Include the project managed identity in the review alongside the agent identities.
+
 ## 👥 Owners, sponsors, and managers
 
 Owners are the technical operators. They can change configuration and credentials within the scope of the object they own. Sponsors provide business accountability and make lifecycle decisions; a sponsor is required for an agent identity and a blueprint. Managers apply to agent users and represent the user-account relationship in the organization. These relationships are metadata and scoped capabilities, not substitutes for directory roles or resource permissions.
