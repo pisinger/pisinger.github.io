@@ -25,6 +25,8 @@ There is no single agent activity table. This map covers the tables I queried in
 > **Reading "no agent rows":** The table was present or queried but returned no agent-related rows in that test. It does not mean the table is empty everywhere or that the activity cannot be recorded elsewhere.
 {: .prompt-info}
 
+![Map of the tables used to hunt Microsoft Entra agent activity](/assets/img/posts/microsoft-entra-agent-activity-hunting-via-defender/defender-agent-hunting-where-to-look.svg)
+
 | Table | Source | What it can show | Test and access notes |
 |---|---|---|---|
 | `AADServicePrincipalSignInLogs` | Sentinel workspace | Agent identity token requests, blueprint marker, requested resources, IPs, and failures | Agent identity marker is in `Agent`; workspace data requires Sentinel connected to Defender. |
@@ -44,8 +46,6 @@ There is no single agent activity table. This map covers the tables I queried in
 | `IdentityInfo` | Defender XDR | Account risk and criticality fields for agent users | Risk level and score were empty for the agent users I checked. |
 
 Two results are worth knowing in advance. `AADRiskyServicePrincipals` and `AADServicePrincipalRiskEvents` returned no agent rows: agent risk lives in `AADRiskyAgents` and `AADAgentRiskEvents` instead. `CopilotActivity` was present but completely empty, as its connector was not sending data; the same Copilot interactions were already in `CloudAppEvents` as `CopilotInteraction`, another case where the Defender XDR table is the better first look. For live Entra agent risk data, the query set also refers to Microsoft Graph `riskyAgents` and `agentRiskDetections` endpoints; those are API calls, not hunting tables, and the available test token lacked the required permission.
-
-![Map of the tables used to hunt Microsoft Entra agent activity](/assets/img/posts/microsoft-entra-agent-activity-hunting-via-defender/defender-agent-hunting-where-to-look.svg)
 
 ## 🧭 Follow both parts of the agent
 
